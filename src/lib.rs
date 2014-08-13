@@ -259,96 +259,111 @@ fn parse_iter<T: Iterator<char>>(rdr: &mut T) -> Option<Version> {
     })
 }
 
+#[deriving(PartialEq,Show,PartialOrd)]
+pub enum ParseError {
+    NonAsciiIdentifier,
+    IncorrectParse(Version, String),
+    GenericFailure,
+}
 
 /// Parse a string into a semver object.
-pub fn parse(s: &str) -> Option<Version> {
+pub fn parse(s: &str) -> Result<Version, ParseError> {
     if !s.is_ascii() {
-        return None;
+        return Err(NonAsciiIdentifier)
     }
     let s = s.trim();
     let v = parse_iter(&mut s.chars());
     match v {
         Some(v) => {
             if v.to_string().equiv(&s) {
-                Some(v)
+                Ok(v)
             } else {
-                None
+                Err(IncorrectParse(v, s.to_string()))
             }
         }
-        None => None
+        None => Err(GenericFailure)
     }
 }
 
 #[test]
 fn test_parse() {
-    assert_eq!(parse(""), None);
-    assert_eq!(parse("  "), None);
-    assert_eq!(parse("1"), None);
-    assert_eq!(parse("1.2"), None);
-    assert_eq!(parse("1.2"), None);
-    assert_eq!(parse("1"), None);
-    assert_eq!(parse("1.2"), None);
-    assert_eq!(parse("1.2.3-"), None);
-    assert_eq!(parse("a.b.c"), None);
-    assert_eq!(parse("1.2.3 abc"), None);
+    assert_eq!(parse(""), Err(GenericFailure));
+    assert_eq!(parse("  "), Err(GenericFailure));
+    assert_eq!(parse("1"),  Err(GenericFailure));
+    assert_eq!(parse("1.2"), Err(GenericFailure));
+    assert_eq!(parse("1.2"), Err(GenericFailure));
+    assert_eq!(parse("1"), Err(GenericFailure));
+    assert_eq!(parse("1.2"), Err(GenericFailure));
+    assert_eq!(parse("1.2.3-"), Err(GenericFailure));
+    assert_eq!(parse("a.b.c"), Err(GenericFailure));
 
-    assert!(parse("1.2.3") == Some(Version {
+    let version = Version {
+        major: 1u32,
+        minor: 2u32,
+        patch: 3u32,
+        pre: vec!(),
+        build: vec!(),
+    };
+    let error = Err(IncorrectParse(version, "1.2.3 abc".to_string()));
+    assert_eq!(parse("1.2.3 abc"), error);
+
+    assert!(parse("1.2.3") == Ok(Version {
         major: 1u32,
         minor: 2u32,
         patch: 3u32,
         pre: vec!(),
         build: vec!(),
     }));
-    assert!(parse("  1.2.3  ") == Some(Version {
+    assert!(parse("  1.2.3  ") == Ok(Version {
         major: 1u32,
         minor: 2u32,
         patch: 3u32,
         pre: vec!(),
         build: vec!(),
     }));
-    assert!(parse("1.2.3-alpha1") == Some(Version {
+    assert!(parse("1.2.3-alpha1") == Ok(Version {
         major: 1u32,
         minor: 2u32,
         patch: 3u32,
         pre: vec!(AlphaNumeric("alpha1".to_string())),
         build: vec!(),
     }));
-    assert!(parse("  1.2.3-alpha1  ") == Some(Version {
+    assert!(parse("  1.2.3-alpha1  ") == Ok(Version {
         major: 1u32,
         minor: 2u32,
         patch: 3u32,
         pre: vec!(AlphaNumeric("alpha1".to_string())),
         build: vec!()
     }));
-    assert!(parse("1.2.3+build5") == Some(Version {
+    assert!(parse("1.2.3+build5") == Ok(Version {
         major: 1u32,
         minor: 2u32,
         patch: 3u32,
         pre: vec!(),
         build: vec!(AlphaNumeric("build5".to_string()))
     }));
-    assert!(parse("  1.2.3+build5  ") == Some(Version {
+    assert!(parse("  1.2.3+build5  ") == Ok(Version {
         major: 1u32,
         minor: 2u32,
         patch: 3u32,
         pre: vec!(),
         build: vec!(AlphaNumeric("build5".to_string()))
     }));
-    assert!(parse("1.2.3-alpha1+build5") == Some(Version {
+    assert!(parse("1.2.3-alpha1+build5") == Ok(Version {
         major: 1u32,
         minor: 2u32,
         patch: 3u32,
         pre: vec!(AlphaNumeric("alpha1".to_string())),
         build: vec!(AlphaNumeric("build5".to_string()))
     }));
-    assert!(parse("  1.2.3-alpha1+build5  ") == Some(Version {
+    assert!(parse("  1.2.3-alpha1+build5  ") == Ok(Version {
         major: 1u32,
         minor: 2u32,
         patch: 3u32,
         pre: vec!(AlphaNumeric("alpha1".to_string())),
         build: vec!(AlphaNumeric("build5".to_string()))
     }));
-    assert!(parse("1.2.3-1.alpha1.9+build5.7.3aedf  ") == Some(Version {
+    assert!(parse("1.2.3-1.alpha1.9+build5.7.3aedf  ") == Ok(Version {
         major: 1u32,
         minor: 2u32,
         patch: 3u32,
