@@ -48,7 +48,7 @@ use std::hash;
 #[deriving(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[allow(missing_doc)]
 pub enum Identifier {
-    Numeric(uint),
+    Numeric(u64),
     AlphaNumeric(String)
 }
 
@@ -67,13 +67,13 @@ impl fmt::Show for Identifier {
 #[deriving(Clone, Eq)]
 pub struct Version {
     /// The major version, to be incremented on incompatible changes.
-    pub major: uint,
+    pub major: u32,
     /// The minor version, to be incremented when functionality is added in a
     /// backwards-compatible manner.
-    pub minor: uint,
+    pub minor: u32,
     /// The patch version, to be incremented when backwards-compatible bug
     /// fixes are made.
-    pub patch: uint,
+    pub patch: u32,
     /// The pre-release version identifier, if one exists.
     pub pre: Vec<Identifier>,
     /// The build metadata, ignored when determining version precedence.
@@ -176,9 +176,9 @@ fn take_nonempty_prefix<T:Iterator<char>>(rdr: &mut T, pred: |char| -> bool)
     (buf, ch)
 }
 
-fn take_num<T: Iterator<char>>(rdr: &mut T) -> Option<(uint, Option<char>)> {
+fn take_num<T: Iterator<char>>(rdr: &mut T) -> Option<(u32, Option<char>)> {
     let (s, ch) = take_nonempty_prefix(rdr, char::is_digit);
-    match from_str::<uint>(s.as_slice()) {
+    match from_str::<u32>(s.as_slice()) {
         None => None,
         Some(i) => Some((i, ch))
     }
@@ -187,7 +187,7 @@ fn take_num<T: Iterator<char>>(rdr: &mut T) -> Option<(uint, Option<char>)> {
 fn take_ident<T: Iterator<char>>(rdr: &mut T) -> Option<(Identifier, Option<char>)> {
     let (s,ch) = take_nonempty_prefix(rdr, char::is_alphanumeric);
     if s.as_slice().chars().all(char::is_digit) {
-        match from_str::<uint>(s.as_slice()) {
+        match from_str::<u64>(s.as_slice()) {
             None => None,
             Some(i) => Some((Numeric(i), ch))
         }
@@ -293,65 +293,65 @@ fn test_parse() {
     assert_eq!(parse("1.2.3 abc"), None);
 
     assert!(parse("1.2.3") == Some(Version {
-        major: 1u,
-        minor: 2u,
-        patch: 3u,
+        major: 1u32,
+        minor: 2u32,
+        patch: 3u32,
         pre: vec!(),
         build: vec!(),
     }));
     assert!(parse("  1.2.3  ") == Some(Version {
-        major: 1u,
-        minor: 2u,
-        patch: 3u,
+        major: 1u32,
+        minor: 2u32,
+        patch: 3u32,
         pre: vec!(),
         build: vec!(),
     }));
     assert!(parse("1.2.3-alpha1") == Some(Version {
-        major: 1u,
-        minor: 2u,
-        patch: 3u,
+        major: 1u32,
+        minor: 2u32,
+        patch: 3u32,
         pre: vec!(AlphaNumeric("alpha1".to_string())),
         build: vec!(),
     }));
     assert!(parse("  1.2.3-alpha1  ") == Some(Version {
-        major: 1u,
-        minor: 2u,
-        patch: 3u,
+        major: 1u32,
+        minor: 2u32,
+        patch: 3u32,
         pre: vec!(AlphaNumeric("alpha1".to_string())),
         build: vec!()
     }));
     assert!(parse("1.2.3+build5") == Some(Version {
-        major: 1u,
-        minor: 2u,
-        patch: 3u,
+        major: 1u32,
+        minor: 2u32,
+        patch: 3u32,
         pre: vec!(),
         build: vec!(AlphaNumeric("build5".to_string()))
     }));
     assert!(parse("  1.2.3+build5  ") == Some(Version {
-        major: 1u,
-        minor: 2u,
-        patch: 3u,
+        major: 1u32,
+        minor: 2u32,
+        patch: 3u32,
         pre: vec!(),
         build: vec!(AlphaNumeric("build5".to_string()))
     }));
     assert!(parse("1.2.3-alpha1+build5") == Some(Version {
-        major: 1u,
-        minor: 2u,
-        patch: 3u,
+        major: 1u32,
+        minor: 2u32,
+        patch: 3u32,
         pre: vec!(AlphaNumeric("alpha1".to_string())),
         build: vec!(AlphaNumeric("build5".to_string()))
     }));
     assert!(parse("  1.2.3-alpha1+build5  ") == Some(Version {
-        major: 1u,
-        minor: 2u,
-        patch: 3u,
+        major: 1u32,
+        minor: 2u32,
+        patch: 3u32,
         pre: vec!(AlphaNumeric("alpha1".to_string())),
         build: vec!(AlphaNumeric("build5".to_string()))
     }));
     assert!(parse("1.2.3-1.alpha1.9+build5.7.3aedf  ") == Some(Version {
-        major: 1u,
-        minor: 2u,
-        patch: 3u,
+        major: 1u32,
+        minor: 2u32,
+        patch: 3u32,
         pre: vec!(Numeric(1),AlphaNumeric("alpha1".to_string()),Numeric(9)),
         build: vec!(AlphaNumeric("build5".to_string()),
                  Numeric(7),
