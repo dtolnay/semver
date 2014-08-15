@@ -8,11 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::char;
-use std::cmp;
 use std::fmt::Show;
 use std::fmt;
-use std::hash;
 use std::str::CharOffsets;
 
 use super::version::Version;

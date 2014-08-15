@@ -13,7 +13,6 @@ use std::cmp;
 use std::fmt::Show;
 use std::fmt;
 use std::hash;
-use std::str::CharOffsets;
 
 /// An identifier in the pre-release or build metadata. If the identifier can
 /// be parsed as a decimal value, it will be represented with `Numeric`.
