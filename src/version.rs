@@ -257,190 +257,205 @@ pub fn parse(s: &str) -> Result<Version, ParseError> {
     }
 }
 
-#[test]
-fn test_parse() {
-    assert_eq!(parse(""), Err(GenericFailure));
-    assert_eq!(parse("  "), Err(GenericFailure));
-    assert_eq!(parse("1"),  Err(GenericFailure));
-    assert_eq!(parse("1.2"), Err(GenericFailure));
-    assert_eq!(parse("1.2"), Err(GenericFailure));
-    assert_eq!(parse("1"), Err(GenericFailure));
-    assert_eq!(parse("1.2"), Err(GenericFailure));
-    assert_eq!(parse("1.2.3-"), Err(GenericFailure));
-    assert_eq!(parse("a.b.c"), Err(GenericFailure));
-
-    let version = Version {
-        major: 1u32,
-        minor: 2u32,
-        patch: 3u32,
-        pre: vec!(),
-        build: vec!(),
+#[cfg(test)]
+mod test {
+    use super::{
+        Version,
+        Numeric,
+        AlphaNumeric,
+        Identifier,
+        ParseError,
+        NonAsciiIdentifier,
+        IncorrectParse,
+        GenericFailure,
+        parse,
     };
-    let error = Err(IncorrectParse(version, "1.2.3 abc".to_string()));
-    assert_eq!(parse("1.2.3 abc"), error);
 
-    assert!(parse("1.2.3") == Ok(Version {
-        major: 1u32,
-        minor: 2u32,
-        patch: 3u32,
-        pre: vec!(),
-        build: vec!(),
-    }));
-    assert!(parse("  1.2.3  ") == Ok(Version {
-        major: 1u32,
-        minor: 2u32,
-        patch: 3u32,
-        pre: vec!(),
-        build: vec!(),
-    }));
-    assert!(parse("1.2.3-alpha1") == Ok(Version {
-        major: 1u32,
-        minor: 2u32,
-        patch: 3u32,
-        pre: vec!(AlphaNumeric("alpha1".to_string())),
-        build: vec!(),
-    }));
-    assert!(parse("  1.2.3-alpha1  ") == Ok(Version {
-        major: 1u32,
-        minor: 2u32,
-        patch: 3u32,
-        pre: vec!(AlphaNumeric("alpha1".to_string())),
-        build: vec!()
-    }));
-    assert!(parse("1.2.3+build5") == Ok(Version {
-        major: 1u32,
-        minor: 2u32,
-        patch: 3u32,
-        pre: vec!(),
-        build: vec!(AlphaNumeric("build5".to_string()))
-    }));
-    assert!(parse("  1.2.3+build5  ") == Ok(Version {
-        major: 1u32,
-        minor: 2u32,
-        patch: 3u32,
-        pre: vec!(),
-        build: vec!(AlphaNumeric("build5".to_string()))
-    }));
-    assert!(parse("1.2.3-alpha1+build5") == Ok(Version {
-        major: 1u32,
-        minor: 2u32,
-        patch: 3u32,
-        pre: vec!(AlphaNumeric("alpha1".to_string())),
-        build: vec!(AlphaNumeric("build5".to_string()))
-    }));
-    assert!(parse("  1.2.3-alpha1+build5  ") == Ok(Version {
-        major: 1u32,
-        minor: 2u32,
-        patch: 3u32,
-        pre: vec!(AlphaNumeric("alpha1".to_string())),
-        build: vec!(AlphaNumeric("build5".to_string()))
-    }));
-    assert!(parse("1.2.3-1.alpha1.9+build5.7.3aedf  ") == Ok(Version {
-        major: 1u32,
-        minor: 2u32,
-        patch: 3u32,
-        pre: vec!(Numeric(1),AlphaNumeric("alpha1".to_string()),Numeric(9)),
-        build: vec!(AlphaNumeric("build5".to_string()),
-                 Numeric(7),
-                 AlphaNumeric("3aedf".to_string()))
-    }));
+    #[test]
+    fn test_parse() {
+        assert_eq!(parse(""), Err(GenericFailure));
+        assert_eq!(parse("  "), Err(GenericFailure));
+        assert_eq!(parse("1"),  Err(GenericFailure));
+        assert_eq!(parse("1.2"), Err(GenericFailure));
+        assert_eq!(parse("1.2"), Err(GenericFailure));
+        assert_eq!(parse("1"), Err(GenericFailure));
+        assert_eq!(parse("1.2"), Err(GenericFailure));
+        assert_eq!(parse("1.2.3-"), Err(GenericFailure));
+        assert_eq!(parse("a.b.c"), Err(GenericFailure));
 
-}
+        let version = Version {
+            major: 1u32,
+            minor: 2u32,
+            patch: 3u32,
+            pre: vec!(),
+            build: vec!(),
+        };
+        let error = Err(IncorrectParse(version, "1.2.3 abc".to_string()));
+        assert_eq!(parse("1.2.3 abc"), error);
 
-#[test]
-fn test_eq() {
-    assert_eq!(parse("1.2.3"), parse("1.2.3"));
-    assert_eq!(parse("1.2.3-alpha1"), parse("1.2.3-alpha1"));
-    assert_eq!(parse("1.2.3+build.42"), parse("1.2.3+build.42"));
-    assert_eq!(parse("1.2.3-alpha1+42"), parse("1.2.3-alpha1+42"));
-    assert_eq!(parse("1.2.3+23"), parse("1.2.3+42"));
-}
+        assert!(parse("1.2.3") == Ok(Version {
+            major: 1u32,
+            minor: 2u32,
+            patch: 3u32,
+            pre: vec!(),
+            build: vec!(),
+        }));
+        assert!(parse("  1.2.3  ") == Ok(Version {
+            major: 1u32,
+            minor: 2u32,
+            patch: 3u32,
+            pre: vec!(),
+            build: vec!(),
+        }));
+        assert!(parse("1.2.3-alpha1") == Ok(Version {
+            major: 1u32,
+            minor: 2u32,
+            patch: 3u32,
+            pre: vec!(AlphaNumeric("alpha1".to_string())),
+            build: vec!(),
+        }));
+        assert!(parse("  1.2.3-alpha1  ") == Ok(Version {
+            major: 1u32,
+            minor: 2u32,
+            patch: 3u32,
+            pre: vec!(AlphaNumeric("alpha1".to_string())),
+            build: vec!()
+        }));
+        assert!(parse("1.2.3+build5") == Ok(Version {
+            major: 1u32,
+            minor: 2u32,
+            patch: 3u32,
+            pre: vec!(),
+            build: vec!(AlphaNumeric("build5".to_string()))
+        }));
+        assert!(parse("  1.2.3+build5  ") == Ok(Version {
+            major: 1u32,
+            minor: 2u32,
+            patch: 3u32,
+            pre: vec!(),
+            build: vec!(AlphaNumeric("build5".to_string()))
+        }));
+        assert!(parse("1.2.3-alpha1+build5") == Ok(Version {
+            major: 1u32,
+            minor: 2u32,
+            patch: 3u32,
+            pre: vec!(AlphaNumeric("alpha1".to_string())),
+            build: vec!(AlphaNumeric("build5".to_string()))
+        }));
+        assert!(parse("  1.2.3-alpha1+build5  ") == Ok(Version {
+            major: 1u32,
+            minor: 2u32,
+            patch: 3u32,
+            pre: vec!(AlphaNumeric("alpha1".to_string())),
+            build: vec!(AlphaNumeric("build5".to_string()))
+        }));
+        assert!(parse("1.2.3-1.alpha1.9+build5.7.3aedf  ") == Ok(Version {
+            major: 1u32,
+            minor: 2u32,
+            patch: 3u32,
+            pre: vec!(Numeric(1),AlphaNumeric("alpha1".to_string()),Numeric(9)),
+            build: vec!(AlphaNumeric("build5".to_string()),
+                     Numeric(7),
+                     AlphaNumeric("3aedf".to_string()))
+        }));
 
-#[test]
-fn test_ne() {
-    assert!(parse("0.0.0")       != parse("0.0.1"));
-    assert!(parse("0.0.0")       != parse("0.1.0"));
-    assert!(parse("0.0.0")       != parse("1.0.0"));
-    assert!(parse("1.2.3-alpha") != parse("1.2.3-beta"));
-}
+    }
 
-#[test]
-fn test_show() {
-    assert_eq!(format!("{}", parse("1.2.3").unwrap()),
-               "1.2.3".to_string());
-    assert_eq!(format!("{}", parse("1.2.3-alpha1").unwrap()),
-               "1.2.3-alpha1".to_string());
-    assert_eq!(format!("{}", parse("1.2.3+build.42").unwrap()),
-               "1.2.3+build.42".to_string());
-    assert_eq!(format!("{}", parse("1.2.3-alpha1+42").unwrap()),
-               "1.2.3-alpha1+42".to_string());
-}
+    #[test]
+    fn test_eq() {
+        assert_eq!(parse("1.2.3"), parse("1.2.3"));
+        assert_eq!(parse("1.2.3-alpha1"), parse("1.2.3-alpha1"));
+        assert_eq!(parse("1.2.3+build.42"), parse("1.2.3+build.42"));
+        assert_eq!(parse("1.2.3-alpha1+42"), parse("1.2.3-alpha1+42"));
+        assert_eq!(parse("1.2.3+23"), parse("1.2.3+42"));
+    }
 
-#[test]
-fn test_to_string() {
-    assert_eq!(parse("1.2.3").unwrap().to_string(), "1.2.3".to_string());
-    assert_eq!(parse("1.2.3-alpha1").unwrap().to_string(), "1.2.3-alpha1".to_string());
-    assert_eq!(parse("1.2.3+build.42").unwrap().to_string(), "1.2.3+build.42".to_string());
-    assert_eq!(parse("1.2.3-alpha1+42").unwrap().to_string(), "1.2.3-alpha1+42".to_string());
-}
+    #[test]
+    fn test_ne() {
+        assert!(parse("0.0.0")       != parse("0.0.1"));
+        assert!(parse("0.0.0")       != parse("0.1.0"));
+        assert!(parse("0.0.0")       != parse("1.0.0"));
+        assert!(parse("1.2.3-alpha") != parse("1.2.3-beta"));
+    }
 
-#[test]
-fn test_lt() {
-    assert!(parse("0.0.0")          < parse("1.2.3-alpha2"));
-    assert!(parse("1.0.0")          < parse("1.2.3-alpha2"));
-    assert!(parse("1.2.0")          < parse("1.2.3-alpha2"));
-    assert!(parse("1.2.3-alpha1")   < parse("1.2.3"));
-    assert!(parse("1.2.3-alpha1")   < parse("1.2.3-alpha2"));
-    assert!(!(parse("1.2.3-alpha2") < parse("1.2.3-alpha2")));
-    assert!(!(parse("1.2.3+23")     < parse("1.2.3+42")));
-}
+    #[test]
+    fn test_show() {
+        assert_eq!(format!("{}", parse("1.2.3").unwrap()),
+                   "1.2.3".to_string());
+        assert_eq!(format!("{}", parse("1.2.3-alpha1").unwrap()),
+                   "1.2.3-alpha1".to_string());
+        assert_eq!(format!("{}", parse("1.2.3+build.42").unwrap()),
+                   "1.2.3+build.42".to_string());
+        assert_eq!(format!("{}", parse("1.2.3-alpha1+42").unwrap()),
+                   "1.2.3-alpha1+42".to_string());
+    }
 
-#[test]
-fn test_le() {
-    assert!(parse("0.0.0")        <= parse("1.2.3-alpha2"));
-    assert!(parse("1.0.0")        <= parse("1.2.3-alpha2"));
-    assert!(parse("1.2.0")        <= parse("1.2.3-alpha2"));
-    assert!(parse("1.2.3-alpha1") <= parse("1.2.3-alpha2"));
-    assert!(parse("1.2.3-alpha2") <= parse("1.2.3-alpha2"));
-    assert!(parse("1.2.3+23")     <= parse("1.2.3+42"));
-}
+    #[test]
+    fn test_to_string() {
+        assert_eq!(parse("1.2.3").unwrap().to_string(), "1.2.3".to_string());
+        assert_eq!(parse("1.2.3-alpha1").unwrap().to_string(), "1.2.3-alpha1".to_string());
+        assert_eq!(parse("1.2.3+build.42").unwrap().to_string(), "1.2.3+build.42".to_string());
+        assert_eq!(parse("1.2.3-alpha1+42").unwrap().to_string(), "1.2.3-alpha1+42".to_string());
+    }
 
-#[test]
-fn test_gt() {
-    assert!(parse("1.2.3-alpha2")   > parse("0.0.0"));
-    assert!(parse("1.2.3-alpha2")   > parse("1.0.0"));
-    assert!(parse("1.2.3-alpha2")   > parse("1.2.0"));
-    assert!(parse("1.2.3-alpha2")   > parse("1.2.3-alpha1"));
-    assert!(parse("1.2.3")          > parse("1.2.3-alpha2"));
-    assert!(!(parse("1.2.3-alpha2") > parse("1.2.3-alpha2")));
-    assert!(!(parse("1.2.3+23")     > parse("1.2.3+42")));
-}
+    #[test]
+    fn test_lt() {
+        assert!(parse("0.0.0")          < parse("1.2.3-alpha2"));
+        assert!(parse("1.0.0")          < parse("1.2.3-alpha2"));
+        assert!(parse("1.2.0")          < parse("1.2.3-alpha2"));
+        assert!(parse("1.2.3-alpha1")   < parse("1.2.3"));
+        assert!(parse("1.2.3-alpha1")   < parse("1.2.3-alpha2"));
+        assert!(!(parse("1.2.3-alpha2") < parse("1.2.3-alpha2")));
+        assert!(!(parse("1.2.3+23")     < parse("1.2.3+42")));
+    }
 
-#[test]
-fn test_ge() {
-    assert!(parse("1.2.3-alpha2") >= parse("0.0.0"));
-    assert!(parse("1.2.3-alpha2") >= parse("1.0.0"));
-    assert!(parse("1.2.3-alpha2") >= parse("1.2.0"));
-    assert!(parse("1.2.3-alpha2") >= parse("1.2.3-alpha1"));
-    assert!(parse("1.2.3-alpha2") >= parse("1.2.3-alpha2"));
-    assert!(parse("1.2.3+23")     >= parse("1.2.3+42"));
-}
+    #[test]
+    fn test_le() {
+        assert!(parse("0.0.0")        <= parse("1.2.3-alpha2"));
+        assert!(parse("1.0.0")        <= parse("1.2.3-alpha2"));
+        assert!(parse("1.2.0")        <= parse("1.2.3-alpha2"));
+        assert!(parse("1.2.3-alpha1") <= parse("1.2.3-alpha2"));
+        assert!(parse("1.2.3-alpha2") <= parse("1.2.3-alpha2"));
+        assert!(parse("1.2.3+23")     <= parse("1.2.3+42"));
+    }
 
-#[test]
-fn test_spec_order() {
-    let vs = ["1.0.0-alpha",
-              "1.0.0-alpha.1",
-              "1.0.0-alpha.beta",
-              "1.0.0-beta",
-              "1.0.0-beta.2",
-              "1.0.0-beta.11",
-              "1.0.0-rc.1",
-              "1.0.0"];
-    let mut i = 1;
-    while i < vs.len() {
-        let a = parse(vs[i-1]).unwrap();
-        let b = parse(vs[i]).unwrap();
-        assert!(a < b);
-        i += 1;
+    #[test]
+    fn test_gt() {
+        assert!(parse("1.2.3-alpha2")   > parse("0.0.0"));
+        assert!(parse("1.2.3-alpha2")   > parse("1.0.0"));
+        assert!(parse("1.2.3-alpha2")   > parse("1.2.0"));
+        assert!(parse("1.2.3-alpha2")   > parse("1.2.3-alpha1"));
+        assert!(parse("1.2.3")          > parse("1.2.3-alpha2"));
+        assert!(!(parse("1.2.3-alpha2") > parse("1.2.3-alpha2")));
+        assert!(!(parse("1.2.3+23")     > parse("1.2.3+42")));
+    }
+
+    #[test]
+    fn test_ge() {
+        assert!(parse("1.2.3-alpha2") >= parse("0.0.0"));
+        assert!(parse("1.2.3-alpha2") >= parse("1.0.0"));
+        assert!(parse("1.2.3-alpha2") >= parse("1.2.0"));
+        assert!(parse("1.2.3-alpha2") >= parse("1.2.3-alpha1"));
+        assert!(parse("1.2.3-alpha2") >= parse("1.2.3-alpha2"));
+        assert!(parse("1.2.3+23")     >= parse("1.2.3+42"));
+    }
+
+    #[test]
+    fn test_spec_order() {
+        let vs = ["1.0.0-alpha",
+                  "1.0.0-alpha.1",
+                  "1.0.0-alpha.beta",
+                  "1.0.0-beta",
+                  "1.0.0-beta.2",
+                  "1.0.0-beta.11",
+                  "1.0.0-rc.1",
+                  "1.0.0"];
+        let mut i = 1;
+        while i < vs.len() {
+            let a = parse(vs[i-1]).unwrap();
+            let b = parse(vs[i]).unwrap();
+            assert!(a < b);
+            i += 1;
+        }
     }
 }
