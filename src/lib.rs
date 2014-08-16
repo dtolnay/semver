@@ -27,6 +27,8 @@
 //!
 //! An example version number with all five components is
 //! `0.8.1-rc.3.0+20130922.linux`.
+//!
+//! There are two modules
 
 #![crate_name = "semver"]
 #![experimental]
@@ -38,5 +40,5 @@
 #![feature(default_type_params)]
 #![feature(macro_rules)]
 
-mod version;
-mod range;
+pub mod version;
+pub mod range;
