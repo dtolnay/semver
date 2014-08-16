@@ -11,24 +11,74 @@
 //! Semantic version parsing and comparison.
 //!
 //! Semantic versioning (see http://semver.org/) is a set of rules for
-//! assigning version numbers intended to convey meaning about what has
-//! changed, and how much. A version number has five parts:
+//! assigning version numbers.
 //!
-//!  * Major number, updated for incompatible API changes
-//!  * Minor number, updated for backwards-compatible API additions
-//!  * Patch number, updated for backwards-compatible bugfixes
-//!  * Pre-release information (optional), preceded by a hyphen (`-`)
-//!  * Build metadata (optional), preceded by a plus sign (`+`)
+//! ## SemVer overview
 //!
-//! The three mandatory components are required to be decimal numbers. The
-//! pre-release information and build metadata are required to be a
-//! period-separated list of identifiers containing only alphanumeric
-//! characters and hyphens.
+//! Given a version number MAJOR.MINOR.PATCH, increment the:
 //!
-//! An example version number with all five components is
-//! `0.8.1-rc.3.0+20130922.linux`.
+//! 1. MAJOR version when you make incompatible API changes,
+//! 2. MINOR version when you add functionality in a backwards-compatible manner, and
+//! 3. PATCH version when you make backwards-compatible bug fixes.
 //!
-//! There are two modules
+//! Additional labels for pre-release and build metadata are available as extensions to the
+//! MAJOR.MINOR.PATCH format.
+//!
+//! Any references to 'the spec' in this documentation refer to [version 2.0 of the SemVer
+//! spec](http://semver.org/spec/v2.0.0.html).
+//!
+//! ## SemVer and the Rust ecosystem
+//!
+//! Rust itself follows the SemVer specification, as does its standard libraries. The two are
+//! not tied together.
+//!
+//! [Cargo](http://crates.io), Rust's package manager, uses SemVer to determine which versions of
+//! packages you need installed.
+//!
+//! ## Versions
+//!
+//! At its simplest, the `semver` crate allows you to construct `Version` objects using the `parse`
+//! method:
+//! 
+//! ```{rust}
+//! use semver::version;
+//!
+//! assert!(version::parse("1.2.3") == Ok(version::Version {
+//!    major: 1u32,
+//!    minor: 2u32,
+//!    patch: 3u32,
+//!    pre: vec!(),
+//!    build: vec!(),
+//! }));
+//! ``` 
+//!
+//! If you have multiple `Version`s, you can use the usual comparison operators to compare them:
+//! 
+//! ```{rust}
+//! use semver::version;
+//!
+//! assert!(version::parse("1.2.3-alpha")  != version::parse("1.2.3-beta"));
+//! assert!(version::parse("1.2.3-alpha2") >  version::parse("1.2.0"));
+//! ``` 
+//! 
+//! ## Ranges
+//!
+//! The `semver` crate also provides a `range` module, which allows you to do more
+//! complex comparisons.
+//!
+//! For example, creating a requirement that only matches versions greater than or
+//! equal to 1.0.0:
+//! 
+//! ```{rust}
+//! use semver::version;
+//! use semver::range;
+//!
+//! let r = range::VersionReq::parse(">= 1.0.0").unwrap();
+//! let v = version::parse("1.0.0").unwrap();
+//!
+//! assert!(r.to_string() == ">= 1.0.0".to_string());
+//! assert!(r.matches(&v))
+//! ``` 
 
 #![crate_name = "semver"]
 #![experimental]
@@ -40,5 +90,8 @@
 #![feature(default_type_params)]
 #![feature(macro_rules)]
 
+/// SemVer-compliant versions.
 pub mod version;
+
+/// advanced version comparisons
 pub mod range;

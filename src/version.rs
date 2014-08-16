@@ -8,18 +8,22 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! The `version` module gives you tools to create and compare SemVer-compliant versions.
+
 use std::char;
 use std::cmp;
 use std::fmt::Show;
 use std::fmt;
 use std::hash;
 
-/// An identifier in the pre-release or build metadata. If the identifier can
-/// be parsed as a decimal value, it will be represented with `Numeric`.
+/// An identifier in the pre-release or build metadata.
+///
+/// See sections 9 and 10 of the spec for more about pre-release identifers and build metadata.
 #[deriving(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[allow(missing_doc)]
 pub enum Identifier {
+    /// An identifier that's solely numbers.
     Numeric(u64),
+    /// An identifier with letters and numbers.
     AlphaNumeric(String)
 }
 
