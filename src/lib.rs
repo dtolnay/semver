@@ -39,7 +39,7 @@
 //!
 //! At its simplest, the `semver` crate allows you to construct `Version` objects using the `parse`
 //! method:
-//! 
+//!
 //! ```{rust}
 //! use semver::version;
 //!
@@ -50,17 +50,17 @@
 //!    pre: vec!(),
 //!    build: vec!(),
 //! }));
-//! ``` 
+//! ```
 //!
 //! If you have multiple `Version`s, you can use the usual comparison operators to compare them:
-//! 
+//!
 //! ```{rust}
 //! use semver::version;
 //!
 //! assert!(version::parse("1.2.3-alpha")  != version::parse("1.2.3-beta"));
 //! assert!(version::parse("1.2.3-alpha2") >  version::parse("1.2.0"));
-//! ``` 
-//! 
+//! ```
+//!
 //! ## Ranges
 //!
 //! The `semver` crate also provides a `range` module, which allows you to do more
@@ -68,7 +68,7 @@
 //!
 //! For example, creating a requirement that only matches versions greater than or
 //! equal to 1.0.0:
-//! 
+//!
 //! ```{rust}
 //! use semver::version;
 //! use semver::range;
@@ -78,7 +78,7 @@
 //!
 //! assert!(r.to_string() == ">= 1.0.0".to_string());
 //! assert!(r.matches(&v))
-//! ``` 
+//! ```
 
 #![crate_name = "semver"]
 #![experimental]
