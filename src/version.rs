@@ -234,7 +234,7 @@ fn parse_iter<T: Iterator<char>>(rdr: &mut T) -> Option<Version> {
     })
 }
 
-#[deriving(PartialEq,Show,PartialOrd)]
+#[deriving(Clone,PartialEq,Show,PartialOrd)]
 pub enum ParseError {
     NonAsciiIdentifier,
     IncorrectParse(Version, String),
