@@ -43,31 +43,48 @@ struct PredBuilder {
     patch: Option<u32>
 }
 
+#[deriving(Show)]
+pub enum ReqParseError {
+    InvalidVersionRequirement,
+    OpAlreadySet,
+    InvalidSigil,
+    VersionComponentsMustBeNumeric,
+    OpRequired,
+    MajorVersionRequired,
+}
 
 impl VersionReq {
     pub fn any() -> VersionReq {
         VersionReq { predicates: vec!() }
     }
 
-    pub fn parse(input: &str) -> Result<VersionReq, String> {
+    pub fn parse(input: &str) -> Result<VersionReq, ReqParseError> {
         let mut lexer = Lexer::new(input);
         let mut builder = PredBuilder::new();
         let mut predicates = Vec::new();
 
         for token in lexer {
-            match token {
-                Sigil(x) => try!(builder.set_sigil(x)),
-                AlphaNum(x) => try!(builder.set_version_part(x)),
-                Dot => (), // Nothing to do for now
+            let result = match token {
+                Sigil(x) => builder.set_sigil(x),
+                AlphaNum(x) => builder.set_version_part(x),
+                Dot => Ok(()), // Nothing to do for now
                 _ => unimplemented!()
+            };
+
+            match result {
+                Ok(_) => (),
+                Err(e) => return Err(e),
             }
         }
 
         if lexer.is_error() {
-            return Err("invalid version requirement".to_string());
+            return Err(InvalidVersionRequirement);
         }
 
-        predicates.push(try!(builder.build()));
+        match builder.build() {
+            Ok(e) => predicates.push(e),
+            Err(e) => return Err(e),
+        }
 
         Ok(VersionReq { predicates: predicates })
     }
@@ -164,20 +181,20 @@ impl PredBuilder {
         }
     }
 
-    fn set_sigil(&mut self, sigil: &str) -> Result<(), String> {
+    fn set_sigil(&mut self, sigil: &str) -> Result<(), ReqParseError> {
         if self.op.is_some() {
-            return Err("op already set".to_string());
+            return Err(OpAlreadySet);
         }
 
         match Op::from_sigil(sigil) {
             Some(op) => self.op = Some(op),
-            _ => return Err("invalid sigil".to_string())
+            _ => return Err(InvalidSigil),
         }
 
         Ok(())
     }
 
-    fn set_version_part(&mut self, part: &str) -> Result<(), String> {
+    fn set_version_part(&mut self, part: &str) -> Result<(), ReqParseError> {
         if self.op.is_none() {
             // If no op is specified, then the predicate is an exact match on
             // the version
@@ -185,13 +202,22 @@ impl PredBuilder {
         }
 
         if self.major.is_none() {
-            self.major = Some(try!(parse_version_part(part)));
+            match parse_version_part(part) {
+                Ok(e) => self.major = Some(e),
+                Err(e) => return Err(e),
+            }
         }
         else if self.minor.is_none() {
-            self.minor = Some(try!(parse_version_part(part)));
+            match parse_version_part(part) {
+                Ok(e) => self.minor = Some(e),
+                Err(e) => return Err(e),
+            }
         }
         else if self.patch.is_none() {
-            self.patch = Some(try!(parse_version_part(part)));
+            match parse_version_part(part) {
+                Ok(e) => self.patch = Some(e),
+                Err(e) => return Err(e),
+            }
         }
 
         Ok(())
@@ -199,15 +225,15 @@ impl PredBuilder {
 
     /// Validates that a version predicate can be created given the present
     /// information.
-    fn build(&self) -> Result<Predicate, String> {
+    fn build(&self) -> Result<Predicate, ReqParseError> {
         let op = match self.op {
             Some(x) => x,
-            None => return Err("op required".to_string())
+            None => return Err(OpRequired),
         };
 
         let major = match self.major {
             Some(x) => x,
-            None => return Err("major version required".to_string())
+            None => return Err(MajorVersionRequired),
         };
 
         Ok(Predicate {
@@ -387,14 +413,14 @@ impl Op {
     }
 }
 
-fn parse_version_part(s: &str) -> Result<u32, String> {
+fn parse_version_part(s: &str) -> Result<u32, ReqParseError> {
     let mut ret = 0;
 
     for c in s.chars() {
         let n = (c as u32) - ('0' as u32);
 
         if n > 9 {
-            return Err("version components must be numeric".to_string());
+            return Err(VersionComponentsMustBeNumeric);
         }
 
         ret *= 10;

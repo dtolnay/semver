@@ -99,7 +99,7 @@ pub use version::{
     ParseError,
 };
 
-pub use range::VersionReq;
+pub use range::{VersionReq, ReqParseError};
 
 // SemVer-compliant versions.
 mod version;
