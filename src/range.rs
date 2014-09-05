@@ -82,7 +82,7 @@ impl VersionReq {
 }
 
 impl Predicate {
-    pub fn exact(version: &Version) -> Predicate {
+    fn exact(version: &Version) -> Predicate {
         Predicate {
             op: Ex,
             major: version.major,
@@ -91,7 +91,7 @@ impl Predicate {
         }
     }
 
-    pub fn matches(&self, ver: &Version) -> bool {
+    fn matches(&self, ver: &Version) -> bool {
         match self.op {
             Ex => self.is_exact(ver),
             Gt => self.is_greater(ver),
