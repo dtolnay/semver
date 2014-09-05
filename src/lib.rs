@@ -41,9 +41,9 @@
 //! method:
 //!
 //! ```{rust}
-//! use semver;
+//! use semver::Version;
 //!
-//! assert!(semver::parse("1.2.3") == Ok(semver::Version {
+//! assert!(Version::parse("1.2.3") == Ok(Version {
 //!    major: 1u32,
 //!    minor: 2u32,
 //!    patch: 3u32,
@@ -55,10 +55,10 @@
 //! If you have multiple `Version`s, you can use the usual comparison operators to compare them:
 //!
 //! ```{rust}
-//! use semver;
+//! use semver::Version;
 //!
-//! assert!(semver::parse("1.2.3-alpha")  != semver::parse("1.2.3-beta"));
-//! assert!(semver::parse("1.2.3-alpha2") >  semver::parse("1.2.0"));
+//! assert!(Version::parse("1.2.3-alpha")  != Version::parse("1.2.3-beta"));
+//! assert!(Version::parse("1.2.3-alpha2") >  Version::parse("1.2.0"));
 //! ```
 //!
 //! ## Ranges
@@ -70,10 +70,11 @@
 //! equal to 1.0.0:
 //!
 //! ```{rust}
-//! use semver;
+//! use semver::Version;
+//! use semver::VersionReq;
 //!
-//! let r = semver::VersionReq::parse(">= 1.0.0").unwrap();
-//! let v = semver::parse("1.0.0").unwrap();
+//! let r = VersionReq::parse(">= 1.0.0").unwrap();
+//! let v = Version::parse("1.0.0").unwrap();
 //!
 //! assert!(r.to_string() == ">= 1.0.0".to_string());
 //! assert!(r.matches(&v))
@@ -94,7 +95,6 @@
 
 pub use version::{
     Version,
-    parse,
     Identifier,
     ParseError,
 };

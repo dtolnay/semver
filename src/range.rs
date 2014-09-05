@@ -463,7 +463,6 @@ impl fmt::Show for Op {
 #[cfg(test)]
 mod test {
     use super::VersionReq;
-    use super::super::version::parse;
     use super::super::version::Version;
 
     fn req(s: &str) -> VersionReq {
@@ -471,7 +470,7 @@ mod test {
     }
 
     fn version(s: &str) -> Version {
-        match parse(s) {
+        match Version::parse(s) {
             Ok(v) => v,
             Err(e) => fail!("`{}` is not a valid version. Reason: {}", s, e)
         }
