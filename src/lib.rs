@@ -41,9 +41,9 @@
 //! method:
 //!
 //! ```{rust}
-//! use semver::version;
+//! use semver;
 //!
-//! assert!(version::parse("1.2.3") == Ok(version::Version {
+//! assert!(semver::parse("1.2.3") == Ok(semver::Version {
 //!    major: 1u32,
 //!    minor: 2u32,
 //!    patch: 3u32,
@@ -55,10 +55,10 @@
 //! If you have multiple `Version`s, you can use the usual comparison operators to compare them:
 //!
 //! ```{rust}
-//! use semver::version;
+//! use semver;
 //!
-//! assert!(version::parse("1.2.3-alpha")  != version::parse("1.2.3-beta"));
-//! assert!(version::parse("1.2.3-alpha2") >  version::parse("1.2.0"));
+//! assert!(semver::parse("1.2.3-alpha")  != semver::parse("1.2.3-beta"));
+//! assert!(semver::parse("1.2.3-alpha2") >  semver::parse("1.2.0"));
 //! ```
 //!
 //! ## Ranges
@@ -70,11 +70,10 @@
 //! equal to 1.0.0:
 //!
 //! ```{rust}
-//! use semver::version;
-//! use semver::range;
+//! use semver;
 //!
-//! let r = range::VersionReq::parse(">= 1.0.0").unwrap();
-//! let v = version::parse("1.0.0").unwrap();
+//! let r = semver::VersionReq::parse(">= 1.0.0").unwrap();
+//! let v = semver::parse("1.0.0").unwrap();
 //!
 //! assert!(r.to_string() == ">= 1.0.0".to_string());
 //! assert!(r.matches(&v))
@@ -90,8 +89,21 @@
 #![feature(default_type_params)]
 #![feature(macro_rules)]
 
-/// SemVer-compliant versions.
-pub mod version;
+// We take the common approach of keeping our own module system private, and
+// just re-exporting the interface that we want.
 
-/// advanced version comparisons
-pub mod range;
+pub use version::{
+    Version,
+    parse,
+    Identifier,
+    ParseError,
+};
+
+pub use range::VersionReq;
+
+// SemVer-compliant versions.
+mod version;
+
+// advanced version comparisons
+mod range;
+
