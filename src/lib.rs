@@ -81,7 +81,7 @@
 //! ```
 
 #![crate_name = "semver"]
-#![experimental]
+#![unstable]
 #![crate_type = "rlib"]
 #![crate_type = "dylib"]
 #![license = "MIT/ASL2"]
