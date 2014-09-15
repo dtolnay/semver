@@ -31,16 +31,16 @@ enum Op {
 #[deriving(PartialEq,Clone)]
 struct Predicate {
     op: Op,
-    major: u32,
-    minor: Option<u32>,
-    patch: Option<u32>
+    major: uint,
+    minor: Option<uint>,
+    patch: Option<uint>
 }
 
 struct PredBuilder {
     op: Option<Op>,
-    major: Option<u32>,
-    minor: Option<u32>,
-    patch: Option<u32>
+    major: Option<uint>,
+    minor: Option<uint>,
+    patch: Option<uint>
 }
 
 #[deriving(Show)]
@@ -412,11 +412,11 @@ impl Op {
     }
 }
 
-fn parse_version_part(s: &str) -> Result<u32, ReqParseError> {
+fn parse_version_part(s: &str) -> Result<uint, ReqParseError> {
     let mut ret = 0;
 
     for c in s.chars() {
-        let n = (c as u32) - ('0' as u32);
+        let n = (c as uint) - ('0' as uint);
 
         if n > 9 {
             return Err(VersionComponentsMustBeNumeric);

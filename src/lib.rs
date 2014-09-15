@@ -44,9 +44,9 @@
 //! use semver::Version;
 //!
 //! assert!(Version::parse("1.2.3") == Ok(Version {
-//!    major: 1u32,
-//!    minor: 2u32,
-//!    patch: 3u32,
+//!    major: 1u,
+//!    minor: 2u,
+//!    patch: 3u,
 //!    pre: vec!(),
 //!    build: vec!(),
 //! }));

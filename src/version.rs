@@ -42,13 +42,13 @@ impl fmt::Show for Identifier {
 #[deriving(Clone, Eq)]
 pub struct Version {
     /// The major version, to be incremented on incompatible changes.
-    pub major: u32,
+    pub major: uint,
     /// The minor version, to be incremented when functionality is added in a
     /// backwards-compatible manner.
-    pub minor: u32,
+    pub minor: uint,
     /// The patch version, to be incremented when backwards-compatible bug
     /// fixes are made.
-    pub patch: u32,
+    pub patch: uint,
     /// The pre-release version identifier, if one exists.
     pub pre: Vec<Identifier>,
     /// The build metadata, ignored when determining version precedence.
@@ -180,9 +180,9 @@ fn take_nonempty_prefix<T:Iterator<char>>(rdr: &mut T, pred: |char| -> bool)
     (buf, ch)
 }
 
-fn take_num<T: Iterator<char>>(rdr: &mut T) -> Option<(u32, Option<char>)> {
+fn take_num<T: Iterator<char>>(rdr: &mut T) -> Option<(uint, Option<char>)> {
     let (s, ch) = take_nonempty_prefix(rdr, char::is_digit);
-    match from_str::<u32>(s.as_slice()) {
+    match from_str::<uint>(s.as_slice()) {
         None => None,
         Some(i) => Some((i, ch))
     }
@@ -286,9 +286,9 @@ mod test {
         assert_eq!(Version::parse("a.b.c"), Err(GenericFailure));
 
         let version = Version {
-            major: 1u32,
-            minor: 2u32,
-            patch: 3u32,
+            major: 1u,
+            minor: 2u,
+            patch: 3u,
             pre: vec!(),
             build: vec!(),
         };
@@ -296,65 +296,65 @@ mod test {
         assert_eq!(Version::parse("1.2.3 abc"), error);
 
         assert!(Version::parse("1.2.3") == Ok(Version {
-            major: 1u32,
-            minor: 2u32,
-            patch: 3u32,
+            major: 1,
+            minor: 2u,
+            patch: 3u,
             pre: vec!(),
             build: vec!(),
         }));
         assert!(Version::parse("  1.2.3  ") == Ok(Version {
-            major: 1u32,
-            minor: 2u32,
-            patch: 3u32,
+            major: 1u,
+            minor: 2u,
+            patch: 3u,
             pre: vec!(),
             build: vec!(),
         }));
         assert!(Version::parse("1.2.3-alpha1") == Ok(Version {
-            major: 1u32,
-            minor: 2u32,
-            patch: 3u32,
+            major: 1u,
+            minor: 2u,
+            patch: 3u,
             pre: vec!(AlphaNumeric("alpha1".to_string())),
             build: vec!(),
         }));
         assert!(Version::parse("  1.2.3-alpha1  ") == Ok(Version {
-            major: 1u32,
-            minor: 2u32,
-            patch: 3u32,
+            major: 1u,
+            minor: 2u,
+            patch: 3u,
             pre: vec!(AlphaNumeric("alpha1".to_string())),
             build: vec!()
         }));
         assert!(Version::parse("1.2.3+build5") == Ok(Version {
-            major: 1u32,
-            minor: 2u32,
-            patch: 3u32,
+            major: 1u,
+            minor: 2u,
+            patch: 3u,
             pre: vec!(),
             build: vec!(AlphaNumeric("build5".to_string()))
         }));
         assert!(Version::parse("  1.2.3+build5  ") == Ok(Version {
-            major: 1u32,
-            minor: 2u32,
-            patch: 3u32,
+            major: 1u,
+            minor: 2u,
+            patch: 3u,
             pre: vec!(),
             build: vec!(AlphaNumeric("build5".to_string()))
         }));
         assert!(Version::parse("1.2.3-alpha1+build5") == Ok(Version {
-            major: 1u32,
-            minor: 2u32,
-            patch: 3u32,
+            major: 1u,
+            minor: 2u,
+            patch: 3u,
             pre: vec!(AlphaNumeric("alpha1".to_string())),
             build: vec!(AlphaNumeric("build5".to_string()))
         }));
         assert!(Version::parse("  1.2.3-alpha1+build5  ") == Ok(Version {
-            major: 1u32,
-            minor: 2u32,
-            patch: 3u32,
+            major: 1u,
+            minor: 2u,
+            patch: 3u,
             pre: vec!(AlphaNumeric("alpha1".to_string())),
             build: vec!(AlphaNumeric("build5".to_string()))
         }));
         assert!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  ") == Ok(Version {
-            major: 1u32,
-            minor: 2u32,
-            patch: 3u32,
+            major: 1u,
+            minor: 2u,
+            patch: 3u,
             pre: vec!(Numeric(1),AlphaNumeric("alpha1".to_string()),Numeric(9)),
             build: vec!(AlphaNumeric("build5".to_string()),
                      Numeric(7),
