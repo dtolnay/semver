@@ -120,12 +120,13 @@ impl Predicate {
         }
     }
 
-    fn matches(&self, ver: &Version) -> bool {
+    pub fn matches(&self, ver: &Version) -> bool {
         match self.op {
             Ex => self.is_exact(ver),
             Gt => self.is_greater(ver),
             GtEq => self.is_exact(ver) || self.is_greater(ver),
-            _ => false // not implemented
+            Lt => !self.is_exact(ver) && !self.is_greater(ver),
+            LtEq => !self.is_greater(ver),
         }
     }
 
