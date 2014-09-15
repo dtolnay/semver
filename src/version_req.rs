@@ -157,13 +157,13 @@ impl Predicate {
 
     fn is_greater(self, ver: &Version) -> bool {
         if self.major != ver.major {
-            return self.major > ver.major;
+            return ver.major > self.major;
         }
 
         match self.minor {
             Some(minor) => {
                 if minor != ver.minor {
-                    return minor > ver.minor
+                    return ver.minor > minor
                 }
             }
             None => return false
@@ -172,10 +172,9 @@ impl Predicate {
         match self.patch {
             Some(patch) => {
                 if patch != ver.patch {
-                    return patch > ver.patch
+                    return ver.patch > patch
                 }
             }
-
             None => return false
         }
 
