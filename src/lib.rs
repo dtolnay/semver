@@ -61,10 +61,10 @@
 //! assert!(Version::parse("1.2.3-alpha2") >  Version::parse("1.2.0"));
 //! ```
 //!
-//! ## Ranges
+//! ## Requirements
 //!
-//! The `semver` crate also provides a `range` module, which allows you to do more
-//! complex comparisons.
+//! The `semver` crate also provides the ability to compare requirements, which are more complex
+//! comparisons.
 //!
 //! For example, creating a requirement that only matches versions greater than or
 //! equal to 1.0.0:
