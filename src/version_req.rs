@@ -43,7 +43,6 @@ struct PredBuilder {
     patch: Option<uint>
 }
 
-#[deriving(Show)]
 pub enum ReqParseError {
     InvalidVersionRequirement,
     OpAlreadySet,
@@ -51,6 +50,19 @@ pub enum ReqParseError {
     VersionComponentsMustBeNumeric,
     OpRequired,
     MajorVersionRequired,
+}
+
+impl Show for ReqParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            InvalidVersionRequirement => write!(f, "The given version requirement is invalid."),
+            OpAlreadySet => write!(f, "You have already provided an operation, such as =, ~, or ^. Only use one."),
+            InvalidSigil => write!(f, "The sigil you have written is not correct."),
+            VersionComponentsMustBeNumeric => write!(f, "Version components must be numeric."),
+            OpRequired => write!(f, "An operation is required. To match an exact version, use =."),
+            MajorVersionRequired => write!(f, "At least a major version number is required."),
+        }
+    }
 }
 
 impl VersionReq {
