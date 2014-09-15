@@ -206,8 +206,7 @@ impl PredBuilder {
                 Ok(e) => self.major = Some(e),
                 Err(e) => return Err(e),
             }
-        }
-        else if self.minor.is_none() {
+        } else if self.minor.is_none() {
             match parse_version_part(part) {
                 Ok(e) => self.minor = Some(e),
                 Err(e) => return Err(e),
