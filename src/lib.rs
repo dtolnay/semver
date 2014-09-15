@@ -99,11 +99,11 @@ pub use version::{
     ParseError,
 };
 
-pub use range::{VersionReq, ReqParseError};
+pub use version_req::{VersionReq, ReqParseError};
 
 // SemVer-compliant versions.
 mod version;
 
 // advanced version comparisons
-mod range;
+mod version_req;
 
