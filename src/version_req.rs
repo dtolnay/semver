@@ -27,6 +27,7 @@ enum Op {
     Lt,   // Less than
     LtEq, // Less than or equal to
     Tilde, // e.g. ~1.0.0
+    Compatible, // compatible by definition of semver, indicated by ^
 }
 
 #[deriving(PartialEq,Clone)]
@@ -129,6 +130,7 @@ impl Predicate {
             Lt => !self.is_exact(ver) && !self.is_greater(ver),
             LtEq => !self.is_greater(ver),
             Tilde => self.matches_tilde(ver),
+            Compatible => self.is_compatible(ver),
         }
     }
 
@@ -196,6 +198,34 @@ impl Predicate {
             }
             None => {
                 self.major == ver.major && minor == ver.minor
+            }
+        }
+    }
+
+    fn is_compatible(self, ver: &Version) -> bool {
+        if self.major != ver.major {
+            return false;
+        }
+
+        let minor = match self.minor {
+            Some(n) => n,
+            None => return self.major == ver.major
+        };
+
+        match self.patch {
+            Some(patch) => if self.major == 0 {
+                if minor == 0 {
+                    ver.minor == minor && ver.patch == patch
+                } else {
+                    ver.minor == minor && ver.patch >= patch
+                }
+            } else {
+                ver.minor > minor || (ver.minor == minor && ver.patch >= patch)
+            },
+            None => if self.major == 0 {
+                ver.minor == minor
+            } else {
+                ver.minor >= minor
             }
         }
     }
@@ -438,6 +468,7 @@ impl Op {
             "<" => Some(Lt),
             "<=" => Some(LtEq),
             "~" => Some(Tilde),
+            "^" => Some(Compatible),
             _ => None
         }
     }
@@ -506,12 +537,13 @@ impl fmt::Show for Predicate {
 impl fmt::Show for Op {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Ex => try!(write!(fmt, "=")),
-            Gt => try!(write!(fmt, ">")),
-            GtEq => try!(write!(fmt, ">=")),
-            Lt => try!(write!(fmt, "<")),
-            LtEq => try!(write!(fmt, "<=")),
-            Tilde => try!(write!(fmt, "~"))
+            Ex         => try!(write!(fmt, "=")),
+            Gt         => try!(write!(fmt, ">")),
+            GtEq       => try!(write!(fmt, ">=")),
+            Lt         => try!(write!(fmt, "<")),
+            LtEq       => try!(write!(fmt, "<=")),
+            Tilde      => try!(write!(fmt, "~")),
+            Compatible => try!(write!(fmt, "^")),
         }
         Ok(())
     }
@@ -586,8 +618,40 @@ mod test {
         assert_not_match(&r, ["1.2.1", "1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
     }
 
+    #[test]
+    pub fn test_parsing_compatible() {
+        let r = req("^1");
+        assert_match(&r, ["1.1.2", "1.1.0", "1.2.1", "1.0.1"]);
+        assert_not_match(&r, ["0.9.1", "2.9.0", "0.1.4"]);
+
+        let r = req("^1.1");
+        assert_match(&r, ["1.1.2", "1.1.0", "1.2.1"]);
+        assert_not_match(&r, ["0.9.1", "2.9.0", "1.0.1", "0.1.4"]);
+
+        let r = req("^1.1.2");
+        assert_match(&r, ["1.1.2", "1.1.4", "1.2.1"]);
+        assert_not_match(&r, ["0.9.1", "2.9.0", "1.1.1", "0.0.1"]);
+
+        let r = req("^0.1.2");
+        assert_match(&r, ["0.1.2", "0.1.4"]);
+        assert_not_match(&r, ["0.9.1", "2.9.0", "1.1.1", "0.0.1"]);
+
+        let r = req("^0.0.2");
+        assert_match(&r, ["0.0.2"]);
+        assert_not_match(&r, ["0.9.1", "2.9.0", "1.1.1", "0.0.1", "0.1.4"]);
+
+        let r = req("^0.0");
+        assert_match(&r, ["0.0.2", "0.0.0"]);
+        assert_not_match(&r, ["0.9.1", "2.9.0", "1.1.1", "0.1.4"]);
+
+        let r = req("^0");
+        assert_match(&r, ["0.9.1", "0.0.2", "0.0.0"]);
+        assert_not_match(&r, ["2.9.0", "1.1.1"]);
+    }
+
     /* TODO:
      * - Test parse errors
      * - Handle pre releases
+     * - Parse 1.2.*, 1.*
      */
 }
