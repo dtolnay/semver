@@ -25,7 +25,8 @@ enum Op {
     Gt,   // Greater than
     GtEq, // Greater than or equal to
     Lt,   // Less than
-    LtEq  // Less than or equal to
+    LtEq, // Less than or equal to
+    Tilde, // e.g. ~1.0.0
 }
 
 #[deriving(PartialEq,Clone)]
@@ -127,6 +128,7 @@ impl Predicate {
             GtEq => self.is_exact(ver) || self.is_greater(ver),
             Lt => !self.is_exact(ver) && !self.is_greater(ver),
             LtEq => !self.is_greater(ver),
+            Tilde => self.matches_tilde(ver),
         }
     }
 
@@ -180,6 +182,22 @@ impl Predicate {
         }
 
         false
+    }
+
+    fn matches_tilde(self, ver: &Version) -> bool {
+        let minor = match self.minor {
+            Some(n) => n,
+            None => return self.major == ver.major
+        };
+
+        match self.patch {
+            Some(patch) => {
+                self.major == ver.major && minor == ver.minor && ver.patch >= patch
+            }
+            None => {
+                self.major == ver.major && minor == ver.minor
+            }
+        }
     }
 }
 
@@ -419,6 +437,7 @@ impl Op {
             ">=" => Some(GtEq),
             "<" => Some(Lt),
             "<=" => Some(LtEq),
+            "~" => Some(Tilde),
             _ => None
         }
     }
@@ -491,7 +510,8 @@ impl fmt::Show for Op {
             Gt => try!(write!(fmt, ">")),
             GtEq => try!(write!(fmt, ">=")),
             Lt => try!(write!(fmt, "<")),
-            LtEq => try!(write!(fmt, "<="))
+            LtEq => try!(write!(fmt, "<=")),
+            Tilde => try!(write!(fmt, "~"))
         }
         Ok(())
     }
@@ -549,6 +569,21 @@ mod test {
         assert!(r.to_string() == ">= 1.0.0".to_string());
 
         assert_match(&r, ["1.0.0"]);
+    }
+
+    #[test]
+    pub fn test_parsing_tilde() {
+        let r = req("~1");
+        assert_match(&r, ["1.0.0", "1.0.1", "1.1.1"]);
+        assert_not_match(&r, ["0.9.1", "2.9.0", "0.0.9"]);
+
+        let r = req("~1.2");
+        assert_match(&r, ["1.2.0", "1.2.1"]);
+        assert_not_match(&r, ["1.1.1", "1.3.0", "0.0.9"]);
+
+        let r = req("~1.2.2");
+        assert_match(&r, ["1.2.2", "1.2.4"]);
+        assert_not_match(&r, ["1.2.1", "1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
     }
 
     /* TODO:
