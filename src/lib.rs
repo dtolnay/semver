@@ -79,6 +79,31 @@
 //! assert!(r.to_string() == ">= 1.0.0".to_string());
 //! assert!(r.matches(&v))
 //! ```
+//!
+//! It also allows parsing of `~x.y.z` and `^x.y.z` requirements as defined at
+//! https://www.npmjs.org/doc/misc/semver.html
+//!
+//! **Tilde requirements** specify a minimal version with some updates:
+//!
+//! ```
+//! ~1.2.3 := >=1.2.3 <1.3.0
+//! ~1.2   := >=1.2.0 <1.3.0
+//! ~1     := >=1.0.0 <2.0.0
+//! ```
+//!
+//! **Caret requirements** allow SemVer compatible updates to a specified verion,
+//! `0.x` and `0.x+1` are not considered compatible, but `1.x` and `1.x+1` are.
+//!
+//! `0.0.x` is not considered compatible with any other version.
+//! Missing minor and patch versions are desugared to `0` but allow flexibility for that value.
+//!
+//! ```
+//! ^1.2.3 := >=1.2.3 <2.0.0
+//! ^0.2.3 := >=0.2.3 <0.3.0
+//! ^0.0.3 := >=0.0.3 <0.0.4
+//! ^0.0   := >=0.0.0 <0.1.0
+//! ^0     := >=0.0.0 <1.0.0
+//! ```
 
 #![crate_name = "semver"]
 #![experimental]

@@ -186,6 +186,7 @@ impl Predicate {
         false
     }
 
+    // see https://www.npmjs.org/doc/misc/semver.html for behavior
     fn matches_tilde(self, ver: &Version) -> bool {
         let minor = match self.minor {
             Some(n) => n,
@@ -202,6 +203,7 @@ impl Predicate {
         }
     }
 
+    // see https://www.npmjs.org/doc/misc/semver.html for behavior
     fn is_compatible(self, ver: &Version) -> bool {
         if self.major != ver.major {
             return false;
