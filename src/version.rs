@@ -68,7 +68,7 @@ impl Version {
         if !s.is_ascii() {
             return Err(NonAsciiIdentifier)
         }
-        let s = s.trim();
+        let s = s.trim().trim_left_chars('v');
         let v = parse_iter(&mut s.chars());
         match v {
             Some(v) => {
@@ -295,6 +295,13 @@ mod test {
         let error = Err(IncorrectParse(version, "1.2.3 abc".to_string()));
         assert_eq!(Version::parse("1.2.3 abc"), error);
 
+        assert_eq!(Version::parse("v1.2.3"), Ok(Version {
+            major: 1,
+            minor: 2u,
+            patch: 3u,
+            pre: vec!(),
+            build: vec!(),
+        }));
         assert!(Version::parse("1.2.3") == Ok(Version {
             major: 1,
             minor: 2u,
