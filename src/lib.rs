@@ -85,7 +85,7 @@
 //!
 //! **Tilde requirements** specify a minimal version with some updates:
 //!
-//! ```
+//! ```notrust
 //! ~1.2.3 := >=1.2.3 <1.3.0
 //! ~1.2   := >=1.2.0 <1.3.0
 //! ~1     := >=1.0.0 <2.0.0
@@ -97,7 +97,7 @@
 //! `0.0.x` is not considered compatible with any other version.
 //! Missing minor and patch versions are desugared to `0` but allow flexibility for that value.
 //!
-//! ```
+//! ```notrust
 //! ^1.2.3 := >=1.2.3 <2.0.0
 //! ^0.2.3 := >=0.2.3 <0.3.0
 //! ^0.0.3 := >=0.0.3 <0.0.4
