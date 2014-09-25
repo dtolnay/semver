@@ -470,7 +470,7 @@ impl<'a> Lexer<'a> {
                     return None;
                 }
 
-                let s = self.input.slice(mark, to);
+                let s = self.input[mark..to];
 
                 self.mark = None;
 
