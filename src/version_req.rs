@@ -19,6 +19,18 @@ pub struct VersionReq {
     predicates: Vec<Predicate>
 }
 
+enum VersionComponent {
+    NumericVersionComponent(uint),
+    WildcardVersionComponent
+}
+
+#[deriving(Clone, PartialEq)]
+enum WildcardVersion {
+    Major,
+    Minor,
+    Patch
+}
+
 #[deriving(PartialEq,Clone)]
 enum Op {
     Ex,   // Exact
@@ -28,6 +40,7 @@ enum Op {
     LtEq, // Less than or equal to
     Tilde, // e.g. ~1.0.0
     Compatible, // compatible by definition of semver, indicated by ^
+    Wildcard(WildcardVersion), // x.y.*, x.*, *
 }
 
 #[deriving(PartialEq,Clone)]
@@ -131,6 +144,7 @@ impl Predicate {
             LtEq => !self.is_greater(ver),
             Tilde => self.matches_tilde(ver),
             Compatible => self.is_compatible(ver),
+            Wildcard(_) => self.matches_wildcard(ver)
         }
     }
 
@@ -231,6 +245,21 @@ impl Predicate {
             }
         }
     }
+
+    // see https://www.npmjs.org/doc/misc/semver.html for behavior
+    fn matches_wildcard(self, ver: &Version) -> bool {
+        match self.op {
+            Wildcard(Major) => true,
+            Wildcard(Minor) => self.major == ver.major,
+            Wildcard(Patch) => {
+                match self.minor {
+                    Some(minor) => self.major == ver.major && minor == ver.minor,
+                    None => false  // unreachable
+                }
+            }
+            _ => false  // unreachable
+        }
+    }
 }
 
 impl PredBuilder {
@@ -265,18 +294,24 @@ impl PredBuilder {
 
         if self.major.is_none() {
             match parse_version_part(part) {
-                Ok(e) => self.major = Some(e),
+                Ok(NumericVersionComponent(e)) => self.major = Some(e),
+                Ok(WildcardVersionComponent) => {
+                    self.major = Some(0);
+                    self.op = Some(Wildcard(Major))
+                }
                 Err(e) => return Err(e),
             }
         } else if self.minor.is_none() {
             match parse_version_part(part) {
-                Ok(e) => self.minor = Some(e),
+                Ok(NumericVersionComponent(e)) => self.minor = Some(e),
+                Ok(WildcardVersionComponent) => self.op = Some(Wildcard(Minor)),
                 Err(e) => return Err(e),
             }
         }
         else if self.patch.is_none() {
             match parse_version_part(part) {
-                Ok(e) => self.patch = Some(e),
+                Ok(NumericVersionComponent(e)) => self.patch = Some(e),
+                Ok(WildcardVersionComponent) => self.op = Some(Wildcard(Patch)),
                 Err(e) => return Err(e),
             }
         }
@@ -319,7 +354,7 @@ struct Lexer<'a> {
 enum LexState {
     LexInit,
     LexStart,
-    LexAlphaNum,
+    LexVersionComponent,
     LexSigil,
     LexErr,
 }
@@ -364,7 +399,7 @@ impl<'a> Lexer<'a> {
                 self.mark = None;
 
                 match kind {
-                    LexAlphaNum => Some(AlphaNum(s)),
+                    LexVersionComponent => Some(AlphaNum(s)),
                     LexSigil => Some(Sigil(s)),
                     _ => None // bug
                 }
@@ -415,9 +450,9 @@ impl<'a> Iterator<Token<'a>> for Lexer<'a> {
                     if c.is_whitespace() {
                         next!(); // Ignore
                     }
-                    else if c.is_alphanumeric() {
+                    else if c.is_alphanumeric() || c == '*' {
                         self.mark(idx);
-                        self.state = LexAlphaNum;
+                        self.state = LexVersionComponent;
                         next!();
                     }
                     else if is_sigil(c) {
@@ -437,12 +472,12 @@ impl<'a> Iterator<Token<'a>> for Lexer<'a> {
                         return None;
                     }
                 }
-                LexAlphaNum => {
+                LexVersionComponent => {
                     if c.is_alphanumeric() {
                         next!();
                     } else {
                         self.state = LexStart;
-                        return flush!(LexAlphaNum);
+                        return flush!(LexVersionComponent);
                     }
                 }
                 LexSigil => {
@@ -475,8 +510,12 @@ impl Op {
     }
 }
 
-fn parse_version_part(s: &str) -> Result<uint, ReqParseError> {
+fn parse_version_part(s: &str) -> Result<VersionComponent, ReqParseError> {
     let mut ret = 0;
+
+    if s == "*" {
+        return Ok(WildcardVersionComponent)
+    }
 
     for c in s.chars() {
         let n = (c as uint) - ('0' as uint);
@@ -489,7 +528,7 @@ fn parse_version_part(s: &str) -> Result<uint, ReqParseError> {
         ret +=  n;
     }
 
-    Ok(ret)
+    Ok(NumericVersionComponent(ret))
 }
 
 fn is_sigil(c: char) -> bool {
@@ -519,16 +558,23 @@ impl fmt::Show for VersionReq {
 
 impl fmt::Show for Predicate {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(fmt, "{} {}", self.op, self.major));
+        match self.op {
+            Wildcard(Major) => try!(write!(fmt, "*")),
+            Wildcard(Minor) => try!(write!(fmt, "{}.*", self.major)),
+            Wildcard(Patch) => try!(write!(fmt, "{}.{}.*", self.major, self.minor.unwrap())),
+            _ => {
+                try!(write!(fmt, "{}{}", self.op, self.major));
 
-        match self.minor {
-            Some(v) => try!(write!(fmt, ".{}", v)),
-            None => ()
-        }
+                match self.minor {
+                    Some(v) => try!(write!(fmt, ".{}", v)),
+                    None => ()
+                }
 
-        match self.patch {
-            Some(v) => try!(write!(fmt, ".{}", v)),
-            None => ()
+                match self.patch {
+                    Some(v) => try!(write!(fmt, ".{}", v)),
+                    None => ()
+                }
+            },
         }
 
         Ok(())
@@ -538,13 +584,15 @@ impl fmt::Show for Predicate {
 impl fmt::Show for Op {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Ex         => try!(write!(fmt, "=")),
-            Gt         => try!(write!(fmt, ">")),
-            GtEq       => try!(write!(fmt, ">=")),
-            Lt         => try!(write!(fmt, "<")),
-            LtEq       => try!(write!(fmt, "<=")),
-            Tilde      => try!(write!(fmt, "~")),
-            Compatible => try!(write!(fmt, "^")),
+            Ex          => try!(write!(fmt, "= ")),
+            Gt          => try!(write!(fmt, "> ")),
+            GtEq        => try!(write!(fmt, ">= ")),
+            Lt          => try!(write!(fmt, "< ")),
+            LtEq        => try!(write!(fmt, "<= ")),
+            Tilde       => try!(write!(fmt, "~")),
+            Compatible  => try!(write!(fmt, "^")),
+             // gets handled specially in Predicate::fmt
+            Wildcard(_) => try!(write!(fmt, "")),
         }
         Ok(())
     }
@@ -650,9 +698,24 @@ mod test {
         assert_not_match(&r, ["2.9.0", "1.1.1"]);
     }
 
+    #[test]
+    pub fn test_parsing_wildcard() {
+        let r = req("*");
+        assert_match(&r, ["0.9.1", "2.9.0", "0.0.9", "1.0.1", "1.1.1"]);
+        assert_not_match(&r, []);
+
+        let r = req("1.*");
+        assert_match(&r, ["1.2.0", "1.2.1", "1.1.1", "1.3.0"]);
+        assert_not_match(&r, ["0.0.9"]);
+
+        let r = req("1.2.*");
+        assert_match(&r, ["1.2.0", "1.2.2", "1.2.4"]);
+        assert_not_match(&r, ["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
+    }
+
+
     /* TODO:
      * - Test parse errors
      * - Handle pre releases
-     * - Parse 1.2.*, 1.*
      */
 }
