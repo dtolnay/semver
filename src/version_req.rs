@@ -322,7 +322,6 @@ enum LexState {
     LexAlphaNum,
     LexSigil,
     LexErr,
-    LexWin
 }
 
 #[deriving(Show)]
@@ -454,7 +453,7 @@ impl<'a> Iterator<Token<'a>> for Lexer<'a> {
                         return flush!(LexSigil);
                     }
                 }
-                LexErr | LexWin => return None,
+                LexErr => return None,
                 LexInit => return None // bug
             }
         }
