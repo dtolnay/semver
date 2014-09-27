@@ -582,14 +582,14 @@ mod test {
     pub fn test_parsing_exact() {
         let r = req("1.0.0");
 
-        assert!(r.to_string() == "= 1.0.0".to_string());
+        assert_eq!(r.to_string(), "= 1.0.0".to_string());
 
         assert_match(&r, ["1.0.0"]);
         assert_not_match(&r, ["1.0.1", "0.9.9", "0.10.0", "0.1.0"]);
 
         let r = req("0.9.0");
 
-        assert!(r.to_string() == "= 0.9.0".to_string());
+        assert_eq!(r.to_string(), "= 0.9.0".to_string());
 
         assert_match(&r, ["0.9.0"]);
         assert_not_match(&r, ["0.9.1", "1.9.0", "0.0.9"]);
@@ -599,7 +599,7 @@ mod test {
     pub fn test_parsing_greater_than() {
         let r = req(">= 1.0.0");
 
-        assert!(r.to_string() == ">= 1.0.0".to_string());
+        assert_eq!(r.to_string(), ">= 1.0.0".to_string());
 
         assert_match(&r, ["1.0.0"]);
     }
