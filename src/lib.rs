@@ -104,6 +104,15 @@
 //! ^0.0   := >=0.0.0 <0.1.0
 //! ^0     := >=0.0.0 <1.0.0
 //! ```
+//!
+//! **Wildcard requirements** allows parsing of version requirements of the formats
+//! `*`, `x.*` and `x.y.*`.
+//!
+//! ```notrust
+//! *     := >=0.0.0
+//! 1.*   := >=1.0.0 <2.0.0
+//! 1.2.* := >=1.2.0 <1.3.0
+//! ```
 
 #![crate_name = "semver"]
 #![experimental]
