@@ -104,8 +104,13 @@ impl VersionReq {
     /// ```
     /// use semver::VersionReq;
     ///
+    /// let version = VersionReq::parse("=1.2.3");
+    /// let version = VersionReq::parse(">1.2.3");
+    /// let version = VersionReq::parse("<1.2.3");
+    /// let version = VersionReq::parse("~1.2.3");
     /// let version = VersionReq::parse("^1.2.3");
-    /// let version = VersionReq::parse("");
+    /// let version = VersionReq::parse("<=1.2.3");
+    /// let version = VersionReq::parse(">=1.2.3");
     /// ```
     ///
     /// This example demonstrates error handling, and will fail.
