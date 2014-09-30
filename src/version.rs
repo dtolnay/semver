@@ -55,10 +55,15 @@ pub struct Version {
     pub build: Vec<Identifier>,
 }
 
+/// A `ParseError` is returned as the `Err` side of a `Result` when a version is attempted
+/// to be parsed.
 #[deriving(Clone,PartialEq,Show,PartialOrd)]
 pub enum ParseError {
+    /// All identifiers must be ASCII.
     NonAsciiIdentifier,
+    /// The version was mis-parsed.
     IncorrectParse(Version, String),
+    /// Any other failure.
     GenericFailure,
 }
 
