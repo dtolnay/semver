@@ -172,7 +172,7 @@ fn take_nonempty_prefix<T:Iterator<char>>(rdr: &mut T, pred: |char| -> bool)
             None => break,
             Some(c) if !pred(c) => break,
             Some(c) => {
-                buf.push_char(c);
+                buf.push(c);
                 ch = rdr.next();
             }
         }
