@@ -365,7 +365,7 @@ impl PredBuilder {
         if self.op.is_none() {
             // If no op is specified, then the predicate is an exact match on
             // the version
-            self.op = Some(Ex);
+            self.op = Some(Compatible);
         }
 
         if self.major.is_none() {
@@ -703,15 +703,26 @@ mod test {
     }
 
     #[test]
-    pub fn test_parsing_exact() {
+    fn test_parsing_default() {
         let r = req("1.0.0");
 
+        assert_eq!(r.to_string(), "^1.0.0".to_string());
+
+        assert_match(&r, ["1.0.0", "1.0.1"]);
+        assert_not_match(&r, ["0.9.9", "0.10.0", "0.1.0"]);
+    }
+
+    #[test]
+    fn test_parsing_exact() {
+        let r = req("=1.0.0");
+
+        assert!(r.to_string() == "= 1.0.0".to_string());
         assert_eq!(r.to_string(), "= 1.0.0".to_string());
 
         assert_match(&r, ["1.0.0"]);
         assert_not_match(&r, ["1.0.1", "0.9.9", "0.10.0", "0.1.0"]);
 
-        let r = req("0.9.0");
+        let r = req("=0.9.0");
 
         assert_eq!(r.to_string(), "= 0.9.0".to_string());
 
