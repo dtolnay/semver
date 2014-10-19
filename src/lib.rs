@@ -123,6 +123,7 @@
        html_favicon_url = "http://www.rust-lang.org/favicon.ico")]
 #![feature(default_type_params)]
 #![feature(macro_rules)]
+#![feature(slicing_syntax)]
 #![deny(missing_doc)]
 
 // We take the common approach of keeping our own module system private, and
