@@ -195,8 +195,11 @@ fn take_num<T: Iterator<char>>(rdr: &mut T) -> Option<(uint, Option<char>)> {
 
 fn take_ident<T: Iterator<char>>(rdr: &mut T) -> Option<(Identifier, Option<char>)> {
     let (s,ch) = take_nonempty_prefix(rdr, char::is_alphanumeric);
-    if s[].chars().all(char::is_digit) {
-        match from_str::<u64>(s[]) {
+
+    if s.len() == 0 {
+        None
+    } else if s[].chars().all(char::is_digit) && s[].char_at(0) != '0' {
+        match from_str::<u64>(s.as_slice()) {
             None => None,
             Some(i) => Some((Numeric(i), ch))
         }
@@ -364,6 +367,13 @@ mod test {
             build: vec!(AlphaNumeric("build5".to_string()),
                      Numeric(7),
                      AlphaNumeric("3aedf".to_string()))
+        }));
+        assert_eq!(Version::parse("0.4.0-beta.1+0851523"), Ok(Version {
+            major: 0,
+            minor: 4,
+            patch: 0,
+            pre: vec![AlphaNumeric("beta".to_string()), Numeric(1)],
+            build: vec![AlphaNumeric("0851523".to_string())],
         }));
 
     }
