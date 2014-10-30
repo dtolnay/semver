@@ -686,7 +686,7 @@ mod test {
     fn version(s: &str) -> Version {
         match Version::parse(s) {
             Ok(v) => v,
-            Err(e) => fail!("`{}` is not a valid version. Reason: {}", s, e)
+            Err(e) => panic!("`{}` is not a valid version. Reason: {}", s, e)
         }
     }
 
