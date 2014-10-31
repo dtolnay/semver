@@ -124,7 +124,7 @@
 #![feature(default_type_params)]
 #![feature(macro_rules)]
 #![feature(slicing_syntax)]
-#![deny(missing_doc)]
+#![deny(missing_docs)]
 
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.
