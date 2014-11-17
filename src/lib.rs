@@ -129,7 +129,8 @@
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.
 
-pub use version::{Version, Identifier, ParseError, Numeric, AlphaNumeric};
+pub use version::{Version, Identifier, ParseError};
+pub use version::Identifier::{Numeric, AlphaNumeric};
 pub use version_req::{VersionReq, ReqParseError};
 
 // SemVer-compliant versions.
@@ -137,4 +138,3 @@ mod version;
 
 // advanced version comparisons
 mod version_req;
-
