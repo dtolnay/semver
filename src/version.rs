@@ -16,6 +16,9 @@ use std::fmt::Show;
 use std::fmt;
 use std::hash;
 
+use self::Identifier::{Numeric, AlphaNumeric};
+use self::ParseError::{GenericFailure, IncorrectParse, NonAsciiIdentifier};
+
 /// An identifier in the pre-release or build metadata.
 ///
 /// See sections 9 and 10 of the spec for more about pre-release identifers and build metadata.
@@ -273,13 +276,9 @@ fn parse_iter<T: Iterator<char>>(rdr: &mut T) -> Option<Version> {
 
 #[cfg(test)]
 mod test {
-    use super::{
-        Version,
-        Numeric,
-        AlphaNumeric,
-        IncorrectParse,
-        GenericFailure,
-    };
+    use super::{Version};
+    use super::ParseError::{IncorrectParse, GenericFailure};
+    use super::Identifier::{AlphaNumeric, Numeric};
 
     #[test]
     fn test_parse() {
