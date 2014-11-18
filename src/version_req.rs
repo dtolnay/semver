@@ -14,6 +14,13 @@ use std::str::CharOffsets;
 
 use super::version::Version;
 
+use self::VersionComponent::*;
+use self::WildcardVersion::*;
+use self::Op::*;
+pub use self::ReqParseError::*;
+use self::LexState::*;
+use self::Token::*;
+
 /// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
 /// numbers. Matching operations can then be done with the `VersionReq` against a particular
 /// version to see if it satisfies some or all of the constraints.
