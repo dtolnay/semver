@@ -124,6 +124,7 @@
 #![feature(default_type_params)]
 #![feature(macro_rules)]
 #![feature(slicing_syntax)]
+#![feature(globs)]
 #![deny(missing_docs)]
 
 // We take the common approach of keeping our own module system private, and

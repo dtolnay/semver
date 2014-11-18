@@ -16,6 +16,9 @@ use std::fmt::Show;
 use std::fmt;
 use std::hash;
 
+pub use self::Identifier::*;
+pub use self::ParseError::*;
+
 /// An identifier in the pre-release or build metadata.
 ///
 /// See sections 9 and 10 of the spec for more about pre-release identifers and build metadata.
