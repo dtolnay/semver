@@ -21,8 +21,8 @@ packages you need installed.
 To use `semver`, add these lines to your `Cargo.toml`:
 
 ```toml
-[dependencies.semver]
-git = "https://github.com/rust-lang/semver"
+[dependencies]
+semver = "*"
 ```
 
 And this to your crate root:
