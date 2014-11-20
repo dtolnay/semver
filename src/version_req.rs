@@ -722,8 +722,8 @@ mod test {
 
         assert_eq!(r.to_string(), "^1.0.0".to_string());
 
-        assert_match(&r, ["1.0.0", "1.0.1"]);
-        assert_not_match(&r, ["0.9.9", "0.10.0", "0.1.0"]);
+        assert_match(&r, &["1.0.0", "1.0.1"]);
+        assert_not_match(&r, &["0.9.9", "0.10.0", "0.1.0"]);
     }
 
     #[test]
@@ -733,15 +733,15 @@ mod test {
         assert!(r.to_string() == "= 1.0.0".to_string());
         assert_eq!(r.to_string(), "= 1.0.0".to_string());
 
-        assert_match(&r, ["1.0.0"]);
-        assert_not_match(&r, ["1.0.1", "0.9.9", "0.10.0", "0.1.0"]);
+        assert_match(&r, &["1.0.0"]);
+        assert_not_match(&r, &["1.0.1", "0.9.9", "0.10.0", "0.1.0"]);
 
         let r = req("=0.9.0");
 
         assert_eq!(r.to_string(), "= 0.9.0".to_string());
 
-        assert_match(&r, ["0.9.0"]);
-        assert_not_match(&r, ["0.9.1", "1.9.0", "0.0.9"]);
+        assert_match(&r, &["0.9.0"]);
+        assert_not_match(&r, &["0.9.1", "1.9.0", "0.0.9"]);
     }
 
     #[test]
@@ -750,68 +750,68 @@ mod test {
 
         assert_eq!(r.to_string(), ">= 1.0.0".to_string());
 
-        assert_match(&r, ["1.0.0"]);
+        assert_match(&r, &["1.0.0"]);
     }
 
     #[test]
     pub fn test_parsing_tilde() {
         let r = req("~1");
-        assert_match(&r, ["1.0.0", "1.0.1", "1.1.1"]);
-        assert_not_match(&r, ["0.9.1", "2.9.0", "0.0.9"]);
+        assert_match(&r, &["1.0.0", "1.0.1", "1.1.1"]);
+        assert_not_match(&r, &["0.9.1", "2.9.0", "0.0.9"]);
 
         let r = req("~1.2");
-        assert_match(&r, ["1.2.0", "1.2.1"]);
-        assert_not_match(&r, ["1.1.1", "1.3.0", "0.0.9"]);
+        assert_match(&r, &["1.2.0", "1.2.1"]);
+        assert_not_match(&r, &["1.1.1", "1.3.0", "0.0.9"]);
 
         let r = req("~1.2.2");
-        assert_match(&r, ["1.2.2", "1.2.4"]);
-        assert_not_match(&r, ["1.2.1", "1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
+        assert_match(&r, &["1.2.2", "1.2.4"]);
+        assert_not_match(&r, &["1.2.1", "1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
     }
 
     #[test]
     pub fn test_parsing_compatible() {
         let r = req("^1");
-        assert_match(&r, ["1.1.2", "1.1.0", "1.2.1", "1.0.1"]);
-        assert_not_match(&r, ["0.9.1", "2.9.0", "0.1.4"]);
+        assert_match(&r, &["1.1.2", "1.1.0", "1.2.1", "1.0.1"]);
+        assert_not_match(&r, &["0.9.1", "2.9.0", "0.1.4"]);
 
         let r = req("^1.1");
-        assert_match(&r, ["1.1.2", "1.1.0", "1.2.1"]);
-        assert_not_match(&r, ["0.9.1", "2.9.0", "1.0.1", "0.1.4"]);
+        assert_match(&r, &["1.1.2", "1.1.0", "1.2.1"]);
+        assert_not_match(&r, &["0.9.1", "2.9.0", "1.0.1", "0.1.4"]);
 
         let r = req("^1.1.2");
-        assert_match(&r, ["1.1.2", "1.1.4", "1.2.1"]);
-        assert_not_match(&r, ["0.9.1", "2.9.0", "1.1.1", "0.0.1"]);
+        assert_match(&r, &["1.1.2", "1.1.4", "1.2.1"]);
+        assert_not_match(&r, &["0.9.1", "2.9.0", "1.1.1", "0.0.1"]);
 
         let r = req("^0.1.2");
-        assert_match(&r, ["0.1.2", "0.1.4"]);
-        assert_not_match(&r, ["0.9.1", "2.9.0", "1.1.1", "0.0.1"]);
+        assert_match(&r, &["0.1.2", "0.1.4"]);
+        assert_not_match(&r, &["0.9.1", "2.9.0", "1.1.1", "0.0.1"]);
 
         let r = req("^0.0.2");
-        assert_match(&r, ["0.0.2"]);
-        assert_not_match(&r, ["0.9.1", "2.9.0", "1.1.1", "0.0.1", "0.1.4"]);
+        assert_match(&r, &["0.0.2"]);
+        assert_not_match(&r, &["0.9.1", "2.9.0", "1.1.1", "0.0.1", "0.1.4"]);
 
         let r = req("^0.0");
-        assert_match(&r, ["0.0.2", "0.0.0"]);
-        assert_not_match(&r, ["0.9.1", "2.9.0", "1.1.1", "0.1.4"]);
+        assert_match(&r, &["0.0.2", "0.0.0"]);
+        assert_not_match(&r, &["0.9.1", "2.9.0", "1.1.1", "0.1.4"]);
 
         let r = req("^0");
-        assert_match(&r, ["0.9.1", "0.0.2", "0.0.0"]);
-        assert_not_match(&r, ["2.9.0", "1.1.1"]);
+        assert_match(&r, &["0.9.1", "0.0.2", "0.0.0"]);
+        assert_not_match(&r, &["2.9.0", "1.1.1"]);
     }
 
     #[test]
     pub fn test_parsing_wildcard() {
         let r = req("*");
-        assert_match(&r, ["0.9.1", "2.9.0", "0.0.9", "1.0.1", "1.1.1"]);
-        assert_not_match(&r, []);
+        assert_match(&r, &["0.9.1", "2.9.0", "0.0.9", "1.0.1", "1.1.1"]);
+        assert_not_match(&r, &[]);
 
         let r = req("1.*");
-        assert_match(&r, ["1.2.0", "1.2.1", "1.1.1", "1.3.0"]);
-        assert_not_match(&r, ["0.0.9"]);
+        assert_match(&r, &["1.2.0", "1.2.1", "1.1.1", "1.3.0"]);
+        assert_not_match(&r, &["0.0.9"]);
 
         let r = req("1.2.*");
-        assert_match(&r, ["1.2.0", "1.2.2", "1.2.4"]);
-        assert_not_match(&r, ["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
+        assert_match(&r, &["1.2.0", "1.2.2", "1.2.4"]);
+        assert_not_match(&r, &["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
     }
 
 
