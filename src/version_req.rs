@@ -447,7 +447,7 @@ struct Lexer<'a> {
     state: LexState
 }
 
-#[deriving(Show,PartialEq)]
+#[deriving(Copy,Show,PartialEq)]
 enum LexState {
     LexInit,
     LexStart,
