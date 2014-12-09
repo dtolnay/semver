@@ -271,7 +271,7 @@ impl Predicate {
         true
     }
 
-    fn is_greater(self, ver: &Version) -> bool {
+    fn is_greater(&self, ver: &Version) -> bool {
         if self.major != ver.major {
             return ver.major > self.major;
         }
@@ -298,7 +298,7 @@ impl Predicate {
     }
 
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
-    fn matches_tilde(self, ver: &Version) -> bool {
+    fn matches_tilde(&self, ver: &Version) -> bool {
         let minor = match self.minor {
             Some(n) => n,
             None => return self.major == ver.major
@@ -315,7 +315,7 @@ impl Predicate {
     }
 
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
-    fn is_compatible(self, ver: &Version) -> bool {
+    fn is_compatible(&self, ver: &Version) -> bool {
         if self.major != ver.major {
             return false;
         }
@@ -344,7 +344,7 @@ impl Predicate {
     }
 
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
-    fn matches_wildcard(self, ver: &Version) -> bool {
+    fn matches_wildcard(&self, ver: &Version) -> bool {
         match self.op {
             Wildcard(Major) => true,
             Wildcard(Minor) => self.major == ver.major,
