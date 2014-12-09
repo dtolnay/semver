@@ -8,6 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use std::error::Error;
 use std::fmt::Show;
 use std::fmt;
 use std::str::CharOffsets;
@@ -94,13 +95,19 @@ pub enum ReqParseError {
 
 impl Show for ReqParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.description().fmt(f)
+    }
+}
+
+impl Error for ReqParseError {
+    fn description(&self) -> &str {
         match *self {
-            InvalidVersionRequirement => write!(f, "The given version requirement is invalid."),
-            OpAlreadySet => write!(f, "You have already provided an operation, such as =, ~, or ^. Only use one."),
-            InvalidSigil => write!(f, "The sigil you have written is not correct."),
-            VersionComponentsMustBeNumeric => write!(f, "Version components must be numeric."),
-            OpRequired => write!(f, "An operation is required. To match an exact version, use =."),
-            MajorVersionRequired => write!(f, "At least a major version number is required."),
+            InvalidVersionRequirement => "the given version requirement is invalid",
+            OpAlreadySet => "you have already provided an operation, such as =, ~, or ^; only use one",
+            InvalidSigil => "the sigil you have written is not correct",
+            VersionComponentsMustBeNumeric => "version components must be numeric",
+            OpRequired => "an operation is required; to match an exact version, use =",
+            MajorVersionRequired => "at least a major version number is required",
         }
     }
 }

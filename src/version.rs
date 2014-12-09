@@ -10,7 +10,6 @@
 
 //! The `version` module gives you tools to create and compare SemVer-compliant versions.
 
-use std::char;
 use std::cmp;
 use std::fmt::Show;
 use std::fmt;
@@ -80,7 +79,7 @@ impl Version {
         let v = parse_iter(&mut s.chars());
         match v {
             Some(v) => {
-                if v.to_string().equiv(&s) {
+                if v.to_string() == s {
                     Ok(v)
                 } else {
                     Err(IncorrectParse(v, s.to_string()))
@@ -189,7 +188,7 @@ fn take_nonempty_prefix<T:Iterator<char>>(rdr: &mut T, pred: |char| -> bool)
 }
 
 fn take_num<T: Iterator<char>>(rdr: &mut T) -> Option<(uint, Option<char>)> {
-    let (s, ch) = take_nonempty_prefix(rdr, char::is_digit);
+    let (s, ch) = take_nonempty_prefix(rdr, |c| c.is_digit(10));
     match from_str::<uint>(s[]) {
         None => None,
         Some(i) => Some((i, ch))
@@ -197,11 +196,11 @@ fn take_num<T: Iterator<char>>(rdr: &mut T) -> Option<(uint, Option<char>)> {
 }
 
 fn take_ident<T: Iterator<char>>(rdr: &mut T) -> Option<(Identifier, Option<char>)> {
-    let (s,ch) = take_nonempty_prefix(rdr, char::is_alphanumeric);
+    let (s,ch) = take_nonempty_prefix(rdr, |c| c.is_alphanumeric());
 
     if s.len() == 0 {
         None
-    } else if s[].chars().all(char::is_digit) && s[].char_at(0) != '0' {
+    } else if s[].chars().all(|c| c.is_digit(10)) && s[].char_at(0) != '0' {
         match from_str::<u64>(s.as_slice()) {
             None => None,
             Some(i) => Some((Numeric(i), ch))
