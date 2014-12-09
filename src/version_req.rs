@@ -420,8 +420,8 @@ impl PredBuilder {
     /// Validates that a version predicate can be created given the present
     /// information.
     fn build(&self) -> Result<Predicate, ReqParseError> {
-        let op = match self.op.clone() {
-            Some(x) => x,
+        let op = match self.op {
+            Some(ref x) => x.clone(),
             None => return Err(OpRequired),
         };
 
