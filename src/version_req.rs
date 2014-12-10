@@ -150,7 +150,7 @@ impl VersionReq {
     ///
     /// This example demonstrates error handling, and will panic.
     ///
-    /// ```
+    /// ```should-panic
     /// use semver::VersionReq;
     ///
     /// let version = match VersionReq::parse("not a version") {
