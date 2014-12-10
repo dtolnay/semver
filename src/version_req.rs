@@ -78,6 +78,7 @@ struct PredBuilder {
 
 /// A `ReqParseError` is returned from methods which parse a string into a `VersionReq`. Each
 /// enumeration is one of the possible errors that can occur.
+#[deriving(Copy)]
 pub enum ReqParseError {
     /// The given version requirement is invalid.
     InvalidVersionRequirement,
@@ -271,7 +272,7 @@ impl Predicate {
         true
     }
 
-    fn is_greater(self, ver: &Version) -> bool {
+    fn is_greater(&self, ver: &Version) -> bool {
         if self.major != ver.major {
             return ver.major > self.major;
         }
@@ -298,7 +299,7 @@ impl Predicate {
     }
 
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
-    fn matches_tilde(self, ver: &Version) -> bool {
+    fn matches_tilde(&self, ver: &Version) -> bool {
         let minor = match self.minor {
             Some(n) => n,
             None => return self.major == ver.major
@@ -315,7 +316,7 @@ impl Predicate {
     }
 
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
-    fn is_compatible(self, ver: &Version) -> bool {
+    fn is_compatible(&self, ver: &Version) -> bool {
         if self.major != ver.major {
             return false;
         }
@@ -344,7 +345,7 @@ impl Predicate {
     }
 
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
-    fn matches_wildcard(self, ver: &Version) -> bool {
+    fn matches_wildcard(&self, ver: &Version) -> bool {
         match self.op {
             Wildcard(Major) => true,
             Wildcard(Minor) => self.major == ver.major,
@@ -420,7 +421,7 @@ impl PredBuilder {
     /// information.
     fn build(&self) -> Result<Predicate, ReqParseError> {
         let op = match self.op {
-            Some(x) => x,
+            Some(ref x) => x.clone(),
             None => return Err(OpRequired),
         };
 
@@ -447,7 +448,7 @@ struct Lexer<'a> {
     state: LexState
 }
 
-#[deriving(Show,PartialEq)]
+#[deriving(Copy,Show,PartialEq)]
 enum LexState {
     LexInit,
     LexStart,
