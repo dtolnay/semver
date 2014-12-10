@@ -148,14 +148,14 @@ impl VersionReq {
     /// let version = VersionReq::parse(">=1.2.3");
     /// ```
     ///
-    /// This example demonstrates error handling, and will fail.
+    /// This example demonstrates error handling, and will panic.
     ///
-    /// ```should-fail
+    /// ```should-panic
     /// use semver::VersionReq;
     ///
     /// let version = match VersionReq::parse("not a version") {
     ///     Ok(version) => version,
-    ///     Err(e) => fail!("There was a problem parsing: {}", e),
+    ///     Err(e) => panic!("There was a problem parsing: {}", e),
     /// }
     /// ```
     pub fn parse(input: &str) -> Result<VersionReq, ReqParseError> {
