@@ -79,7 +79,7 @@ impl Version {
         let v = parse_iter(&mut s.chars());
         match v {
             Some(v) => {
-                if v.to_string() == s {
+                if v.to_string() == s.to_string() {
                     Ok(v)
                 } else {
                     Err(IncorrectParse(v, s.to_string()))
