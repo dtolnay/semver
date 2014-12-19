@@ -512,7 +512,7 @@ impl<'a> Iterator<Token<'a>> for Lexer<'a> {
         let mut c;
         let mut idx = 0;
 
-        macro_rules! next(
+        macro_rules! next {
             () => (
                 match self.iter.next() {
                     Some((n_idx, n_char)) => {
@@ -524,14 +524,16 @@ impl<'a> Iterator<Token<'a>> for Lexer<'a> {
                       return self.flush(idx + 1, s)
                     }
                 }
-            ))
+            )
+        }
 
-        macro_rules! flush(
+        macro_rules! flush {
             ($s:expr) => ({
                 self.c = c;
                 self.idx = idx;
                 self.flush(idx, $s)
-            }))
+            })
+        }
 
 
         if self.state == LexInit {
