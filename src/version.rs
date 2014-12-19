@@ -94,7 +94,7 @@ impl Version {
 impl fmt::Show for Version {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "{}.{}.{}", self.major, self.minor, self.patch))
+        try!(write!(f, "{}.{}.{}", self.major, self.minor, self.patch));
         if !self.pre.is_empty() {
             try!(write!(f, "-"));
             for (i, x) in self.pre.iter().enumerate() {
