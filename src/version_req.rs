@@ -524,14 +524,14 @@ impl<'a> Iterator<Token<'a>> for Lexer<'a> {
                       return self.flush(idx + 1, s)
                     }
                 }
-            ))
+            ));
 
         macro_rules! flush(
             ($s:expr) => ({
                 self.c = c;
                 self.idx = idx;
                 self.flush(idx, $s)
-            }))
+            }));
 
 
         if self.state == LexInit {
