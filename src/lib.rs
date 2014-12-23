@@ -114,16 +114,11 @@
 //! 1.2.* := >=1.2.0 <1.3.0
 //! ```
 
-#![crate_name = "semver"]
-#![experimental]
-#![crate_type = "rlib"]
-#![crate_type = "dylib"]
 #![doc(html_logo_url = "http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
        html_favicon_url = "http://www.rust-lang.org/favicon.ico")]
-#![feature(default_type_params)]
-#![feature(macro_rules)]
-#![feature(slicing_syntax)]
+#![feature(default_type_params, macro_rules, slicing_syntax)]
 #![deny(missing_docs)]
+#![cfg_attr(test, deny(warnings))]
 
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.

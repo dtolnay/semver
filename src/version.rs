@@ -189,7 +189,7 @@ fn take_nonempty_prefix<T:Iterator<char>>(rdr: &mut T, pred: |char| -> bool)
 
 fn take_num<T: Iterator<char>>(rdr: &mut T) -> Option<(uint, Option<char>)> {
     let (s, ch) = take_nonempty_prefix(rdr, |c| c.is_digit(10));
-    match from_str::<uint>(s[]) {
+    match s.parse::<uint>() {
         None => None,
         Some(i) => Some((i, ch))
     }
@@ -201,7 +201,7 @@ fn take_ident<T: Iterator<char>>(rdr: &mut T) -> Option<(Identifier, Option<char
     if s.len() == 0 {
         None
     } else if s[].chars().all(|c| c.is_digit(10)) && s[].char_at(0) != '0' {
-        match from_str::<u64>(s.as_slice()) {
+        match s.parse::<u64>() {
             None => None,
             Some(i) => Some((Numeric(i), ch))
         }

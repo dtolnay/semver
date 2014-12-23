@@ -11,7 +11,7 @@
 use std::error::Error;
 use std::fmt::Show;
 use std::fmt;
-use std::str::CharOffsets;
+use std::str::CharIndices;
 
 use super::version::Version;
 
@@ -442,7 +442,7 @@ impl PredBuilder {
 struct Lexer<'a> {
     c: char,
     idx: uint,
-    iter: CharOffsets<'a>,
+    iter: CharIndices<'a>,
     mark: Option<uint>,
     input: &'a str,
     state: LexState
