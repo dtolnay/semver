@@ -10,6 +10,7 @@
 
 //! The `version` module gives you tools to create and compare SemVer-compliant versions.
 
+use std::ascii::AsciiExt;
 use std::cmp;
 use std::fmt::Show;
 use std::fmt;
