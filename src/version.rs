@@ -15,6 +15,7 @@ use std::cmp;
 use std::fmt::Show;
 use std::fmt;
 use std::hash;
+use std::ascii::AsciiExt;
 
 use self::Identifier::{Numeric, AlphaNumeric};
 use self::ParseError::{GenericFailure, IncorrectParse, NonAsciiIdentifier};
