@@ -11,7 +11,7 @@
 //! The `version` module gives you tools to create and compare SemVer-compliant versions.
 
 use std::ascii::AsciiExt;
-use std::cmp;
+use std::cmp::{self, Ordering};
 use std::fmt::Show;
 use std::fmt;
 use std::hash;
@@ -22,7 +22,7 @@ use self::ParseError::{GenericFailure, IncorrectParse, NonAsciiIdentifier};
 /// An identifier in the pre-release or build metadata.
 ///
 /// See sections 9 and 10 of the spec for more about pre-release identifers and build metadata.
-#[deriving(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Identifier {
     /// An identifier that's solely numbers.
     Numeric(u64),
@@ -42,7 +42,7 @@ impl fmt::Show for Identifier {
 
 
 /// Represents a version number conforming to the semantic versioning scheme.
-#[deriving(Clone, Eq)]
+#[derive(Clone, Eq)]
 pub struct Version {
     /// The major version, to be incremented on incompatible changes.
     pub major: uint,
@@ -60,7 +60,7 @@ pub struct Version {
 
 /// A `ParseError` is returned as the `Err` side of a `Result` when a version is attempted
 /// to be parsed.
-#[deriving(Clone,PartialEq,Show,PartialOrd)]
+#[derive(Clone,PartialEq,Show,PartialOrd)]
 pub enum ParseError {
     /// All identifiers must be ASCII.
     NonAsciiIdentifier,
@@ -136,17 +136,17 @@ impl cmp::PartialOrd for Version {
 impl cmp::Ord for Version {
     fn cmp(&self, other: &Version) -> Ordering {
         match self.major.cmp(&other.major) {
-            Equal => {}
+            Ordering::Equal => {}
             r => return r,
         }
 
         match self.minor.cmp(&other.minor) {
-            Equal => {}
+            Ordering::Equal => {}
             r => return r,
         }
 
         match self.patch.cmp(&other.patch) {
-            Equal => {}
+            Ordering::Equal => {}
             r => return r,
         }
 
@@ -154,9 +154,9 @@ impl cmp::Ord for Version {
         // but the version of ord defined for vec
         // says that [] < [pre] so we alter it here
         match (self.pre.len(), other.pre.len()) {
-            (0, 0) => Equal,
-            (0, _) => Greater,
-            (_, 0) => Less,
+            (0, 0) => Ordering::Equal,
+            (0, _) => Ordering::Greater,
+            (_, 0) => Ordering::Less,
             (_, _) => self.pre.cmp(&other.pre)
         }
     }

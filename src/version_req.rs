@@ -32,7 +32,7 @@ use self::ReqParseError::{
 /// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
 /// numbers. Matching operations can then be done with the `VersionReq` against a particular
 /// version to see if it satisfies some or all of the constraints.
-#[deriving(PartialEq,Clone)]
+#[derive(PartialEq,Clone)]
 pub struct VersionReq {
     predicates: Vec<Predicate>
 }
@@ -42,14 +42,14 @@ enum VersionComponent {
     WildcardVersionComponent
 }
 
-#[deriving(Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 enum WildcardVersion {
     Major,
     Minor,
     Patch
 }
 
-#[deriving(PartialEq,Clone)]
+#[derive(PartialEq,Clone)]
 enum Op {
     Ex,   // Exact
     Gt,   // Greater than
@@ -61,7 +61,7 @@ enum Op {
     Wildcard(WildcardVersion), // x.y.*, x.*, *
 }
 
-#[deriving(PartialEq,Clone)]
+#[derive(PartialEq,Clone)]
 struct Predicate {
     op: Op,
     major: uint,
@@ -78,7 +78,7 @@ struct PredBuilder {
 
 /// A `ReqParseError` is returned from methods which parse a string into a `VersionReq`. Each
 /// enumeration is one of the possible errors that can occur.
-#[deriving(Copy)]
+#[derive(Copy)]
 pub enum ReqParseError {
     /// The given version requirement is invalid.
     InvalidVersionRequirement,
@@ -448,7 +448,7 @@ struct Lexer<'a> {
     state: LexState
 }
 
-#[deriving(Copy,Show,PartialEq)]
+#[derive(Copy,Show,PartialEq)]
 enum LexState {
     LexInit,
     LexStart,
@@ -457,7 +457,7 @@ enum LexState {
     LexErr,
 }
 
-#[deriving(Show)]
+#[derive(Show)]
 enum Token<'a> {
     Sigil(&'a str),
     AlphaNum(&'a str),
