@@ -116,7 +116,7 @@
 
 #![doc(html_logo_url = "http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
        html_favicon_url = "http://www.rust-lang.org/favicon.ico")]
-#![feature(default_type_params, macro_rules, slicing_syntax, old_orphan_check)]
+#![feature(associated_types, default_type_params, macro_rules, slicing_syntax, old_orphan_check)]
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
 

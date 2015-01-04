@@ -507,7 +507,9 @@ impl<'a> Lexer<'a> {
     }
 }
 
-impl<'a> Iterator<Token<'a>> for Lexer<'a> {
+impl<'a> Iterator for Lexer<'a> {
+    type Item = Token<'a>;
+
     fn next(&mut self) -> Option<Token<'a>> {
         let mut c;
         let mut idx = 0;
