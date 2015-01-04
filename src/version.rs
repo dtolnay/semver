@@ -171,7 +171,7 @@ impl<S: hash::Writer> hash::Hash<S> for Version {
     }
 }
 
-fn take_nonempty_prefix<T:Iterator<char>>(rdr: &mut T, pred: |char| -> bool)
+fn take_nonempty_prefix<T:Iterator<Item=char>>(rdr: &mut T, pred: |char| -> bool)
                         -> (String, Option<char>) {
     let mut buf = String::new();
     let mut ch = rdr.next();
@@ -188,7 +188,7 @@ fn take_nonempty_prefix<T:Iterator<char>>(rdr: &mut T, pred: |char| -> bool)
     (buf, ch)
 }
 
-fn take_num<T: Iterator<char>>(rdr: &mut T) -> Option<(uint, Option<char>)> {
+fn take_num<T: Iterator<Item=char>>(rdr: &mut T) -> Option<(uint, Option<char>)> {
     let (s, ch) = take_nonempty_prefix(rdr, |c| c.is_digit(10));
     match s.parse::<uint>() {
         None => None,
@@ -196,7 +196,7 @@ fn take_num<T: Iterator<char>>(rdr: &mut T) -> Option<(uint, Option<char>)> {
     }
 }
 
-fn take_ident<T: Iterator<char>>(rdr: &mut T) -> Option<(Identifier, Option<char>)> {
+fn take_ident<T: Iterator<Item=char>>(rdr: &mut T) -> Option<(Identifier, Option<char>)> {
     let (s,ch) = take_nonempty_prefix(rdr, |c| c.is_alphanumeric());
 
     if s.len() == 0 {
@@ -219,7 +219,7 @@ fn expect(ch: Option<char>, c: char) -> Option<()> {
     }
 }
 
-fn parse_iter<T: Iterator<char>>(rdr: &mut T) -> Option<Version> {
+fn parse_iter<T: Iterator<Item=char>>(rdr: &mut T) -> Option<Version> {
     let maybe_vers = take_num(rdr).and_then(|(major, ch)| {
         expect(ch, '.').and_then(|_| Some(major))
     }).and_then(|major| {
