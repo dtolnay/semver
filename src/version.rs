@@ -12,7 +12,6 @@
 
 use std::ascii::AsciiExt;
 use std::cmp::{self, Ordering};
-use std::fmt::Show;
 use std::fmt;
 use std::hash;
 
@@ -22,7 +21,7 @@ use self::ParseError::{GenericFailure, IncorrectParse, NonAsciiIdentifier};
 /// An identifier in the pre-release or build metadata.
 ///
 /// See sections 9 and 10 of the spec for more about pre-release identifers and build metadata.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Show)]
 pub enum Identifier {
     /// An identifier that's solely numbers.
     Numeric(u64),
@@ -30,28 +29,28 @@ pub enum Identifier {
     AlphaNumeric(String)
 }
 
-impl fmt::Show for Identifier {
+impl fmt::String for Identifier {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Numeric(ref n) => n.fmt(f),
-            AlphaNumeric(ref s) => s.fmt(f)
+            Numeric(ref n) => fmt::String::fmt(n, f),
+            AlphaNumeric(ref s) => fmt::String::fmt(s, f),
         }
     }
 }
 
 
 /// Represents a version number conforming to the semantic versioning scheme.
-#[derive(Clone, Eq)]
+#[derive(Clone, Eq, Show)]
 pub struct Version {
     /// The major version, to be incremented on incompatible changes.
-    pub major: uint,
+    pub major: u64,
     /// The minor version, to be incremented when functionality is added in a
     /// backwards-compatible manner.
-    pub minor: uint,
+    pub minor: u64,
     /// The patch version, to be incremented when backwards-compatible bug
     /// fixes are made.
-    pub patch: uint,
+    pub patch: u64,
     /// The pre-release version identifier, if one exists.
     pub pre: Vec<Identifier>,
     /// The build metadata, ignored when determining version precedence.
@@ -92,7 +91,7 @@ impl Version {
 }
 
 
-impl fmt::Show for Version {
+impl fmt::String for Version {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(f, "{}.{}.{}", self.major, self.minor, self.patch));
@@ -100,14 +99,14 @@ impl fmt::Show for Version {
             try!(write!(f, "-"));
             for (i, x) in self.pre.iter().enumerate() {
                 if i != 0 { try!(write!(f, ".")) };
-                try!(x.fmt(f));
+                try!(write!(f, "{}", x));
             }
         }
         if !self.build.is_empty() {
             try!(write!(f, "+"));
             for (i, x) in self.build.iter().enumerate() {
                 if i != 0 { try!(write!(f, ".")) };
-                try!(x.fmt(f));
+                try!(write!(f, "{}", x));
             }
         }
         Ok(())
@@ -162,7 +161,23 @@ impl cmp::Ord for Version {
     }
 }
 
-impl<S: hash::Writer> hash::Hash<S> for Version {
+impl fmt::String for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            ParseError::NonAsciiIdentifier => {
+                write!(f, "identifiers can only contain ascii characters")
+            }
+            ParseError::GenericFailure => {
+                write!(f, "failed to parse semver from string")
+            }
+            ParseError::IncorrectParse(ref a, ref b) => {
+                write!(f, "semver `{}` was not correctly parsed from {:?}", a, b)
+            }
+        }
+    }
+}
+
+impl<S: hash::Writer + hash::Hasher> hash::Hash<S> for Version {
     fn hash(&self, into: &mut S) {
         self.major.hash(into);
         self.minor.hash(into);
@@ -190,9 +205,9 @@ fn take_nonempty_prefix<T, F>(rdr: &mut T, pred: F) -> (String, Option<char>) wh
     (buf, ch)
 }
 
-fn take_num<T: Iterator<Item=char>>(rdr: &mut T) -> Option<(uint, Option<char>)> {
+fn take_num<T: Iterator<Item=char>>(rdr: &mut T) -> Option<(u64, Option<char>)> {
     let (s, ch) = take_nonempty_prefix(rdr, |&: c| c.is_digit(10));
-    match s.parse::<uint>() {
+    match s.parse::<u64>() {
         None => None,
         Some(i) => Some((i, ch))
     }
@@ -295,9 +310,9 @@ mod test {
         assert_eq!(Version::parse("a.b.c"), Err(GenericFailure));
 
         let version = Version {
-            major: 1u,
-            minor: 2u,
-            patch: 3u,
+            major: 1,
+            minor: 2,
+            patch: 3,
             pre: vec!(),
             build: vec!(),
         };
@@ -306,64 +321,64 @@ mod test {
 
         assert!(Version::parse("1.2.3") == Ok(Version {
             major: 1,
-            minor: 2u,
-            patch: 3u,
+            minor: 2,
+            patch: 3,
             pre: vec!(),
             build: vec!(),
         }));
         assert!(Version::parse("  1.2.3  ") == Ok(Version {
-            major: 1u,
-            minor: 2u,
-            patch: 3u,
+            major: 1,
+            minor: 2,
+            patch: 3,
             pre: vec!(),
             build: vec!(),
         }));
         assert!(Version::parse("1.2.3-alpha1") == Ok(Version {
-            major: 1u,
-            minor: 2u,
-            patch: 3u,
+            major: 1,
+            minor: 2,
+            patch: 3,
             pre: vec!(AlphaNumeric("alpha1".to_string())),
             build: vec!(),
         }));
         assert!(Version::parse("  1.2.3-alpha1  ") == Ok(Version {
-            major: 1u,
-            minor: 2u,
-            patch: 3u,
+            major: 1,
+            minor: 2,
+            patch: 3,
             pre: vec!(AlphaNumeric("alpha1".to_string())),
             build: vec!()
         }));
         assert!(Version::parse("1.2.3+build5") == Ok(Version {
-            major: 1u,
-            minor: 2u,
-            patch: 3u,
+            major: 1,
+            minor: 2,
+            patch: 3,
             pre: vec!(),
             build: vec!(AlphaNumeric("build5".to_string()))
         }));
         assert!(Version::parse("  1.2.3+build5  ") == Ok(Version {
-            major: 1u,
-            minor: 2u,
-            patch: 3u,
+            major: 1,
+            minor: 2,
+            patch: 3,
             pre: vec!(),
             build: vec!(AlphaNumeric("build5".to_string()))
         }));
         assert!(Version::parse("1.2.3-alpha1+build5") == Ok(Version {
-            major: 1u,
-            minor: 2u,
-            patch: 3u,
+            major: 1,
+            minor: 2,
+            patch: 3,
             pre: vec!(AlphaNumeric("alpha1".to_string())),
             build: vec!(AlphaNumeric("build5".to_string()))
         }));
         assert!(Version::parse("  1.2.3-alpha1+build5  ") == Ok(Version {
-            major: 1u,
-            minor: 2u,
-            patch: 3u,
+            major: 1,
+            minor: 2,
+            patch: 3,
             pre: vec!(AlphaNumeric("alpha1".to_string())),
             build: vec!(AlphaNumeric("build5".to_string()))
         }));
         assert!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  ") == Ok(Version {
-            major: 1u,
-            minor: 2u,
-            patch: 3u,
+            major: 1,
+            minor: 2,
+            patch: 3,
             pre: vec!(Numeric(1),AlphaNumeric("alpha1".to_string()),Numeric(9)),
             build: vec!(AlphaNumeric("build5".to_string()),
                      Numeric(7),

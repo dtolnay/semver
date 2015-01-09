@@ -18,41 +18,43 @@
 //! Given a version number MAJOR.MINOR.PATCH, increment the:
 //!
 //! 1. MAJOR version when you make incompatible API changes,
-//! 2. MINOR version when you add functionality in a backwards-compatible manner, and
+//! 2. MINOR version when you add functionality in a backwards-compatible
+//!    manner, and
 //! 3. PATCH version when you make backwards-compatible bug fixes.
 //!
-//! Additional labels for pre-release and build metadata are available as extensions to the
-//! MAJOR.MINOR.PATCH format.
+//! Additional labels for pre-release and build metadata are available as
+//! extensions to the MAJOR.MINOR.PATCH format.
 //!
-//! Any references to 'the spec' in this documentation refer to [version 2.0 of the SemVer
-//! spec](http://semver.org/spec/v2.0.0.html).
+//! Any references to 'the spec' in this documentation refer to [version 2.0 of
+//! the SemVer spec](http://semver.org/spec/v2.0.0.html).
 //!
 //! ## SemVer and the Rust ecosystem
 //!
-//! Rust itself follows the SemVer specification, as does its standard libraries. The two are
-//! not tied together.
+//! Rust itself follows the SemVer specification, as does its standard
+//! libraries. The two are not tied together.
 //!
-//! [Cargo](http://crates.io), Rust's package manager, uses SemVer to determine which versions of
-//! packages you need installed.
+//! [Cargo](http://crates.io), Rust's package manager, uses SemVer to determine
+//! which versions of packages you need installed.
 //!
 //! ## Versions
 //!
-//! At its simplest, the `semver` crate allows you to construct `Version` objects using the `parse`
-//! method:
+//! At its simplest, the `semver` crate allows you to construct `Version`
+//! objects using the `parse` method:
 //!
 //! ```{rust}
 //! use semver::Version;
 //!
 //! assert!(Version::parse("1.2.3") == Ok(Version {
-//!    major: 1u,
-//!    minor: 2u,
-//!    patch: 3u,
+//!    major: 1,
+//!    minor: 2,
+//!    patch: 3,
 //!    pre: vec!(),
 //!    build: vec!(),
 //! }));
 //! ```
 //!
-//! If you have multiple `Version`s, you can use the usual comparison operators to compare them:
+//! If you have multiple `Version`s, you can use the usual comparison operators
+//! to compare them:
 //!
 //! ```{rust}
 //! use semver::Version;
@@ -63,13 +65,13 @@
 //!
 //! ## Requirements
 //!
-//! The `semver` crate also provides the ability to compare requirements, which are more complex
-//! comparisons.
+//! The `semver` crate also provides the ability to compare requirements, which
+//! are more complex comparisons.
 //!
-//! For example, creating a requirement that only matches versions greater than or
-//! equal to 1.0.0:
+//! For example, creating a requirement that only matches versions greater than
+//! or equal to 1.0.0:
 //!
-//! ```{rust}
+//! ```{rust} # #![allow(unstable)]
 //! use semver::Version;
 //! use semver::VersionReq;
 //!
@@ -91,11 +93,13 @@
 //! ~1     := >=1.0.0 <2.0.0
 //! ```
 //!
-//! **Caret requirements** allow SemVer compatible updates to a specified verion,
-//! `0.x` and `0.x+1` are not considered compatible, but `1.x` and `1.x+1` are.
+//! **Caret requirements** allow SemVer compatible updates to a specified
+//! verion, `0.x` and `0.x+1` are not considered compatible, but `1.x` and
+//! `1.x+1` are.
 //!
 //! `0.0.x` is not considered compatible with any other version.
-//! Missing minor and patch versions are desugared to `0` but allow flexibility for that value.
+//! Missing minor and patch versions are desugared to `0` but allow flexibility
+//! for that value.
 //!
 //! ```notrust
 //! ^1.2.3 := >=1.2.3 <2.0.0
@@ -105,8 +109,8 @@
 //! ^0     := >=0.0.0 <1.0.0
 //! ```
 //!
-//! **Wildcard requirements** allows parsing of version requirements of the formats
-//! `*`, `x.*` and `x.y.*`.
+//! **Wildcard requirements** allows parsing of version requirements of the
+//! formats `*`, `x.*` and `x.y.*`.
 //!
 //! ```notrust
 //! *     := >=0.0.0
@@ -116,9 +120,9 @@
 
 #![doc(html_logo_url = "http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
        html_favicon_url = "http://www.rust-lang.org/favicon.ico")]
-#![feature(slicing_syntax)]
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
+#![allow(unstable)]
 
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.

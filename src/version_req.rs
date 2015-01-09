@@ -32,24 +32,24 @@ use self::ReqParseError::{
 /// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
 /// numbers. Matching operations can then be done with the `VersionReq` against a particular
 /// version to see if it satisfies some or all of the constraints.
-#[derive(PartialEq,Clone)]
+#[derive(PartialEq,Clone,Show)]
 pub struct VersionReq {
     predicates: Vec<Predicate>
 }
 
 enum VersionComponent {
-    NumericVersionComponent(uint),
+    NumericVersionComponent(u64),
     WildcardVersionComponent
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Show)]
 enum WildcardVersion {
     Major,
     Minor,
     Patch
 }
 
-#[derive(PartialEq,Clone)]
+#[derive(PartialEq,Clone,Show)]
 enum Op {
     Ex,   // Exact
     Gt,   // Greater than
@@ -61,19 +61,19 @@ enum Op {
     Wildcard(WildcardVersion), // x.y.*, x.*, *
 }
 
-#[derive(PartialEq,Clone)]
+#[derive(PartialEq,Clone,Show)]
 struct Predicate {
     op: Op,
-    major: uint,
-    minor: Option<uint>,
-    patch: Option<uint>
+    major: u64,
+    minor: Option<u64>,
+    patch: Option<u64>
 }
 
 struct PredBuilder {
     op: Option<Op>,
-    major: Option<uint>,
-    minor: Option<uint>,
-    patch: Option<uint>
+    major: Option<u64>,
+    minor: Option<u64>,
+    patch: Option<u64>
 }
 
 /// A `ReqParseError` is returned from methods which parse a string into a `VersionReq`. Each
@@ -441,9 +441,9 @@ impl PredBuilder {
 
 struct Lexer<'a> {
     c: char,
-    idx: uint,
+    idx: usize,
     iter: CharIndices<'a>,
-    mark: Option<uint>,
+    mark: Option<usize>,
     input: &'a str,
     state: LexState
 }
@@ -481,18 +481,18 @@ impl<'a> Lexer<'a> {
         self.state == LexErr
     }
 
-    fn mark(&mut self, at: uint) {
+    fn mark(&mut self, at: usize) {
         self.mark = Some(at)
     }
 
-    fn flush(&mut self, to: uint, kind: LexState) -> Option<Token<'a>> {
+    fn flush(&mut self, to: usize, kind: LexState) -> Option<Token<'a>> {
         match self.mark {
             Some(mark) => {
                 if to <= mark {
                     return None;
                 }
 
-                let s = self.input[mark..to];
+                let s = &self.input[mark..to];
 
                 self.mark = None;
 
@@ -620,7 +620,7 @@ fn parse_version_part(s: &str) -> Result<VersionComponent, ReqParseError> {
     }
 
     for c in s.chars() {
-        let n = (c as uint) - ('0' as uint);
+        let n = (c as u64) - ('0' as u64);
 
         if n > 9 {
             return Err(VersionComponentsMustBeNumeric);
@@ -640,7 +640,7 @@ fn is_sigil(c: char) -> bool {
     }
 }
 
-impl fmt::Show for VersionReq {
+impl fmt::String for VersionReq {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         if self.predicates.is_empty() {
             try!(write!(fmt, "*"));
@@ -658,7 +658,7 @@ impl fmt::Show for VersionReq {
     }
 }
 
-impl fmt::Show for Predicate {
+impl fmt::String for Predicate {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self.op {
             Wildcard(Major) => try!(write!(fmt, "*")),
@@ -683,7 +683,7 @@ impl fmt::Show for Predicate {
     }
 }
 
-impl fmt::Show for Op {
+impl fmt::String for Op {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Ex          => try!(write!(fmt, "= ")),
