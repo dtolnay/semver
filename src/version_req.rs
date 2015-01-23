@@ -78,7 +78,7 @@ struct PredBuilder {
 
 /// A `ReqParseError` is returned from methods which parse a string into a `VersionReq`. Each
 /// enumeration is one of the possible errors that can occur.
-#[derive(Copy)]
+#[derive(Copy, Debug)]
 pub enum ReqParseError {
     /// The given version requirement is invalid.
     InvalidVersionRequirement,
@@ -94,7 +94,7 @@ pub enum ReqParseError {
     MajorVersionRequired,
 }
 
-impl Show for ReqParseError {
+impl fmt::Display for ReqParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.description().fmt(f)
     }
@@ -640,7 +640,7 @@ fn is_sigil(c: char) -> bool {
     }
 }
 
-impl fmt::String for VersionReq {
+impl fmt::Display for VersionReq {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         if self.predicates.is_empty() {
             try!(write!(fmt, "*"));
@@ -658,7 +658,7 @@ impl fmt::String for VersionReq {
     }
 }
 
-impl fmt::String for Predicate {
+impl fmt::Display for Predicate {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self.op {
             Wildcard(Major) => try!(write!(fmt, "*")),
@@ -683,7 +683,7 @@ impl fmt::String for Predicate {
     }
 }
 
-impl fmt::String for Op {
+impl fmt::Display for Op {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Ex          => try!(write!(fmt, "= ")),

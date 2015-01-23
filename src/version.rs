@@ -21,7 +21,7 @@ use self::ParseError::{GenericFailure, IncorrectParse, NonAsciiIdentifier};
 /// An identifier in the pre-release or build metadata.
 ///
 /// See sections 9 and 10 of the spec for more about pre-release identifers and build metadata.
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Show)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum Identifier {
     /// An identifier that's solely numbers.
     Numeric(u64),
@@ -29,19 +29,19 @@ pub enum Identifier {
     AlphaNumeric(String)
 }
 
-impl fmt::String for Identifier {
+impl fmt::Display for Identifier {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Numeric(ref n) => fmt::String::fmt(n, f),
-            AlphaNumeric(ref s) => fmt::String::fmt(s, f),
+            Numeric(ref n) => fmt::Display::fmt(n, f),
+            AlphaNumeric(ref s) => fmt::Display::fmt(s, f),
         }
     }
 }
 
 
 /// Represents a version number conforming to the semantic versioning scheme.
-#[derive(Clone, Eq, Show)]
+#[derive(Clone, Eq, Debug)]
 pub struct Version {
     /// The major version, to be incremented on incompatible changes.
     pub major: u64,
@@ -59,7 +59,7 @@ pub struct Version {
 
 /// A `ParseError` is returned as the `Err` side of a `Result` when a version is attempted
 /// to be parsed.
-#[derive(Clone,PartialEq,Show,PartialOrd)]
+#[derive(Clone,PartialEq,Debug,PartialOrd)]
 pub enum ParseError {
     /// All identifiers must be ASCII.
     NonAsciiIdentifier,
@@ -91,7 +91,7 @@ impl Version {
 }
 
 
-impl fmt::String for Version {
+impl fmt::Display for Version {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(f, "{}.{}.{}", self.major, self.minor, self.patch));
@@ -161,7 +161,7 @@ impl cmp::Ord for Version {
     }
 }
 
-impl fmt::String for ParseError {
+impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ParseError::NonAsciiIdentifier => {
