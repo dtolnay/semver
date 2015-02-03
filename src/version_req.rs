@@ -9,7 +9,6 @@
 // except according to those terms.
 
 use std::error::Error;
-use std::fmt::Show;
 use std::fmt;
 use std::str::CharIndices;
 
@@ -32,7 +31,7 @@ use self::ReqParseError::{
 /// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
 /// numbers. Matching operations can then be done with the `VersionReq` against a particular
 /// version to see if it satisfies some or all of the constraints.
-#[derive(PartialEq,Clone,Show)]
+#[derive(PartialEq,Clone,Debug)]
 pub struct VersionReq {
     predicates: Vec<Predicate>
 }
@@ -42,14 +41,14 @@ enum VersionComponent {
     WildcardVersionComponent
 }
 
-#[derive(Clone, PartialEq, Show)]
+#[derive(Clone, PartialEq, Debug)]
 enum WildcardVersion {
     Major,
     Minor,
     Patch
 }
 
-#[derive(PartialEq,Clone,Show)]
+#[derive(PartialEq,Clone,Debug)]
 enum Op {
     Ex,   // Exact
     Gt,   // Greater than
@@ -61,7 +60,7 @@ enum Op {
     Wildcard(WildcardVersion), // x.y.*, x.*, *
 }
 
-#[derive(PartialEq,Clone,Show)]
+#[derive(PartialEq,Clone,Debug)]
 struct Predicate {
     op: Op,
     major: u64,
@@ -163,7 +162,7 @@ impl VersionReq {
         let mut builder = PredBuilder::new();
         let mut predicates = Vec::new();
 
-        for token in lexer {
+        for token in lexer.by_ref() {
             let result = match token {
                 Sigil(x) => builder.set_sigil(x),
                 AlphaNum(x) => builder.set_version_part(x),
@@ -448,7 +447,7 @@ struct Lexer<'a> {
     state: LexState
 }
 
-#[derive(Copy,Show,PartialEq)]
+#[derive(Copy,Debug,PartialEq)]
 enum LexState {
     LexInit,
     LexStart,
@@ -457,7 +456,7 @@ enum LexState {
     LexErr,
 }
 
-#[derive(Show)]
+#[derive(Debug)]
 enum Token<'a> {
     Sigil(&'a str),
     AlphaNum(&'a str),
