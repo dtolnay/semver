@@ -24,7 +24,6 @@ use self::ReqParseError::{
     OpAlreadySet,
     InvalidSigil,
     VersionComponentsMustBeNumeric,
-    OpRequired,
     MajorVersionRequired,
 };
 
@@ -87,8 +86,6 @@ pub enum ReqParseError {
     InvalidSigil,
     /// All components of a version must be numeric.
     VersionComponentsMustBeNumeric,
-    /// An operation is required. To match an exact version, use `=`.
-    OpRequired,
     /// At least a major version is required.
     MajorVersionRequired,
 }
@@ -106,7 +103,6 @@ impl Error for ReqParseError {
             OpAlreadySet => "you have already provided an operation, such as =, ~, or ^; only use one",
             InvalidSigil => "the sigil you have written is not correct",
             VersionComponentsMustBeNumeric => "version components must be numeric",
-            OpRequired => "an operation is required; to match an exact version, use =",
             MajorVersionRequired => "at least a major version number is required",
         }
     }
@@ -421,7 +417,7 @@ impl PredBuilder {
     fn build(&self) -> Result<Predicate, ReqParseError> {
         let op = match self.op {
             Some(ref x) => x.clone(),
-            None => return Err(OpRequired),
+            None => unreachable!()
         };
 
         let major = match self.major {
