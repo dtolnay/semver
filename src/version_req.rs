@@ -24,8 +24,8 @@ use self::ReqParseError::{
     OpAlreadySet,
     InvalidSigil,
     VersionComponentsMustBeNumeric,
-    OpRequired,
     MajorVersionRequired,
+    UnimplementedVersionRequirement
 };
 
 /// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
@@ -77,7 +77,7 @@ struct PredBuilder {
 
 /// A `ReqParseError` is returned from methods which parse a string into a `VersionReq`. Each
 /// enumeration is one of the possible errors that can occur.
-#[derive(Copy, Debug)]
+#[derive(Copy, Debug, PartialEq)]
 pub enum ReqParseError {
     /// The given version requirement is invalid.
     InvalidVersionRequirement,
@@ -87,10 +87,10 @@ pub enum ReqParseError {
     InvalidSigil,
     /// All components of a version must be numeric.
     VersionComponentsMustBeNumeric,
-    /// An operation is required. To match an exact version, use `=`.
-    OpRequired,
     /// At least a major version is required.
     MajorVersionRequired,
+    /// An unimplemented version requirement.
+    UnimplementedVersionRequirement,
 }
 
 impl fmt::Display for ReqParseError {
@@ -106,8 +106,8 @@ impl Error for ReqParseError {
             OpAlreadySet => "you have already provided an operation, such as =, ~, or ^; only use one",
             InvalidSigil => "the sigil you have written is not correct",
             VersionComponentsMustBeNumeric => "version components must be numeric",
-            OpRequired => "an operation is required; to match an exact version, use =",
             MajorVersionRequired => "at least a major version number is required",
+            UnimplementedVersionRequirement => "the given version requirement is not implemented, yet",
         }
     }
 }
@@ -167,7 +167,7 @@ impl VersionReq {
                 Sigil(x) => builder.set_sigil(x),
                 AlphaNum(x) => builder.set_version_part(x),
                 Dot => Ok(()), // Nothing to do for now
-                _ => unimplemented!()
+                Comma => return Err(UnimplementedVersionRequirement)
             };
 
             match result {
@@ -421,7 +421,7 @@ impl PredBuilder {
     fn build(&self) -> Result<Predicate, ReqParseError> {
         let op = match self.op {
             Some(ref x) => x.clone(),
-            None => return Err(OpRequired),
+            None => unreachable!()
         };
 
         let major = match self.major {
@@ -703,6 +703,14 @@ impl fmt::Display for Op {
 mod test {
     use super::VersionReq;
     use super::super::version::Version;
+    use super::ReqParseError::{
+        InvalidVersionRequirement,
+        OpAlreadySet,
+        InvalidSigil,
+        VersionComponentsMustBeNumeric,
+        MajorVersionRequired,
+        UnimplementedVersionRequirement
+    };
 
     fn req(s: &str) -> VersionReq {
         VersionReq::parse(s).unwrap()
@@ -826,8 +834,18 @@ mod test {
     }
 
 
+    #[test]
+    pub fn test_parse_errors() {
+        assert_eq!(Err(UnimplementedVersionRequirement), VersionReq::parse("0.0.1, 0.0.2"));
+        assert_eq!(Err(InvalidVersionRequirement), VersionReq::parse("0-0.1"));
+        assert_eq!(Err(OpAlreadySet), VersionReq::parse(">= >= 0.0.2"));
+        assert_eq!(Err(InvalidSigil), VersionReq::parse(">== 0.0.2"));
+        assert_eq!(Err(VersionComponentsMustBeNumeric), VersionReq::parse("a.0.0"));
+        assert_eq!(Err(MajorVersionRequired), VersionReq::parse(">="));
+    }
+
+
     /* TODO:
-     * - Test parse errors
      * - Handle pre releases
      */
 }
