@@ -177,8 +177,8 @@ impl fmt::Display for ParseError {
     }
 }
 
-impl<S: hash::Writer + hash::Hasher> hash::Hash<S> for Version {
-    fn hash(&self, into: &mut S) {
+impl hash::Hash for Version {
+    fn hash<H: hash::Hasher>(&self, into: &mut H) {
         self.major.hash(into);
         self.minor.hash(into);
         self.patch.hash(into);
@@ -218,7 +218,7 @@ fn take_ident<T: Iterator<Item=char>>(rdr: &mut T) -> Option<(Identifier, Option
 
     if s.len() == 0 {
         None
-    } else if s[].chars().all(|c| c.is_digit(10)) && s[].char_at(0) != '0' {
+    } else if s.chars().all(|c| c.is_digit(10)) && s.char_at(0) != '0' {
         match s.parse::<u64>().ok() {
             None => None,
             Some(i) => Some((Numeric(i), ch))
