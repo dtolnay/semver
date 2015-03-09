@@ -218,7 +218,7 @@ fn take_ident<T: Iterator<Item=char>>(rdr: &mut T) -> Option<(Identifier, Option
 
     if s.len() == 0 {
         None
-    } else if s.chars().all(|c| c.is_digit(10)) && s.char_at(0) != '0' {
+    } else if s.chars().all(|c| c.is_digit(10)) && s.chars().next() != Some('0') {
         match s.parse::<u64>().ok() {
             None => None,
             Some(i) => Some((Numeric(i), ch))
