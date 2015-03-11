@@ -123,7 +123,7 @@
        html_favicon_url = "http://www.rust-lang.org/favicon.ico")]
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
-#![feature(core, unicode)]
+#![feature(core)]
 
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.
