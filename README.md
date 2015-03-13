@@ -89,7 +89,7 @@ https://www.npmjs.org/doc/misc/semver.html
 ~1     := >=1.0.0 <2.0.0
 ```
 
-**Caret requirements** allow SemVer compatible updates to a specified verion,
+**Caret requirements** allow SemVer compatible updates to a specified version,
 `0.x` and `0.x+1` are not considered compatible, but `1.x` and `1.x+1` are.
 
 `0.0.x` is not considered compatible with any other version.
