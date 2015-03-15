@@ -12,11 +12,12 @@
 
 use std::ascii::AsciiExt;
 use std::cmp::{self, Ordering};
+use std::error::{Error, FromError};
 use std::fmt;
 use std::hash;
 
 use self::Identifier::{Numeric, AlphaNumeric};
-use self::ParseError::{GenericFailure, IncorrectParse, NonAsciiIdentifier};
+use self::ErrorKind::{GenericFailure, IncorrectParse, NonAsciiIdentifier};
 
 /// An identifier in the pre-release or build metadata.
 ///
@@ -59,8 +60,17 @@ pub struct Version {
 
 /// A `ParseError` is returned as the `Err` side of a `Result` when a version is attempted
 /// to be parsed.
-#[derive(Clone,PartialEq,Debug,PartialOrd)]
-pub enum ParseError {
+#[derive(Clone, PartialEq, Debug, PartialOrd)]
+pub struct ParseError {
+    /// Type of the error
+    pub kind: ErrorKind,
+    /// Short description
+    pub description: String
+}
+
+/// Kinds of `ParseError`
+#[derive(Clone, PartialEq, Debug, PartialOrd)]
+pub enum ErrorKind {
     /// All identifiers must be ASCII.
     NonAsciiIdentifier,
     /// The version was mis-parsed.
@@ -73,7 +83,7 @@ impl Version {
     /// Parse a string into a semver object.
     pub fn parse(s: &str) -> Result<Version, ParseError> {
         if !s.is_ascii() {
-            return Err(NonAsciiIdentifier)
+            try!(Err(NonAsciiIdentifier))
         }
         let s = s.trim();
         let v = parse_iter(&mut s.chars());
@@ -82,10 +92,10 @@ impl Version {
                 if v.to_string() == s {
                     Ok(v)
                 } else {
-                    Err(IncorrectParse(v, s.to_string()))
+                    try!(Err(IncorrectParse(v, s.to_string())))
                 }
             }
-            None => Err(GenericFailure)
+            None => try!(Err(GenericFailure))
         }
     }
 }
@@ -163,16 +173,31 @@ impl cmp::Ord for Version {
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ParseError::NonAsciiIdentifier => {
-                write!(f, "identifiers can only contain ascii characters")
-            }
-            ParseError::GenericFailure => {
-                write!(f, "failed to parse semver from string")
-            }
-            ParseError::IncorrectParse(ref a, ref b) => {
-                write!(f, "semver `{}` was not correctly parsed from {:?}", a, b)
-            }
+        write!(f, "{}", self.description)
+    }
+}
+
+impl Error for ParseError {
+    fn description(&self) -> &str {
+        &self.description
+    }
+}
+
+impl FromError<ErrorKind> for ParseError {
+    fn from_error(kind: ErrorKind) -> ParseError {
+        ParseError {
+            description: match kind {
+                ErrorKind::NonAsciiIdentifier => {
+                    "identifiers can only contain ascii characters".to_string()
+                }
+                ErrorKind::GenericFailure => {
+                    "failed to parse semver from string".to_string()
+                }
+                ErrorKind::IncorrectParse(ref a, ref b) => {
+                    format!("semver `{}` was not correctly parsed from {:?}", a, b)
+                }
+            },
+            kind: kind,
         }
     }
 }
@@ -294,20 +319,20 @@ fn parse_iter<T: Iterator<Item=char>>(rdr: &mut T) -> Option<Version> {
 #[cfg(test)]
 mod test {
     use super::{Version};
-    use super::ParseError::{IncorrectParse, GenericFailure};
+    use super::ErrorKind::{IncorrectParse, GenericFailure};
     use super::Identifier::{AlphaNumeric, Numeric};
 
     #[test]
     fn test_parse() {
-        assert_eq!(Version::parse(""), Err(GenericFailure));
-        assert_eq!(Version::parse("  "), Err(GenericFailure));
-        assert_eq!(Version::parse("1"),  Err(GenericFailure));
-        assert_eq!(Version::parse("1.2"), Err(GenericFailure));
-        assert_eq!(Version::parse("1.2"), Err(GenericFailure));
-        assert_eq!(Version::parse("1"), Err(GenericFailure));
-        assert_eq!(Version::parse("1.2"), Err(GenericFailure));
-        assert_eq!(Version::parse("1.2.3-"), Err(GenericFailure));
-        assert_eq!(Version::parse("a.b.c"), Err(GenericFailure));
+        assert_eq!(Version::parse("").unwrap_err().kind, GenericFailure);
+        assert_eq!(Version::parse("  ").unwrap_err().kind, GenericFailure);
+        assert_eq!(Version::parse("1").unwrap_err().kind,  GenericFailure);
+        assert_eq!(Version::parse("1.2").unwrap_err().kind, GenericFailure);
+        assert_eq!(Version::parse("1.2").unwrap_err().kind, GenericFailure);
+        assert_eq!(Version::parse("1").unwrap_err().kind, GenericFailure);
+        assert_eq!(Version::parse("1.2").unwrap_err().kind, GenericFailure);
+        assert_eq!(Version::parse("1.2.3-").unwrap_err().kind, GenericFailure);
+        assert_eq!(Version::parse("a.b.c").unwrap_err().kind, GenericFailure);
 
         let version = Version {
             major: 1,
@@ -316,8 +341,8 @@ mod test {
             pre: vec!(),
             build: vec!(),
         };
-        let error = Err(IncorrectParse(version, "1.2.3 abc".to_string()));
-        assert_eq!(Version::parse("1.2.3 abc"), error);
+        let error = IncorrectParse(version, "1.2.3 abc".to_string());
+        assert_eq!(Version::parse("1.2.3 abc").unwrap_err().kind, error);
 
         assert!(Version::parse("1.2.3") == Ok(Version {
             major: 1,
