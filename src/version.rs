@@ -301,9 +301,6 @@ mod test {
     fn test_parse() {
         assert_eq!(Version::parse(""), Err(GenericFailure));
         assert_eq!(Version::parse("  "), Err(GenericFailure));
-        assert_eq!(Version::parse("1"),  Err(GenericFailure));
-        assert_eq!(Version::parse("1.2"), Err(GenericFailure));
-        assert_eq!(Version::parse("1.2"), Err(GenericFailure));
         assert_eq!(Version::parse("1"), Err(GenericFailure));
         assert_eq!(Version::parse("1.2"), Err(GenericFailure));
         assert_eq!(Version::parse("1.2.3-"), Err(GenericFailure));
