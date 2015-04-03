@@ -77,7 +77,7 @@ struct PredBuilder {
 
 /// A `ReqParseError` is returned from methods which parse a string into a `VersionReq`. Each
 /// enumeration is one of the possible errors that can occur.
-#[derive(Copy, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ReqParseError {
     /// The given version requirement is invalid.
     InvalidVersionRequirement,
@@ -447,7 +447,7 @@ struct Lexer<'a> {
     state: LexState
 }
 
-#[derive(Copy,Debug,PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 enum LexState {
     LexInit,
     LexStart,
