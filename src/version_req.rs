@@ -167,7 +167,11 @@ impl VersionReq {
                 Sigil(x) => builder.set_sigil(x),
                 AlphaNum(x) => builder.set_version_part(x),
                 Dot => Ok(()), // Nothing to do for now
-                Comma => return Err(UnimplementedVersionRequirement)
+                Comma => {
+                    let result = builder.build().map(|p| predicates.push(p));
+                    builder = PredBuilder::new();
+                    result
+                }
             };
 
             match result {
@@ -709,7 +713,6 @@ mod test {
         InvalidSigil,
         VersionComponentsMustBeNumeric,
         MajorVersionRequired,
-        UnimplementedVersionRequirement
     };
 
     fn req(s: &str) -> VersionReq {
@@ -770,6 +773,16 @@ mod test {
         assert_eq!(r.to_string(), ">= 1.0.0".to_string());
 
         assert_match(&r, &["1.0.0"]);
+    }
+
+    #[test]
+    pub fn test_multiple() {
+        let r = req("> 0.0.9, <= 2.5.3");
+
+        assert_eq!(r.to_string(), "> 0.0.9, <= 2.5.3".to_string());
+
+        assert_match(&r, &["0.0.10", "1.0.0", "2.5.3"]);
+        assert_not_match(&r, &["0.0.8", "2.5.4"]);
     }
 
     #[test]
@@ -836,7 +849,6 @@ mod test {
 
     #[test]
     pub fn test_parse_errors() {
-        assert_eq!(Err(UnimplementedVersionRequirement), VersionReq::parse("0.0.1, 0.0.2"));
         assert_eq!(Err(InvalidVersionRequirement), VersionReq::parse("0-0.1"));
         assert_eq!(Err(OpAlreadySet), VersionReq::parse(">= >= 0.0.2"));
         assert_eq!(Err(InvalidSigil), VersionReq::parse(">== 0.0.2"));
