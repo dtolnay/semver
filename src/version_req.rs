@@ -425,7 +425,7 @@ impl PredBuilder {
     fn build(&self) -> Result<Predicate, ReqParseError> {
         let op = match self.op {
             Some(ref x) => x.clone(),
-            None => unreachable!()
+            None => return Err(InvalidVersionRequirement),
         };
 
         let major = match self.major {
@@ -778,11 +778,25 @@ mod test {
     #[test]
     pub fn test_multiple() {
         let r = req("> 0.0.9, <= 2.5.3");
-
         assert_eq!(r.to_string(), "> 0.0.9, <= 2.5.3".to_string());
-
         assert_match(&r, &["0.0.10", "1.0.0", "2.5.3"]);
         assert_not_match(&r, &["0.0.8", "2.5.4"]);
+
+        let r = req("0.3.0, 0.4.0");
+        assert_eq!(r.to_string(), "^0.3.0, ^0.4.0".to_string());
+        assert_not_match(&r, &["0.0.8", "0.3.0", "0.4.0"]);
+
+        let r = req("<= 0.2.0, >= 0.5.0");
+        assert_eq!(r.to_string(), "<= 0.2.0, >= 0.5.0".to_string());
+        assert_not_match(&r, &["0.0.8", "0.3.0", "0.5.1"]);
+
+        let r = req("0.1.0, 0.1.4, 0.1.6");
+        assert_eq!(r.to_string(), "^0.1.0, ^0.1.4, ^0.1.6".to_string());
+        assert_match(&r, &["0.1.6", "0.1.9"]);
+        assert_not_match(&r, &["0.1.0", "0.1.4", "0.2.0"]);
+
+        assert!(VersionReq::parse("> 0.1.0,").is_err());
+        assert!(VersionReq::parse("> 0.3.0, ,").is_err());
     }
 
     #[test]
