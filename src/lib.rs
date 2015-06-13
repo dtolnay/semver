@@ -63,6 +63,20 @@
 //! assert!(Version::parse("1.2.3-alpha2") >  Version::parse("1.2.0"));
 //! ```
 //!
+//! If you explicitly need to modify a Version, SemVer also allows you to 
+//! increment the major, minor, and patch numbers in accordance with the spec.
+//! 
+//! Please note that in order to do this, you must use a mutable Version:
+//!
+//! ```{rust}
+//! use semver::Version;
+//!
+//! let mut feature_release = Version::parse("1.4.6").unwrap();
+//! feature_release.increment_minor();
+//!
+//! assert_eq!(feature_release, Version::parse("1.5.0").unwrap());
+//! ```
+//!
 //! ## Requirements
 //!
 //! The `semver` crate also provides the ability to compare requirements, which

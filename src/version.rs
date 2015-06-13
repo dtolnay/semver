@@ -88,6 +88,28 @@ impl Version {
             None => Err(GenericFailure)
         }
     }
+
+    ///Increments the patch number for this Version (Must be mutable)
+    pub fn increment_patch(&mut self) {
+        self.patch += 1;
+    }
+
+    ///Increments the minor version number for this Version (Must be mutable)
+    ///
+    ///As instructed by section 7 of the spec, the patch number is reset to 0.
+    pub fn increment_minor(&mut self) {
+        self.minor += 1;
+        self.patch = 0;
+    }
+
+    ///Increments the major version number for this Version (Must be mutable)
+    ///
+    ///As instructed by section 8 of the spec, the minor and patch numbers are reset to 0
+    pub fn increment_major(&mut self) {
+        self.major += 1;
+        self.minor = 0;
+        self.patch = 0;
+    }
 }
 
 
@@ -389,6 +411,27 @@ mod test {
             build: vec![AlphaNumeric("0851523".to_string())],
         }));
 
+    }
+
+    #[test]
+    fn test_increment_patch() {
+        let mut buggy_release = Version::parse("0.1.0").unwrap();
+        buggy_release.increment_patch();
+        assert_eq!(buggy_release, Version::parse("0.1.1").unwrap());
+    }
+
+    #[test]
+    fn test_increment_minor() {
+        let mut feature_release = Version::parse("1.4.6").unwrap();
+        feature_release.increment_minor();
+        assert_eq!(feature_release, Version::parse("1.5.0").unwrap());
+    }
+
+    #[test]
+    fn test_increment_major() {
+        let mut chrome_release = Version::parse("46.1.246773").unwrap();
+        chrome_release.increment_major();
+        assert_eq!(chrome_release, Version::parse("47.0.0").unwrap());
     }
 
     #[test]
