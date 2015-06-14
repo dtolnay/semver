@@ -71,10 +71,34 @@
 //! ```{rust}
 //! use semver::Version;
 //!
+//! let mut bugfix_release = Version::parse("1.0.0").unwrap();
+//! bugfix_release.increment_patch();
+//!
+//! assert_eq!(bugfix_release, Version::parse("1.0.1").unwrap());
+//! ```
+//!
+//! When incrementing the minor version number, the patch number resets to zero 
+//! (in accordance with section 7 of the spec)
+//!
+//! ```{rust}
+//! use semver::Version;
+//!
 //! let mut feature_release = Version::parse("1.4.6").unwrap();
 //! feature_release.increment_minor();
 //!
 //! assert_eq!(feature_release, Version::parse("1.5.0").unwrap());
+//! ```
+//!
+//! Similarly, when incrementing the major version number, the patch and minor
+//! numbers reset to zero (in accordance with section 8 of the spec)
+//!
+//! ```{rust}
+//! use semver::Version;
+//!
+//! let mut chrome_release = Version::parse("41.5.5377").unwrap();
+//! chrome_release.increment_major();
+//!
+//! assert_eq!(chrome_release, Version::parse("42.0.0").unwrap());
 //! ```
 //!
 //! ## Requirements
