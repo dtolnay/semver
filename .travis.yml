@@ -5,9 +5,9 @@ rust:
   - nightly
 sudo: false
 script:
-  - cargo build --verbose
-  - cargo test --verbose
-  - cargo doc
+  - cargo build --verbose -j 2
+  - cargo test --verbose -j 2
+  - cargo doc -j 2
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
