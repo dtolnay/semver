@@ -89,9 +89,15 @@ impl Version {
         }
     }
 
+    ///Clears the build metadata
+    fn clear_metadata(&mut self) {
+        self.build = vec!()
+    }
+
     ///Increments the patch number for this Version (Must be mutable)
     pub fn increment_patch(&mut self) {
         self.patch += 1;
+        self.clear_metadata();
     }
 
     ///Increments the minor version number for this Version (Must be mutable)
@@ -100,6 +106,7 @@ impl Version {
     pub fn increment_minor(&mut self) {
         self.minor += 1;
         self.patch = 0;
+        self.clear_metadata();
     }
 
     ///Increments the major version number for this Version (Must be mutable)
@@ -109,6 +116,7 @@ impl Version {
         self.major += 1;
         self.minor = 0;
         self.patch = 0;
+        self.clear_metadata();
     }
 }
 
@@ -432,6 +440,41 @@ mod test {
         let mut chrome_release = Version::parse("46.1.246773").unwrap();
         chrome_release.increment_major();
         assert_eq!(chrome_release, Version::parse("47.0.0").unwrap());
+    }
+
+    #[test]
+    fn test_increment_keep_prerelease() {
+        let mut release = Version::parse("1.0.0-alpha").unwrap();
+        release.increment_patch();
+
+        assert_eq!(release, Version::parse("1.0.1-alpha").unwrap());
+
+        release.increment_minor();
+
+        assert_eq!(release, Version::parse("1.1.0-alpha").unwrap());
+
+        release.increment_major();
+
+        assert_eq!(release, Version::parse("2.0.0-alpha").unwrap());
+    }
+
+
+    #[test]
+    fn test_increment_clear_metadata() {
+        let mut release = Version::parse("1.0.0+4442").unwrap();
+        release.increment_patch();
+
+        assert_eq!(release, Version::parse("1.0.1").unwrap());
+        release = Version::parse("1.0.1+hello").unwrap();
+
+        release.increment_minor();
+
+        assert_eq!(release, Version::parse("1.1.0").unwrap());
+        release = Version::parse("1.1.3747+hello").unwrap();
+
+        release.increment_major();
+
+        assert_eq!(release, Version::parse("2.0.0").unwrap());
     }
 
     #[test]
