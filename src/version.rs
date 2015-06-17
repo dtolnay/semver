@@ -8,7 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! The `version` module gives you tools to create and compare SemVer-compliant versions.
+//! The `version` module gives you tools to create and compare SemVer-compliant
+//! versions.
 
 use std::ascii::AsciiExt;
 use std::cmp::{self, Ordering};
@@ -20,7 +21,8 @@ use self::ParseError::{GenericFailure, IncorrectParse, NonAsciiIdentifier};
 
 /// An identifier in the pre-release or build metadata.
 ///
-/// See sections 9 and 10 of the spec for more about pre-release identifers and build metadata.
+/// See sections 9 and 10 of the spec for more about pre-release identifers and
+/// build metadata.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum Identifier {
     /// An identifier that's solely numbers.
@@ -57,8 +59,8 @@ pub struct Version {
     pub build: Vec<Identifier>,
 }
 
-/// A `ParseError` is returned as the `Err` side of a `Result` when a version is attempted
-/// to be parsed.
+/// A `ParseError` is returned as the `Err` side of a `Result` when a version is
+/// attempted to be parsed.
 #[derive(Clone,PartialEq,Debug,PartialOrd)]
 pub enum ParseError {
     /// All identifiers must be ASCII.
@@ -89,29 +91,31 @@ impl Version {
         }
     }
 
-    ///Clears the build metadata
+    /// Clears the build metadata
     fn clear_metadata(&mut self) {
-        self.build = vec!()
+        self.build = Vec::new();
+        self.pre = Vec::new();
     }
 
-    ///Increments the patch number for this Version (Must be mutable)
+    /// Increments the patch number for this Version (Must be mutable)
     pub fn increment_patch(&mut self) {
         self.patch += 1;
         self.clear_metadata();
     }
 
-    ///Increments the minor version number for this Version (Must be mutable)
+    /// Increments the minor version number for this Version (Must be mutable)
     ///
-    ///As instructed by section 7 of the spec, the patch number is reset to 0.
+    /// As instructed by section 7 of the spec, the patch number is reset to 0.
     pub fn increment_minor(&mut self) {
         self.minor += 1;
         self.patch = 0;
         self.clear_metadata();
     }
 
-    ///Increments the major version number for this Version (Must be mutable)
+    /// Increments the major version number for this Version (Must be mutable)
     ///
-    ///As instructed by section 8 of the spec, the minor and patch numbers are reset to 0
+    /// As instructed by section 8 of the spec, the minor and patch numbers are
+    /// reset to 0
     pub fn increment_major(&mut self) {
         self.major += 1;
         self.minor = 0;
