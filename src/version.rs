@@ -451,15 +451,15 @@ mod test {
         let mut release = Version::parse("1.0.0-alpha").unwrap();
         release.increment_patch();
 
-        assert_eq!(release, Version::parse("1.0.1-alpha").unwrap());
+        assert_eq!(release, Version::parse("1.0.1").unwrap());
 
         release.increment_minor();
 
-        assert_eq!(release, Version::parse("1.1.0-alpha").unwrap());
+        assert_eq!(release, Version::parse("1.1.0").unwrap());
 
         release.increment_major();
 
-        assert_eq!(release, Version::parse("2.0.0-alpha").unwrap());
+        assert_eq!(release, Version::parse("2.0.0").unwrap());
     }
 
 
