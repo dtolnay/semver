@@ -13,6 +13,7 @@
 
 use std::ascii::AsciiExt;
 use std::cmp::{self, Ordering};
+use std::error::Error;
 use std::fmt;
 use std::hash;
 
@@ -195,17 +196,29 @@ impl cmp::Ord for Version {
     }
 }
 
+impl Error for ParseError {
+    fn description(&self) -> &str {
+        match *self {
+            ParseError::NonAsciiIdentifier
+                => "identifiers can only contain ascii characters",
+            ParseError::GenericFailure
+                | ParseError::IncorrectParse(..)
+                => "failed to parse semver from string",
+        }
+    }
+}
+
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ParseError::NonAsciiIdentifier => {
-                write!(f, "identifiers can only contain ascii characters")
+                write!(f, "{}", self.description())
             }
             ParseError::GenericFailure => {
-                write!(f, "failed to parse semver from string")
+                write!(f, "{}", self.description())
             }
             ParseError::IncorrectParse(ref a, ref b) => {
-                write!(f, "semver `{}` was not correctly parsed from {:?}", a, b)
+                write!(f, "{}: {} could not be parsed from {:?}", self.description(), a, b)
             }
         }
     }
