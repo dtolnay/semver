@@ -123,6 +123,11 @@ impl Version {
         self.patch = 0;
         self.clear_metadata();
     }
+
+    /// Checks to see if the current Version is in pre-release status
+    pub fn is_prerelease(&mut self) -> bool {
+        !self.pre.is_empty()
+    }
 }
 
 
@@ -571,6 +576,14 @@ mod test {
         assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.2.3-alpha1"));
         assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.2.3-alpha2"));
         assert!(Version::parse("1.2.3+23")     >= Version::parse("1.2.3+42"));
+    }
+
+    #[test]
+    fn test_prerelease_check() {
+        assert!(Version::parse("1.0.0").unwrap().is_prerelease() == false);
+        assert!(Version::parse("0.0.1").unwrap().is_prerelease() == false);
+        assert!(Version::parse("4.1.4-alpha").unwrap().is_prerelease());
+        assert!(Version::parse("1.0.0-beta294296").unwrap().is_prerelease());
     }
 
     #[test]
