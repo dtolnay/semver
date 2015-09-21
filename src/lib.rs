@@ -63,9 +63,9 @@
 //! assert!(Version::parse("1.2.3-alpha2") >  Version::parse("1.2.0"));
 //! ```
 //!
-//! If you explicitly need to modify a Version, SemVer also allows you to 
+//! If you explicitly need to modify a Version, SemVer also allows you to
 //! increment the major, minor, and patch numbers in accordance with the spec.
-//! 
+//!
 //! Please note that in order to do this, you must use a mutable Version:
 //!
 //! ```{rust}
@@ -77,7 +77,7 @@
 //! assert_eq!(bugfix_release, Version::parse("1.0.1").unwrap());
 //! ```
 //!
-//! When incrementing the minor version number, the patch number resets to zero 
+//! When incrementing the minor version number, the patch number resets to zero
 //! (in accordance with section 7 of the spec)
 //!
 //! ```{rust}
@@ -157,8 +157,8 @@
 //! 1.2.* := >=1.2.0 <1.3.0
 //! ```
 
-#![doc(html_logo_url = "http://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
-       html_favicon_url = "http://www.rust-lang.org/favicon.ico")]
+#![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
+       html_favicon_url = "https://www.rust-lang.org/favicon.ico")]
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
 
