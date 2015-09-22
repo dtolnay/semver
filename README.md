@@ -3,7 +3,7 @@ semver
 
 Semantic version parsing and comparison.
 
-[![Build Status](https://travis-ci.org/rust-lang/semver.svg?branch=master)](https://travis-ci.org/rust-lang/semver)
+[![Build Status](https://travis-ci.org/rust-lang-deprecated/semver.svg?branch=master)](https://travis-ci.org/rust-lang-deprecated/semver)
 
 [Documentation](https://doc.rust-lang.org/semver)
 
