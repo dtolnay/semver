@@ -158,6 +158,17 @@ impl VersionReq {
     /// }
     /// ```
     pub fn parse(input: &str) -> Result<VersionReq, ReqParseError> {
+        if input == "" {
+            return Ok(VersionReq { predicates: vec![
+                Predicate {
+                    op: Wildcard(Major),
+                    major: 0,
+                    minor: None,
+                    patch: None
+                }
+            ]});
+        }
+
         let mut lexer = Lexer::new(input);
         let mut builder = PredBuilder::new();
         let mut predicates = Vec::new();
@@ -847,6 +858,9 @@ mod test {
 
     #[test]
     pub fn test_parsing_wildcard() {
+        let r = req("");
+        assert_match(&r, &["0.9.1", "2.9.0", "0.0.9", "1.0.1", "1.1.1"]);
+        assert_not_match(&r, &[]);
         let r = req("*");
         assert_match(&r, &["0.9.1", "2.9.0", "0.0.9", "1.0.1", "1.1.1"]);
         assert_not_match(&r, &[]);
