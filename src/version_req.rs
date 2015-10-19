@@ -629,7 +629,7 @@ impl Op {
 fn parse_version_part(s: &str) -> Result<VersionComponent, ReqParseError> {
     let mut ret = 0;
 
-    if s == "*" {
+    if ["*", "x", "X"].contains(&s) {
         return Ok(WildcardVersionComponent)
     }
 
@@ -864,12 +864,30 @@ mod test {
         let r = req("*");
         assert_match(&r, &["0.9.1", "2.9.0", "0.0.9", "1.0.1", "1.1.1"]);
         assert_not_match(&r, &[]);
+        let r = req("x");
+        assert_match(&r, &["0.9.1", "2.9.0", "0.0.9", "1.0.1", "1.1.1"]);
+        assert_not_match(&r, &[]);
+        let r = req("X");
+        assert_match(&r, &["0.9.1", "2.9.0", "0.0.9", "1.0.1", "1.1.1"]);
+        assert_not_match(&r, &[]);
 
         let r = req("1.*");
         assert_match(&r, &["1.2.0", "1.2.1", "1.1.1", "1.3.0"]);
         assert_not_match(&r, &["0.0.9"]);
+        let r = req("1.x");
+        assert_match(&r, &["1.2.0", "1.2.1", "1.1.1", "1.3.0"]);
+        assert_not_match(&r, &["0.0.9"]);
+        let r = req("1.X");
+        assert_match(&r, &["1.2.0", "1.2.1", "1.1.1", "1.3.0"]);
+        assert_not_match(&r, &["0.0.9"]);
 
         let r = req("1.2.*");
+        assert_match(&r, &["1.2.0", "1.2.2", "1.2.4"]);
+        assert_not_match(&r, &["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
+        let r = req("1.2.x");
+        assert_match(&r, &["1.2.0", "1.2.2", "1.2.4"]);
+        assert_not_match(&r, &["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
+        let r = req("1.2.X");
         assert_match(&r, &["1.2.0", "1.2.2", "1.2.4"]);
         assert_not_match(&r, &["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
     }
