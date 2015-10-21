@@ -3,9 +3,9 @@ semver
 
 Semantic version parsing and comparison.
 
-[![Build Status](https://api.travis-ci.org/steveklabnik/semver.svg?branch=master)](https://travis-ci.org/rust-lang-deprecated/semver)
+[![Build Status](https://api.travis-ci.org/steveklabnik/semver.svg?branch=master)](https://travis-ci.org/steveklabnik/semver)
 
-[Documentation](https://doc.rust-lang.org/semver)
+[Documentation](https://steveklabnik.github.io/semver)
 
 Semantic versioning (see http://semver.org/) is a set of rules for
 assigning version numbers.
