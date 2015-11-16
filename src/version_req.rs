@@ -883,7 +883,7 @@ impl fmt::Display for Op {
 
 #[cfg(test)]
 mod test {
-    use super::VersionReq;
+    use super::{VersionReq, VersionSet};
     use super::super::version::Version;
     use super::ReqParseError::{
         InvalidVersionRequirement,
@@ -982,8 +982,9 @@ mod test {
         assert_not_match(&r, &["2.1.0", "2.2.0-alpha1", "2.0.0-alpha2", "1.0.0-alpha2"]);
     }
 
+    // Test the `VersionSet` matching functionality with a set of comma-separated requirements.
     #[test]
-    pub fn test_multiple() {
+    pub fn test_sets() {
         let r = req("> 0.0.9, <= 2.5.3");
         assert_eq!(r.to_string(), "> 0.0.9, <= 2.5.3".to_string());
         assert_match(&r, &["0.0.10", "1.0.0", "2.5.3"]);
@@ -1002,14 +1003,27 @@ mod test {
         assert_match(&r, &["0.1.6", "0.1.9"]);
         assert_not_match(&r, &["0.1.0", "0.1.4", "0.2.0"]);
 
-        assert!(VersionReq::parse("> 0.1.0,").is_err());
-        assert!(VersionReq::parse("> 0.3.0, ,").is_err());
+        assert!(VersionSet::parse("> 0.1.0,").is_err());
+        assert!(VersionSet::parse("> 0.3.0, ,").is_err());
 
         let r = req(">=0.5.1-alpha3, <0.6");
         assert_eq!(r.to_string(), ">= 0.5.1-alpha3, < 0.6".to_string());
         assert_match(&r, &["0.5.1-alpha3", "0.5.1-alpha4", "0.5.1-beta", "0.5.1", "0.5.5"]);
         assert_not_match(&r, &["0.5.1-alpha1", "0.5.2-alpha3", "0.5.5-pre", "0.5.0-pre"]);
         assert_not_match(&r, &["0.6.0", "0.6.0-pre"]);
+    }
+
+    // Test the `VersionReq` matching functionality with a set of "||"-separated version sets.
+    #[test]
+    pub fn test_comparator_sets() {
+        // Don't match any of version 1.*
+        let r = req(">= 2.0.0 || < 1.0.0");
+        assert_eq!(r.to_string(), ">= 2.0.0 || < 1.0.0".to_string());
+
+        assert_match(&r, &["0.9.0", "2.0.0", "2.1.0"]);
+        assert_not_match(&r, &["1.0.0", "1.9.9"]);
+
+        assert!(VersionReq::parse("> 1.2.3 ||| < 0.9.8").is_err());
     }
 
     #[test]
