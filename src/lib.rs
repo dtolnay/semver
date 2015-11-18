@@ -36,6 +36,32 @@ mod tests {
     use super::Version;
 
     #[test]
+    fn parse_major_version() {
+        let version = "10";
+        let version = Version::parse(version).unwrap();
+
+        assert_eq!(version,
+                   Version {
+                       major: 10,
+                       minor: 0,
+                       patch: 0,
+                   });
+    }
+
+    #[test]
+    fn parse_minor_version() {
+        let version = "10.11";
+        let version = Version::parse(version).unwrap();
+
+        assert_eq!(version,
+                   Version {
+                       major: 10,
+                       minor: 11,
+                       patch: 0,
+                   });
+    }
+
+    #[test]
     fn parse_version() {
         let version = "10.11.12";
         let version = Version::parse(version).unwrap();
