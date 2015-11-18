@@ -5,6 +5,7 @@ pub mod parser;
 
 use std::result;
 
+/// A SemVer Version
 #[derive(PartialEq,Debug)]
 pub struct Version {
     major: u32,
@@ -12,11 +13,15 @@ pub struct Version {
     patch: u32,
 }
 
+/// An error type for this crate
+///
+/// Currently, just a generic error. Will make this nicer later.
 #[derive(Debug)]
 enum SemVerError {
     GenericError,
 }
 
+/// A Result type for errors
 pub type Result<T> = result::Result<T, SemVerError>;
 
 impl From<()> for SemVerError {
@@ -26,6 +31,9 @@ impl From<()> for SemVerError {
 }
 
 impl Version {
+    /// Create a Version from a string
+    ///
+    /// Currently supported: x, x.y, and x.y.z versions.
     pub fn parse(version: &str) -> Result<Version> {
         Ok(try!(parser::try_parse(version.as_bytes())))
     }

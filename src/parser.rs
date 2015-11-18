@@ -39,56 +39,59 @@ mod tests {
     use super::number;
     use super::dot_number;
     use super::version;
-    use nom::IResult::Done;
     use Version;
+
+    fn done<T>(x: T) -> ::nom::IResult<&'static [u8], T> {
+        ::nom::IResult::Done(&[][..], x)
+    }
 
     #[test]
     fn parse_number() {
-        let v = "10";
+        let v = "10".as_bytes();
 
-        assert_eq!(number(v.as_bytes()), Done(&[][..], 10));
+        assert_eq!(number(v), done(10));
     }
 
     #[test]
     fn parse_dot_number() {
-        let v = ".10";
+        let v = ".10".as_bytes();
 
-        assert_eq!(dot_number(v.as_bytes()), Done(&[][..], 10));
+        assert_eq!(dot_number(v), done(10));
     }
 
     #[test]
     fn parse_major() {
-        let v1 = "10";
+        let v1 = "10".as_bytes();
         let v2 = Version {
             major: 10,
             minor: 0,
             patch: 0,
         };
 
-        assert_eq!(version(v1.as_bytes()), Done(&[][..], v2));
+        assert_eq!(version(v1), done(v2));
     }
 
     #[test]
     fn parse_minor() {
-        let v1 = "10.11";
+        let v1 = "10.11".as_bytes();
         let v2 = Version {
             major: 10,
             minor: 11,
             patch: 0,
         };
 
-        assert_eq!(version(v1.as_bytes()), Done(&[][..], v2));
+        assert_eq!(version(v1), done(v2));
     }
 
     #[test]
     fn parse_version() {
-        let v1 = "10.11.12";
+        let v1 = "10.11.12".as_bytes();
         let v2 = Version {
             major: 10,
             minor: 11,
             patch: 12,
         };
 
-        assert_eq!(version(v1.as_bytes()), Done(&[][..], v2));
+        assert_eq!(version(v1), done(v2));
     }
 }
