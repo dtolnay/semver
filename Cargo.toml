@@ -10,3 +10,6 @@ documentation = "http://steveklabnik.github.io/semver"
 description = """
 Semantic version parsing and comparison.
 """
+
+[dependencies]
+nom = "*"
