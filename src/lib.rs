@@ -6,8 +6,10 @@ pub mod parser;
 use std::result;
 
 #[derive(PartialEq,Debug)]
-struct Version {
+pub struct Version {
     major: u32,
+    minor: u32,
+    patch: u32,
 }
 
 #[derive(Debug)]
@@ -15,7 +17,7 @@ enum SemVerError {
     GenericError,
 }
 
-type Result<T> = result::Result<T, SemVerError>;
+pub type Result<T> = result::Result<T, SemVerError>;
 
 impl From<()> for SemVerError {
     fn from(_: ()) -> SemVerError {
@@ -25,9 +27,7 @@ impl From<()> for SemVerError {
 
 impl Version {
     pub fn parse(version: &str) -> Result<Version> {
-        let major = try!(parser::try_number(version.as_bytes()));
-
-        Ok(Version { major: major })
+        Ok(try!(parser::try_parse(version.as_bytes())))
     }
 }
 
@@ -36,10 +36,15 @@ mod tests {
     use super::Version;
 
     #[test]
-    fn parse_major_number() {
-        let version = "10";
+    fn parse_version() {
+        let version = "10.11.12";
         let version = Version::parse(version).unwrap();
 
-        assert_eq!(version, Version { major: 10 });
+        assert_eq!(version,
+                   Version {
+                       major: 10,
+                       minor: 11,
+                       patch: 12,
+                   });
     }
 }
