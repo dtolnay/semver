@@ -2,6 +2,9 @@ use std::str;
 use nom;
 use nom::IResult;
 
+/// Try to parse a version
+///
+/// If there's an error, then you just get (). for now.
 pub fn try_parse(i: &[u8]) -> Result<super::Version, ()> {
     match version(i) {
         IResult::Done(_, d) => Ok(d),
@@ -9,17 +12,28 @@ pub fn try_parse(i: &[u8]) -> Result<super::Version, ()> {
     }
 }
 
+/// parse a u32
 fn number(i: &[u8]) -> IResult<&[u8], u32> {
     map_res!(i,
              nom::digit,
              |d| str::FromStr::from_str(str::from_utf8(d).unwrap()))
 }
 
+/// parse a . and then a u32
 named!(dot_number<&[u8], u32>, chain!(
         tag!(".") ~
         i: number, || { i }
 ));
 
+/// parse a version
+///
+/// A version is currently:
+///
+/// - a major version number
+/// - optionally followed by a dot and a minor version number
+/// - optionally followed by a dot and a patch version number
+///
+/// If some of the versions aren't present, gives a zero.
 named!(version<&[u8], super::Version>, chain!(
         major: number ~
         rest: opt!(complete!(chain!(
