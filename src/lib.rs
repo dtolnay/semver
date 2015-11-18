@@ -167,7 +167,7 @@
 
 pub use version::{Version, Identifier, ParseError};
 pub use version::Identifier::{Numeric, AlphaNumeric};
-pub use version_req::{VersionReq, ReqParseError};
+pub use version_req::{VersionReq, VersionSet, ReqParseError};
 
 // SemVer-compliant versions.
 mod version;

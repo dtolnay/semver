@@ -30,11 +30,19 @@ use self::ReqParseError::{
     UnimplementedVersionRequirement
 };
 
-/// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
-/// numbers. Matching operations can then be done with the `VersionReq` against a particular
-/// version to see if it satisfies some or all of the constraints.
-#[derive(PartialEq,Clone,Debug)]
+/// A `VersionReq` is a set of version comparator sets; it corresponds to the top-level
+/// "version range" in the Npm implementation of SemVer:
+///   https://docs.npmjs.com/misc/semver#ranges
+#[derive(Clone, PartialEq, Debug)]
 pub struct VersionReq {
+    sets: Vec<VersionSet>
+}
+
+/// `VersionSet` is composed of a set of one or more comparators (predicates). A specific
+/// version can then be matched against the range to see if it satisfies the constraints
+/// set by the predicates.
+#[derive(Clone, PartialEq, Debug)]
+pub struct VersionSet {
     predicates: Vec<Predicate>
 }
 
@@ -121,53 +129,84 @@ impl Error for ReqParseError {
 }
 
 impl VersionReq {
-    /// `any()` is a factory method which creates a `VersionReq` with no constraints. In other
+    /// Primary constructor of a `VersionReq`. It takes a string containing version
+    /// comparator sets and parses them, first separating them by "||"'s into a comparator
+    /// sets, then passing off each comparator set to be parsed by `VersionSet::parse` (see that
+    /// function for more details on how sets of comparator predicates are parsed).
+    pub fn parse(input: &str) -> Result<VersionReq, ReqParseError> {
+        let input_sets: Vec<_> = input.split("||").map(|s| s.trim()).collect();
+
+        let mut sets = Vec::new();
+
+        for input in input_sets {
+            match VersionSet::parse(input) {
+                Ok(set) => sets.push(set),
+                Err(e)  => return Err(e),
+            }
+        }
+
+        Ok(VersionReq { sets: sets })
+    }
+
+    /// `matches()` checks if the given `Version` satisfies any (1 or more) of its
+    /// comparator (ie. predicate) sets.
+    pub fn matches(&self, version: &Version) -> bool {
+        if self.sets.is_empty() {
+            true
+        } else {
+            self.sets.iter().any(|pred| pred.matches(version))
+        }
+    }
+}
+
+impl VersionSet {
+    /// `any()` is a factory method which creates a `VersionSet` with no constraints. In other
     /// words, any version will match against it.
     ///
     /// # Examples
     ///
     /// ```
-    /// use semver::VersionReq;
+    /// use semver::VersionSet;
     ///
-    /// let anything = VersionReq::any();
+    /// let anything = VersionSet::any();
     /// ```
-    pub fn any() -> VersionReq {
-        VersionReq { predicates: vec!() }
+    pub fn any() -> VersionSet {
+        VersionSet { predicates: vec!() }
     }
 
-    /// `parse()` is the main constructor of a `VersionReq`. It turns a string like `"^1.2.3"`
-    /// and turns it into a `VersionReq` that matches that particular constraint.
+    /// `parse()` is the main constructor of a `VersionSet`. It turns a string like `"^1.2.3"`
+    /// and turns it into a `VersionSet` that matches that particular constraint.
     ///
     /// A `Result` is returned which contains a `ReqParseError` if there was a problem parsing the
-    /// `VersionReq`.
+    /// `VersionSet`.
     ///
     /// # Examples
     ///
     /// ```
-    /// use semver::VersionReq;
+    /// use semver::VersionSet;
     ///
-    /// let version = VersionReq::parse("=1.2.3");
-    /// let version = VersionReq::parse(">1.2.3");
-    /// let version = VersionReq::parse("<1.2.3");
-    /// let version = VersionReq::parse("~1.2.3");
-    /// let version = VersionReq::parse("^1.2.3");
-    /// let version = VersionReq::parse("<=1.2.3");
-    /// let version = VersionReq::parse(">=1.2.3");
+    /// let version = VersionSet::parse("=1.2.3");
+    /// let version = VersionSet::parse(">1.2.3");
+    /// let version = VersionSet::parse("<1.2.3");
+    /// let version = VersionSet::parse("~1.2.3");
+    /// let version = VersionSet::parse("^1.2.3");
+    /// let version = VersionSet::parse("<=1.2.3");
+    /// let version = VersionSet::parse(">=1.2.3");
     /// ```
     ///
     /// This example demonstrates error handling, and will panic.
     ///
     /// ```should-panic
-    /// use semver::VersionReq;
+    /// use semver::VersionSet;
     ///
-    /// let version = match VersionReq::parse("not a version") {
+    /// let version = match VersionSet::parse("not a version") {
     ///     Ok(version) => version,
     ///     Err(e) => panic!("There was a problem parsing: {}", e),
     /// }
     /// ```
-    pub fn parse(input: &str) -> Result<VersionReq, ReqParseError> {
+    pub fn parse(input: &str) -> Result<VersionSet, ReqParseError> {
         if input == "" {
-            return Ok(VersionReq { predicates: vec![
+            return Ok(VersionSet { predicates: vec![
                 Predicate {
                     op: Wildcard(Major),
                     major: 0,
@@ -213,34 +252,34 @@ impl VersionReq {
             Err(e) => return Err(e),
         }
 
-        Ok(VersionReq { predicates: predicates })
+        Ok(VersionSet { predicates: predicates })
     }
 
-    /// `exact()` is a factory method which creates a `VersionReq` with one exact constraint.
+    /// `exact()` is a factory method which creates a `VersionSet` with one exact constraint.
     ///
     /// # Examples
     ///
     /// ```
-    /// use semver::VersionReq;
+    /// use semver::VersionSet;
     /// use semver::Version;
     ///
     /// let version = Version { major: 1, minor: 1, patch: 1, pre: vec![], build: vec![] };
-    /// let exact = VersionReq::exact(&version);
+    /// let exact = VersionSet::exact(&version);
     /// ```
-    pub fn exact(version: &Version) -> VersionReq {
-        VersionReq { predicates: vec!(Predicate::exact(version)) }
+    pub fn exact(version: &Version) -> VersionSet {
+        VersionSet { predicates: vec!(Predicate::exact(version)) }
     }
 
-    /// `matches()` matches a given `Version` against this `VersionReq`.
+    /// `matches()` matches a given `Version` against this `VersionSet`.
     ///
     /// # Examples
     ///
     /// ```
-    /// use semver::VersionReq;
+    /// use semver::VersionSet;
     /// use semver::Version;
     ///
     /// let version = Version { major: 1, minor: 1, patch: 1, pre: vec![], build: vec![] };
-    /// let exact = VersionReq::exact(&version);
+    /// let exact = VersionSet::exact(&version);
     ///
     /// assert!(exact.matches(&version));
     /// ```
@@ -758,6 +797,24 @@ fn is_sigil(c: char) -> bool {
 
 impl fmt::Display for VersionReq {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        if self.sets.is_empty() {
+            try!(write!(fmt, "*"));
+        } else {
+            for (i, ref set) in self.sets.iter().enumerate() {
+                if i == 0 {
+                    try!(write!(fmt, "{}", set));
+                } else {
+                    try!(write!(fmt, " || {}", set));
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl fmt::Display for VersionSet {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         if self.predicates.is_empty() {
             try!(write!(fmt, "*"));
         } else {
@@ -826,7 +883,7 @@ impl fmt::Display for Op {
 
 #[cfg(test)]
 mod test {
-    use super::VersionReq;
+    use super::{VersionReq, VersionSet};
     use super::super::version::Version;
     use super::ReqParseError::{
         InvalidVersionRequirement,
@@ -925,8 +982,9 @@ mod test {
         assert_not_match(&r, &["2.1.0", "2.2.0-alpha1", "2.0.0-alpha2", "1.0.0-alpha2"]);
     }
 
+    // Test the `VersionSet` matching functionality with a set of comma-separated requirements.
     #[test]
-    pub fn test_multiple() {
+    pub fn test_sets() {
         let r = req("> 0.0.9, <= 2.5.3");
         assert_eq!(r.to_string(), "> 0.0.9, <= 2.5.3".to_string());
         assert_match(&r, &["0.0.10", "1.0.0", "2.5.3"]);
@@ -945,14 +1003,27 @@ mod test {
         assert_match(&r, &["0.1.6", "0.1.9"]);
         assert_not_match(&r, &["0.1.0", "0.1.4", "0.2.0"]);
 
-        assert!(VersionReq::parse("> 0.1.0,").is_err());
-        assert!(VersionReq::parse("> 0.3.0, ,").is_err());
+        assert!(VersionSet::parse("> 0.1.0,").is_err());
+        assert!(VersionSet::parse("> 0.3.0, ,").is_err());
 
         let r = req(">=0.5.1-alpha3, <0.6");
         assert_eq!(r.to_string(), ">= 0.5.1-alpha3, < 0.6".to_string());
         assert_match(&r, &["0.5.1-alpha3", "0.5.1-alpha4", "0.5.1-beta", "0.5.1", "0.5.5"]);
         assert_not_match(&r, &["0.5.1-alpha1", "0.5.2-alpha3", "0.5.5-pre", "0.5.0-pre"]);
         assert_not_match(&r, &["0.6.0", "0.6.0-pre"]);
+    }
+
+    // Test the `VersionReq` matching functionality with a set of "||"-separated version sets.
+    #[test]
+    pub fn test_comparator_sets() {
+        // Don't match any of version 1.*
+        let r = req(">= 2.0.0 || < 1.0.0");
+        assert_eq!(r.to_string(), ">= 2.0.0 || < 1.0.0".to_string());
+
+        assert_match(&r, &["0.9.0", "2.0.0", "2.1.0"]);
+        assert_not_match(&r, &["1.0.0", "1.9.9"]);
+
+        assert!(VersionReq::parse("> 1.2.3 ||| < 0.9.8").is_err());
     }
 
     #[test]
