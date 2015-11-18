@@ -37,6 +37,7 @@ named!(version<&[u8], super::Version>, chain!(
 #[cfg(test)]
 mod tests {
     use super::number;
+    use super::dot_number;
     use super::version;
     use nom::IResult::Done;
     use Version;
@@ -46,6 +47,13 @@ mod tests {
         let v = "10";
 
         assert_eq!(number(v.as_bytes()), Done(&[][..], 10));
+    }
+
+    #[test]
+    fn parse_dot_number() {
+        let v = ".10";
+
+        assert_eq!(dot_number(v.as_bytes()), Done(&[][..], 10));
     }
 
     #[test]
