@@ -27,16 +27,9 @@ fn word(i: &[u8]) -> IResult<&[u8], String> {
 }
 
 /// parse a . and then a u32
-named!(dot_number<&[u8], u32>, chain!(
-        tag!(".") ~
-        i: number, || { i }
-));
+named!(dot_number<&[u8], u32>, preceded!(char!('.'), number));
 
-named!(pre<&[u8], Option<String> >, opt!(complete!(chain!(
-        tag!("-") ~
-        w: word, || { w }
-))));
-
+named!(pre<&[u8], Option<String> >, opt!(complete!(preceded!(char!('-'), word))));
 
 /// parse a version
 ///
