@@ -11,6 +11,7 @@ pub struct Version {
     major: u32,
     minor: u32,
     patch: u32,
+    pre: Option<String>,
 }
 
 /// An error type for this crate
@@ -53,6 +54,7 @@ mod tests {
                        major: 10,
                        minor: 0,
                        patch: 0,
+                       pre: None,
                    });
     }
 
@@ -66,6 +68,7 @@ mod tests {
                        major: 10,
                        minor: 11,
                        patch: 0,
+                       pre: None,
                    });
     }
 
@@ -79,6 +82,20 @@ mod tests {
                        major: 10,
                        minor: 11,
                        patch: 12,
+                       pre: None,
+                   });
+    }
+
+    #[test]
+    fn parse_pre() {
+        let version = "1.0.0-alpha";
+        let version = Version::parse(version).unwrap();
+        assert_eq!(version,
+                   Version {
+                       major: 1,
+                       minor: 0,
+                       patch: 0,
+                       pre: Some(String::from("alpha")),
                    });
     }
 }

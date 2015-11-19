@@ -19,11 +19,24 @@ fn number(i: &[u8]) -> IResult<&[u8], u32> {
              |d| str::FromStr::from_str(str::from_utf8(d).unwrap()))
 }
 
+/// parse a word
+fn word(i: &[u8]) -> IResult<&[u8], String> {
+    map_res!(i,
+             nom::alphanumeric,
+             |d: &[u8]| String::from_utf8(d.to_vec()))
+}
+
 /// parse a . and then a u32
 named!(dot_number<&[u8], u32>, chain!(
         tag!(".") ~
         i: number, || { i }
 ));
+
+named!(pre<&[u8], Option<String> >, opt!(complete!(chain!(
+        tag!("-") ~
+        w: word, || { w }
+))));
+
 
 /// parse a version
 ///
@@ -38,12 +51,26 @@ named!(version<&[u8], super::Version>, chain!(
         major: number ~
         rest: opt!(complete!(chain!(
                 minor: dot_number ~
-                patch: opt!(complete!(dot_number)),
-                || { (minor, patch.unwrap_or(0)) }
+                patch_pre: opt!(complete!(chain!(
+                    patch: dot_number ~
+                    pre: pre,
+                    || { (patch, pre) }
+                ))),
+                || {
+                    let (patch, pre) = match patch_pre {
+                        Some((patch, ref pre)) => (patch, pre.clone()),
+                        None => (0, None),
+                    };
+
+                    (minor, patch, pre)
+                }
         ))),
         || {
-            let (minor, patch) = rest.unwrap_or((0, 0));
-            super::Version { major: major, minor: minor, patch: patch }
+            let (minor, patch, pre) = match rest {
+                Some((minor, patch, ref pre)) => (minor, patch, pre.clone()),
+                None => (0, 0, None),
+            };
+            super::Version { major: major, minor: minor, patch: patch, pre: pre }
         }
 ));
 
@@ -80,6 +107,7 @@ mod tests {
             major: 10,
             minor: 0,
             patch: 0,
+            pre: None,
         };
 
         assert_eq!(version(v1), done(v2));
@@ -92,6 +120,7 @@ mod tests {
             major: 10,
             minor: 11,
             patch: 0,
+            pre: None,
         };
 
         assert_eq!(version(v1), done(v2));
@@ -104,6 +133,20 @@ mod tests {
             major: 10,
             minor: 11,
             patch: 12,
+            pre: None,
+        };
+
+        assert_eq!(version(v1), done(v2));
+    }
+
+    #[test]
+    fn parse_pre() {
+        let v1 = "1.0.0-alpha".as_bytes();
+        let v2 = Version {
+            major: 1,
+            minor: 0,
+            patch: 0,
+            pre: Some(String::from("alpha")),
         };
 
         assert_eq!(version(v1), done(v2));
