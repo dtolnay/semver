@@ -87,7 +87,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_pre() {
+    fn parse_pre_basic() {
         let version = "1.0.0-alpha";
         let version = Version::parse(version).unwrap();
         assert_eq!(version,
@@ -96,6 +96,20 @@ mod tests {
                        minor: 0,
                        patch: 0,
                        pre: Some(String::from("alpha")),
+                   });
+    }
+
+    #[test]
+    fn parse_pre_dot() {
+        let version = "1.0.0-alpha.1";
+        let version = Version::parse(version).unwrap();
+
+        assert_eq!(version,
+                   Version {
+                       major: 1,
+                       minor: 0,
+                       patch: 0,
+                       pre: Some(String::from("alpha.1")),
                    });
     }
 }

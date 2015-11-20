@@ -19,10 +19,21 @@ fn number(i: &[u8]) -> IResult<&[u8], u32> {
              |d| str::FromStr::from_str(str::from_utf8(d).unwrap()))
 }
 
+fn ascii_or_hyphen(chr: u8) -> bool {
+    // dot
+    chr == 46 ||
+    // 0-9
+    (chr >= 48 && chr <= 57) ||
+    // A-Z
+    (chr >= 65 && chr <= 90) ||
+    // a-z
+    (chr >= 97 && chr <= 122)
+}
+
 /// parse a word
 fn word(i: &[u8]) -> IResult<&[u8], String> {
     map_res!(i,
-             nom::alphanumeric,
+             take_while!(ascii_or_hyphen),
              |d: &[u8]| String::from_utf8(d.to_vec()))
 }
 
@@ -133,13 +144,26 @@ mod tests {
     }
 
     #[test]
-    fn parse_pre() {
+    fn parse_pre_basic() {
         let v1 = "1.0.0-alpha".as_bytes();
         let v2 = Version {
             major: 1,
             minor: 0,
             patch: 0,
             pre: Some(String::from("alpha")),
+        };
+
+        assert_eq!(version(v1), done(v2));
+    }
+
+    #[test]
+    fn parse_pre_dot() {
+        let v1 = "1.0.0-alpha.1".as_bytes();
+        let v2 = Version {
+            major: 1,
+            minor: 0,
+            patch: 0,
+            pre: Some(String::from("alpha.1")),
         };
 
         assert_eq!(version(v1), done(v2));
