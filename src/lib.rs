@@ -50,8 +50,8 @@ mod tests {
     fn test_parse() {
         assert_eq!(Version::parse(""), Err(SemVerError::GenericError));
         assert_eq!(Version::parse("  "), Err(SemVerError::GenericError));
-        //assert_eq!(Version::parse("1"), Err(SemVerError::GenericError));
-        //assert_eq!(Version::parse("1.2"), Err(SemVerError::GenericError));
+        assert_eq!(Version::parse("1"), Err(SemVerError::GenericError));
+        assert_eq!(Version::parse("1.2"), Err(SemVerError::GenericError));
         //assert_eq!(Version::parse("1.2.3-"), Err(SemVerError::GenericError));
         assert_eq!(Version::parse("a.b.c"), Err(SemVerError::GenericError));
 
