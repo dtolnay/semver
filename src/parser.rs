@@ -41,6 +41,13 @@ fn word(i: &[u8]) -> IResult<&[u8], String> {
 named!(dot_number<&[u8], u32>, preceded!(char!('.'), number));
 
 named!(pre<&[u8], Option<String> >, opt!(complete!(preceded!(char!('-'), word))));
+named!(build<&[u8], Option<String> >, opt!(complete!(preceded!(char!('+'), word))));
+
+named!(extras<&[u8], (Option<String>, Option<String>) >, chain!(
+        pre: pre ~
+        build: build,
+        || { (pre, build) }
+));
 
 /// parse a version
 ///
@@ -57,24 +64,24 @@ named!(version<&[u8], super::Version>, chain!(
                 minor: dot_number ~
                 patch_pre: opt!(complete!(chain!(
                     patch: dot_number ~
-                    pre: pre,
-                    || { (patch, pre) }
+                    extras: extras,
+                    || { (patch, extras.0.clone(), extras.1.clone()) }
                 ))),
                 || {
-                    let (patch, pre) = match patch_pre {
-                        Some((patch, ref pre)) => (patch, pre.clone()),
-                        None => (0, None),
+                    let (patch, pre, build) = match patch_pre {
+                        Some((patch, ref pre, ref build)) => (patch, pre.clone(), build.clone()),
+                        None => (0, None, None),
                     };
 
-                    (minor, patch, pre)
+                    (minor, patch, pre, build)
                 }
         ))),
         || {
-            let (minor, patch, pre) = match rest {
-                Some((minor, patch, ref pre)) => (minor, patch, pre.clone()),
-                None => (0, 0, None),
+            let (minor, patch, pre, build) = match rest {
+                Some((minor, patch, ref pre, ref build)) => (minor, patch, pre.clone(), build.clone()),
+                None => (0, 0, None, None),
             };
-            super::Version { major: major, minor: minor, patch: patch, pre: pre }
+            super::Version { major: major, minor: minor, patch: patch, pre: pre, build: build }
         }
 ));
 
@@ -112,6 +119,7 @@ mod tests {
             minor: 0,
             patch: 0,
             pre: None,
+            build: None,
         };
 
         assert_eq!(version(v1), done(v2));
@@ -125,6 +133,7 @@ mod tests {
             minor: 11,
             patch: 0,
             pre: None,
+            build: None,
         };
 
         assert_eq!(version(v1), done(v2));
@@ -138,6 +147,7 @@ mod tests {
             minor: 11,
             patch: 12,
             pre: None,
+            build: None,
         };
 
         assert_eq!(version(v1), done(v2));
@@ -151,6 +161,7 @@ mod tests {
             minor: 0,
             patch: 0,
             pre: Some(String::from("alpha")),
+            build: None,
         };
 
         assert_eq!(version(v1), done(v2));
@@ -164,6 +175,35 @@ mod tests {
             minor: 0,
             patch: 0,
             pre: Some(String::from("alpha.1")),
+            build: None,
+        };
+
+        assert_eq!(version(v1), done(v2));
+    }
+
+    #[test]
+    fn parse_build_basic() {
+        let v1 = "1.0.0-alpha+001".as_bytes();
+        let v2 = Version {
+            major: 1,
+            minor: 0,
+            patch: 0,
+            pre: Some(String::from("alpha")),
+            build: Some(String::from("001")),
+        };
+
+        assert_eq!(version(v1), done(v2));
+    }
+
+    #[test]
+    fn parse_build_no_pre() {
+        let v1 = "1.0.0+001".as_bytes();
+        let v2 = Version {
+            major: 1,
+            minor: 0,
+            patch: 0,
+            pre: None,
+            build: Some(String::from("001")),
         };
 
         assert_eq!(version(v1), done(v2));

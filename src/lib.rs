@@ -12,6 +12,7 @@ pub struct Version {
     minor: u32,
     patch: u32,
     pre: Option<String>,
+    build: Option<String>,
 }
 
 /// An error type for this crate
@@ -55,6 +56,7 @@ mod tests {
                        minor: 0,
                        patch: 0,
                        pre: None,
+                       build: None,
                    });
     }
 
@@ -69,6 +71,7 @@ mod tests {
                        minor: 11,
                        patch: 0,
                        pre: None,
+                       build: None,
                    });
     }
 
@@ -83,6 +86,7 @@ mod tests {
                        minor: 11,
                        patch: 12,
                        pre: None,
+                       build: None,
                    });
     }
 
@@ -96,6 +100,7 @@ mod tests {
                        minor: 0,
                        patch: 0,
                        pre: Some(String::from("alpha")),
+                       build: None,
                    });
     }
 
@@ -110,6 +115,37 @@ mod tests {
                        minor: 0,
                        patch: 0,
                        pre: Some(String::from("alpha.1")),
+                       build: None,
+                   });
+    }
+
+    #[test]
+    fn parse_build() {
+        let version = "1.0.0-alpha+100";
+        let version = Version::parse(version).unwrap();
+
+        assert_eq!(version,
+                   Version {
+                       major: 1,
+                       minor: 0,
+                       patch: 0,
+                       pre: Some(String::from("alpha")),
+                       build: Some(String::from("100")),
+                   });
+    }
+
+    #[test]
+    fn parse_build_no_pre() {
+        let version = "1.0.0+100";
+        let version = Version::parse(version).unwrap();
+
+        assert_eq!(version,
+                   Version {
+                       major: 1,
+                       minor: 0,
+                       patch: 0,
+                       pre: None,
+                       build: Some(String::from("100")),
                    });
     }
 }
