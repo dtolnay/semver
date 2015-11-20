@@ -159,6 +159,14 @@ impl VersionReq {
     }
 }
 
+impl<I: IntoIterator<Item=VersionSet>> From<I> for VersionReq {
+    fn from(i: I) -> Self {
+        VersionReq {
+            sets: i.into_iter().collect(),
+        }
+    }
+}
+
 impl VersionSet {
     /// `any()` is a factory method which creates a `VersionSet` with no constraints. In other
     /// words, any version will match against it.
