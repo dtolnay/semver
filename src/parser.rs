@@ -60,28 +60,11 @@ named!(extras<&[u8], (Option<String>, Option<String>) >, chain!(
 /// If some of the versions aren't present, gives a zero.
 named!(version<&[u8], super::Version>, chain!(
         major: number ~
-        rest: opt!(complete!(chain!(
-                minor: dot_number ~
-                patch_pre: opt!(complete!(chain!(
-                    patch: dot_number ~
-                    extras: extras,
-                    || { (patch, extras.0.clone(), extras.1.clone()) }
-                ))),
-                || {
-                    let (patch, pre, build) = match patch_pre {
-                        Some((patch, ref pre, ref build)) => (patch, pre.clone(), build.clone()),
-                        None => (0, None, None),
-                    };
-
-                    (minor, patch, pre, build)
-                }
-        ))),
+        minor: dot_number ~
+        patch: dot_number ~
+        extras: extras,
         || {
-            let (minor, patch, pre, build) = match rest {
-                Some((minor, patch, ref pre, ref build)) => (minor, patch, pre.clone(), build.clone()),
-                None => (0, 0, None, None),
-            };
-            super::Version { major: major, minor: minor, patch: patch, pre: pre, build: build }
+            super::Version { major: major, minor: minor, patch: patch, pre: extras.0.clone(), build: extras.1.clone() }
         }
 ));
 
@@ -109,34 +92,6 @@ mod tests {
         let v = ".10".as_bytes();
 
         assert_eq!(dot_number(v), done(10));
-    }
-
-    #[test]
-    fn parse_major() {
-        let v1 = "10".as_bytes();
-        let v2 = Version {
-            major: 10,
-            minor: 0,
-            patch: 0,
-            pre: None,
-            build: None,
-        };
-
-        assert_eq!(version(v1), done(v2));
-    }
-
-    #[test]
-    fn parse_minor() {
-        let v1 = "10.11".as_bytes();
-        let v2 = Version {
-            major: 10,
-            minor: 11,
-            patch: 0,
-            pre: None,
-            build: None,
-        };
-
-        assert_eq!(version(v1), done(v2));
     }
 
     #[test]
