@@ -12,4 +12,4 @@ Semantic version parsing and comparison.
 """
 
 [dependencies]
-nom = "*"
+nom = "1.0.1"
