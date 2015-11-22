@@ -57,63 +57,63 @@ mod tests {
 
         //assert_eq!(Version::parse("1.2.3 abc"), Err(SemVerError::GenericError));
 
-        assert!(Version::parse("1.2.3") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: None,
             build: None,
         }));
-        assert!(Version::parse("  1.2.3  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: None,
             build: None,
         }));
-        assert!(Version::parse("1.2.3-alpha1") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3-alpha1"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: Some(String::from("alpha1")),
             build: None,
         }));
-        assert!(Version::parse("  1.2.3-alpha1  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3-alpha1  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: Some(String::from("alpha1")),
             build: None
         }));
-        assert!(Version::parse("1.2.3+build5") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3+build5"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: None,
             build: Some(String::from("build5")),
         }));
-        assert!(Version::parse("  1.2.3+build5  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3+build5  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: None,
             build: Some(String::from("build5")),
         }));
-        assert!(Version::parse("1.2.3-alpha1+build5") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3-alpha1+build5"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: Some(String::from("alpha1")),
             build: Some(String::from("build5")),
         }));
-        assert!(Version::parse("  1.2.3-alpha1+build5  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3-alpha1+build5  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: Some(String::from("alpha1")),
             build: Some(String::from("build5")),
         }));
-        assert!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  ") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
