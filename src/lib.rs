@@ -20,100 +20,104 @@ pub struct Version {
 /// Currently, just a generic error. Will make this nicer later.
 #[derive(PartialEq,Debug)]
 enum SemVerError {
-    GenericError,
+    ParseError(String),
 }
 
 /// A Result type for errors
 pub type Result<T> = result::Result<T, SemVerError>;
-
-impl From<()> for SemVerError {
-    fn from(_: ()) -> SemVerError {
-        SemVerError::GenericError
-    }
-}
 
 impl Version {
     /// Create a Version from a string
     ///
     /// Currently supported: x, x.y, and x.y.z versions.
     pub fn parse(version: &str) -> Result<Version> {
-        Ok(try!(parser::try_parse(version.trim().as_bytes())))
+        let res = parser::try_parse(version.trim().as_bytes());
+
+        match res {
+            // Convert plain String error into proper ParseError
+            Err(e) => Err(SemVerError::ParseError(e)),
+            Ok(v) => Ok(v),
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::result;
     use super::Version;
     use super::SemVerError;
 
     #[test]
     fn test_parse() {
-        assert_eq!(Version::parse(""), Err(SemVerError::GenericError));
-        assert_eq!(Version::parse("  "), Err(SemVerError::GenericError));
-        assert_eq!(Version::parse("1"), Err(SemVerError::GenericError));
-        assert_eq!(Version::parse("1.2"), Err(SemVerError::GenericError));
-        //assert_eq!(Version::parse("1.2.3-"), Err(SemVerError::GenericError));
-        assert_eq!(Version::parse("a.b.c"), Err(SemVerError::GenericError));
+        fn parse_error(e: &str) -> result::Result<Version, SemVerError> {
+            return Err(SemVerError::ParseError(e.to_string()))
+        }
 
-        //assert_eq!(Version::parse("1.2.3 abc"), Err(SemVerError::GenericError));
+        assert_eq!(Version::parse(""),          parse_error("Parse error"));
+        assert_eq!(Version::parse("  "),        parse_error("Parse error"));
+        assert_eq!(Version::parse("1"),         parse_error("Parse error"));
+        assert_eq!(Version::parse("1.2"),       parse_error("Parse error"));
+        assert_eq!(Version::parse("1.2.3-"),    parse_error("Failed with unparsed input: '-'"));
+        assert_eq!(Version::parse("a.b.c"),     parse_error("Parse error"));
+        assert_eq!(Version::parse("1.2.3 abc"), parse_error("Failed with unparsed input: ' abc'"));
 
-        assert!(Version::parse("1.2.3") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: None,
             build: None,
         }));
-        assert!(Version::parse("  1.2.3  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: None,
             build: None,
         }));
-        assert!(Version::parse("1.2.3-alpha1") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3-alpha1"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: Some(String::from("alpha1")),
             build: None,
         }));
-        assert!(Version::parse("  1.2.3-alpha1  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3-alpha1  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: Some(String::from("alpha1")),
             build: None
         }));
-        assert!(Version::parse("1.2.3+build5") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3+build5"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: None,
             build: Some(String::from("build5")),
         }));
-        assert!(Version::parse("  1.2.3+build5  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3+build5  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: None,
             build: Some(String::from("build5")),
         }));
-        assert!(Version::parse("1.2.3-alpha1+build5") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3-alpha1+build5"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: Some(String::from("alpha1")),
             build: Some(String::from("build5")),
         }));
-        assert!(Version::parse("  1.2.3-alpha1+build5  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3-alpha1+build5  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: Some(String::from("alpha1")),
             build: Some(String::from("build5")),
         }));
-        assert!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  ") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,

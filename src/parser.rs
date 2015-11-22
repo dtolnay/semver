@@ -5,10 +5,18 @@ use nom::IResult;
 /// Try to parse a version
 ///
 /// If there's an error, then you just get (). for now.
-pub fn try_parse(i: &[u8]) -> Result<super::Version, ()> {
+pub fn try_parse(i: &[u8]) -> Result<super::Version, String> {
     match version(i) {
-        IResult::Done(_, d) => Ok(d),
-        _ => Err(()),
+        IResult::Done(rest, version) => {
+            if rest.len() > 0 {
+                let err = format!("Failed with unparsed input: '{}'",
+                                  String::from_utf8(rest.to_vec()).unwrap());
+                Err(err)
+            } else{
+                Ok(version)
+            }
+        },
+        _ => Err("Parse error".to_string()),
     }
 }
 
@@ -19,6 +27,7 @@ fn number(i: &[u8]) -> IResult<&[u8], u32> {
              |d| str::FromStr::from_str(str::from_utf8(d).unwrap()))
 }
 
+/// Parse an alphanumeric or a dot ("[0-9A-Za-z.]" in regex)
 fn ascii_or_hyphen(chr: u8) -> bool {
     // dot
     chr == 46 ||
@@ -30,18 +39,23 @@ fn ascii_or_hyphen(chr: u8) -> bool {
     (chr >= 97 && chr <= 122)
 }
 
-/// parse a word
+/// Parse a word
 fn word(i: &[u8]) -> IResult<&[u8], String> {
     map_res!(i,
              take_while!(ascii_or_hyphen),
-             |d: &[u8]| String::from_utf8(d.to_vec()))
+             |d: &[u8]|
+                 match d.len() {
+                     0 => Err("Expected 1 or more characters"),
+                     _ => Ok(String::from_utf8(d.to_vec()).unwrap()),
+                 }
+             )
 }
 
 /// parse a . and then a u32
 named!(dot_number<&[u8], u32>, preceded!(char!('.'), number));
 
-named!(pre<&[u8], Option<String> >, opt!(complete!(preceded!(char!('-'), word))));
-named!(build<&[u8], Option<String> >, opt!(complete!(preceded!(char!('+'), word))));
+named!(pre<&[u8], Option<String> >,   opt!(complete!(preceded!(tag!("-"), word))));
+named!(build<&[u8], Option<String> >, opt!(complete!(preceded!(tag!("+"), word))));
 
 named!(extras<&[u8], (Option<String>, Option<String>) >, chain!(
         pre: pre ~
@@ -64,7 +78,13 @@ named!(version<&[u8], super::Version>, chain!(
         patch: dot_number ~
         extras: extras,
         || {
-            super::Version { major: major, minor: minor, patch: patch, pre: extras.0.clone(), build: extras.1.clone() }
+            super::Version {
+                major: major,
+                minor: minor,
+                patch: patch,
+                pre: extras.0.clone(),
+                build: extras.1.clone(),
+            }
         }
 ));
 
