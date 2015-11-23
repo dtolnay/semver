@@ -13,6 +13,7 @@ use std::fmt;
 use std::str::CharIndices;
 
 use Version;
+use version::Identifier;
 
 use self::VersionComponent::{NumericVersionComponent, WildcardVersionComponent};
 use self::Op::{Ex, Gt, GtEq, Lt, LtEq, Tilde, Compatible, Wildcard};
@@ -76,7 +77,7 @@ struct Predicate {
     major: u64,
     minor: Option<u64>,
     patch: Option<u64>,
-    pre: Vec<String>,
+    pre: Vec<Identifier>,
 }
 
 struct PredBuilder {
@@ -84,7 +85,7 @@ struct PredBuilder {
     major: Option<u64>,
     minor: Option<u64>,
     patch: Option<u64>,
-    pre: Vec<String>,
+    pre: Vec<Identifier>,
     has_pre: bool,
 }
 
@@ -778,11 +779,13 @@ fn parse_version_part(s: &str) -> Result<VersionComponent, ReqParseError> {
     Ok(NumericVersionComponent(ret))
 }
 
-fn parse_ident(s: &str) -> Result<String, ReqParseError> {
+fn parse_ident(s: &str) -> Result<Identifier, ReqParseError> {
     if s.is_empty() {
         return Err(InvalidIdentifier)
+    } else if s.chars().all(|c| c.is_digit(10)) && s.chars().next() != Some('0') {
+        s.parse::<u64>().map(Identifier::Numeric).or(Err(InvalidIdentifier))
     } else {
-        Ok(s.to_owned())
+        Ok(Identifier::Alphanumeric(s.to_owned()))
     }
 }
 

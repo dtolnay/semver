@@ -59,8 +59,8 @@
 //! ```{rust}
 //! use semver::Version;
 //!
-//! assert!(Version::parse("1.2.3-alpha")  != Version::parse("1.2.3-beta"));
-//! assert!(Version::parse("1.2.3-alpha2") >  Version::parse("1.2.0"));
+//! assert!(Version::parse("1.2.3-alpha").unwrap()  != Version::parse("1.2.3-beta").unwrap());
+//! assert!(Version::parse("1.2.3-alpha2").unwrap() >  Version::parse("1.2.0").unwrap());
 //! ```
 //!
 //! If you explicitly need to modify a Version, SemVer also allows you to

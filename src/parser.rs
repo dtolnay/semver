@@ -2,6 +2,8 @@ use std::str;
 use nom;
 use nom::IResult;
 
+use version::Identifier;
+
 /// Try to parse a version
 ///
 /// If there's an error, then you just get (). for now.
@@ -40,7 +42,7 @@ fn ascii_or_hyphen(chr: u8) -> bool {
 }
 
 /// Parse an identifier
-fn identifiers(i: &[u8]) -> IResult<&[u8], Vec<String>> {
+fn identifiers(i: &[u8]) -> IResult<&[u8], Vec<Identifier>> {
     map_res!(i,
              take_while!(ascii_or_hyphen),
              |d: &[u8]|
@@ -51,7 +53,16 @@ fn identifiers(i: &[u8]) -> IResult<&[u8], Vec<String>> {
                         let s = String::from_utf8(d.to_vec()).unwrap();
                         let identifiers: Vec<&str> = s.split('.').collect();
 
-                        Ok(identifiers.into_iter().map(String::from).collect::<Vec<String>>())
+                        let mut result = Vec::new();
+
+                        for identifier in identifiers {
+                            match identifier.parse() {
+                                Ok(n) => result.push(Identifier::Numeric(n)),
+                                Err(_) => result.push(Identifier::Alphanumeric(identifier.to_string())),
+                            }
+                        }
+
+                        Ok(result)
                      },
                  }
              )
@@ -60,10 +71,10 @@ fn identifiers(i: &[u8]) -> IResult<&[u8], Vec<String>> {
 /// parse a . and then a u32
 named!(dot_number<&[u8], u64>, preceded!(char!('.'), number));
 
-named!(pre<&[u8], Option<Vec<String> > >,   opt!(complete!(preceded!(tag!("-"), identifiers))));
-named!(build<&[u8], Option<Vec<String> > >, opt!(complete!(preceded!(tag!("+"), identifiers))));
+named!(pre<&[u8], Option<Vec<Identifier> > >,   opt!(complete!(preceded!(tag!("-"), identifiers))));
+named!(build<&[u8], Option<Vec<Identifier> > >, opt!(complete!(preceded!(tag!("+"), identifiers))));
 
-named!(extras<&[u8], (Option<Vec<String>>, Option<Vec<String>>) >, chain!(
+named!(extras<&[u8], (Option<Vec<Identifier>>, Option<Vec<Identifier>>) >, chain!(
         pre: pre ~
         build: build,
         || { (pre, build) }
@@ -100,6 +111,7 @@ mod tests {
     use super::number;
     use super::dot_number;
     use super::version;
+    use version::Identifier;
     use Version;
 
     fn done<T>(x: T) -> ::nom::IResult<&'static [u8], T> {
@@ -141,7 +153,7 @@ mod tests {
             major: 1,
             minor: 0,
             patch: 0,
-            pre: vec![String::from("alpha")],
+            pre: vec![Identifier::Alphanumeric(String::from("alpha"))],
             build: Vec::new(),
         };
 
@@ -155,7 +167,7 @@ mod tests {
             major: 1,
             minor: 0,
             patch: 0,
-            pre: vec![String::from("alpha"), String::from("1")],
+            pre: vec![Identifier::Alphanumeric(String::from("alpha")), Identifier::Numeric(1)],
             build: Vec::new(),
         };
 
@@ -169,8 +181,8 @@ mod tests {
             major: 1,
             minor: 0,
             patch: 0,
-            pre: vec![String::from("alpha")],
-            build: vec![String::from("001")],
+            pre: vec![Identifier::Alphanumeric(String::from("alpha"))],
+            build: vec![Identifier::Numeric(1)],
         };
 
         assert_eq!(version(v1), done(v2));
@@ -184,7 +196,7 @@ mod tests {
             minor: 0,
             patch: 0,
             pre: Vec::new(),
-            build: vec![String::from("001")],
+            build: vec![Identifier::Numeric(1)],
         };
 
         assert_eq!(version(v1), done(v2));
