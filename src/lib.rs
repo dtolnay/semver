@@ -11,8 +11,8 @@ pub struct Version {
     major: u32,
     minor: u32,
     patch: u32,
-    pre: Option<String>,
-    build: Option<String>,
+    pre: Vec<String>,
+    build: Vec<String>,
 }
 
 /// An error type for this crate
@@ -65,71 +65,79 @@ mod tests {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: None,
-            build: None,
+            pre: Vec::new(),
+            build: Vec::new(),
         }));
         assert_eq!(Version::parse("  1.2.3  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: None,
-            build: None,
+            pre: Vec::new(),
+            build: Vec::new(),
         }));
         assert_eq!(Version::parse("1.2.3-alpha1"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: Some(String::from("alpha1")),
-            build: None,
+            pre: vec![String::from("alpha1")],
+            build: Vec::new(),
         }));
         assert_eq!(Version::parse("  1.2.3-alpha1  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: Some(String::from("alpha1")),
-            build: None
+            pre: vec![String::from("alpha1")],
+            build: Vec::new(),
         }));
         assert_eq!(Version::parse("1.2.3+build5"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: None,
-            build: Some(String::from("build5")),
+            pre: Vec::new(),
+            build: vec![String::from("build5")],
         }));
         assert_eq!(Version::parse("  1.2.3+build5  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: None,
-            build: Some(String::from("build5")),
+            pre: Vec::new(),
+            build: vec![String::from("build5")],
         }));
         assert_eq!(Version::parse("1.2.3-alpha1+build5"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: Some(String::from("alpha1")),
-            build: Some(String::from("build5")),
+            pre: vec![String::from("alpha1")],
+            build: vec![String::from("build5")],
         }));
         assert_eq!(Version::parse("  1.2.3-alpha1+build5  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: Some(String::from("alpha1")),
-            build: Some(String::from("build5")),
+            pre: vec![String::from("alpha1")],
+            build: vec![String::from("build5")],
         }));
         assert_eq!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: Some(String::from("1.alpha1.9")),
-            build: Some(String::from("build5.7.3aedf")),
+            pre: vec![String::from("1"),
+                      String::from("alpha1"),
+                      String::from("9"),
+            ],
+            build: vec![String::from("build5"),
+                        String::from("7"),
+                        String::from("3aedf"),
+            ],
         }));
         assert_eq!(Version::parse("0.4.0-beta.1+0851523"), Ok(Version {
             major: 0,
             minor: 4,
             patch: 0,
-            pre: Some(String::from("beta.1")),
-            build: Some(String::from("0851523")),
+            pre: vec![String::from("beta"),
+                      String::from("1"),
+            ],
+            build: vec![String::from("0851523")],
         }));
 
     }

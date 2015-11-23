@@ -39,14 +39,20 @@ fn ascii_or_hyphen(chr: u8) -> bool {
     (chr >= 97 && chr <= 122)
 }
 
-/// Parse a word
-fn word(i: &[u8]) -> IResult<&[u8], String> {
+/// Parse an identifier
+fn identifiers(i: &[u8]) -> IResult<&[u8], Vec<String>> {
     map_res!(i,
              take_while!(ascii_or_hyphen),
              |d: &[u8]|
                  match d.len() {
                      0 => Err("Expected 1 or more characters"),
-                     _ => Ok(String::from_utf8(d.to_vec()).unwrap()),
+                     _ => { 
+                        // too much allocation here because I'm lazy 
+                        let s = String::from_utf8(d.to_vec()).unwrap();
+                        let identifiers: Vec<&str> = s.split('.').collect();
+
+                        Ok(identifiers.into_iter().map(String::from).collect::<Vec<String>>())
+                     },
                  }
              )
 }
@@ -54,10 +60,10 @@ fn word(i: &[u8]) -> IResult<&[u8], String> {
 /// parse a . and then a u32
 named!(dot_number<&[u8], u32>, preceded!(char!('.'), number));
 
-named!(pre<&[u8], Option<String> >,   opt!(complete!(preceded!(tag!("-"), word))));
-named!(build<&[u8], Option<String> >, opt!(complete!(preceded!(tag!("+"), word))));
+named!(pre<&[u8], Option<Vec<String> > >,   opt!(complete!(preceded!(tag!("-"), identifiers))));
+named!(build<&[u8], Option<Vec<String> > >, opt!(complete!(preceded!(tag!("+"), identifiers))));
 
-named!(extras<&[u8], (Option<String>, Option<String>) >, chain!(
+named!(extras<&[u8], (Option<Vec<String>>, Option<Vec<String>>) >, chain!(
         pre: pre ~
         build: build,
         || { (pre, build) }
@@ -82,8 +88,8 @@ named!(version<&[u8], super::Version>, chain!(
                 major: major,
                 minor: minor,
                 patch: patch,
-                pre: extras.0.clone(),
-                build: extras.1.clone(),
+                pre: extras.0.clone().unwrap_or(Vec::new()),
+                build: extras.1.clone().unwrap_or(Vec::new()),
             }
         }
 ));
@@ -121,8 +127,8 @@ mod tests {
             major: 10,
             minor: 11,
             patch: 12,
-            pre: None,
-            build: None,
+            pre: Vec::new(),
+            build: Vec::new(),
         };
 
         assert_eq!(version(v1), done(v2));
@@ -135,8 +141,8 @@ mod tests {
             major: 1,
             minor: 0,
             patch: 0,
-            pre: Some(String::from("alpha")),
-            build: None,
+            pre: vec![String::from("alpha")],
+            build: Vec::new(),
         };
 
         assert_eq!(version(v1), done(v2));
@@ -149,8 +155,8 @@ mod tests {
             major: 1,
             minor: 0,
             patch: 0,
-            pre: Some(String::from("alpha.1")),
-            build: None,
+            pre: vec![String::from("alpha"), String::from("1")],
+            build: Vec::new(),
         };
 
         assert_eq!(version(v1), done(v2));
@@ -163,8 +169,8 @@ mod tests {
             major: 1,
             minor: 0,
             patch: 0,
-            pre: Some(String::from("alpha")),
-            build: Some(String::from("001")),
+            pre: vec![String::from("alpha")],
+            build: vec![String::from("001")],
         };
 
         assert_eq!(version(v1), done(v2));
@@ -177,8 +183,8 @@ mod tests {
             major: 1,
             minor: 0,
             patch: 0,
-            pre: None,
-            build: Some(String::from("001")),
+            pre: Vec::new(),
+            build: vec![String::from("001")],
         };
 
         assert_eq!(version(v1), done(v2));
