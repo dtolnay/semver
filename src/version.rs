@@ -11,14 +11,13 @@
 //! The `version` module gives you tools to create and compare SemVer-compliant
 //! versions.
 
-use std::ascii::AsciiExt;
 use std::cmp::{self, Ordering};
-use std::error::Error;
 use std::fmt;
 use std::hash;
 
-use self::Identifier::{Numeric, AlphaNumeric};
-use self::ParseError::{GenericFailure, IncorrectParse, NonAsciiIdentifier};
+use std::result;
+
+use parser;
 
 /// An identifier in the pre-release or build metadata.
 ///
@@ -29,19 +28,18 @@ pub enum Identifier {
     /// An identifier that's solely numbers.
     Numeric(u64),
     /// An identifier with letters and numbers.
-    AlphaNumeric(String)
+    Alphanumeric(String)
 }
 
 impl fmt::Display for Identifier {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Numeric(ref n) => fmt::Display::fmt(n, f),
-            AlphaNumeric(ref s) => fmt::Display::fmt(s, f),
+            Identifier::Numeric(ref n) => fmt::Display::fmt(n, f),
+            Identifier::Alphanumeric(ref s) => fmt::Display::fmt(s, f),
         }
     }
 }
-
 
 /// Represents a version number conforming to the semantic versioning scheme.
 #[derive(Clone, Eq, Debug)]
@@ -60,35 +58,26 @@ pub struct Version {
     pub build: Vec<Identifier>,
 }
 
-/// A `ParseError` is returned as the `Err` side of a `Result` when a version is
-/// attempted to be parsed.
-#[derive(Clone,PartialEq,Debug,PartialOrd)]
-pub enum ParseError {
-    /// All identifiers must be ASCII.
-    NonAsciiIdentifier,
-    /// The version was mis-parsed.
-    IncorrectParse(Version, String),
-    /// Any other failure.
-    GenericFailure,
+/// An error type for this crate
+///
+/// Currently, just a generic error. Will make this nicer later.
+#[derive(PartialEq,Debug)]
+enum SemVerError {
+    ParseError(String),
 }
+
+/// A Result type for errors
+pub type Result<T> = result::Result<T, SemVerError>;
 
 impl Version {
     /// Parse a string into a semver object.
-    pub fn parse(s: &str) -> Result<Version, ParseError> {
-        if !s.is_ascii() {
-            return Err(NonAsciiIdentifier)
-        }
-        let s = s.trim();
-        let v = parse_iter(&mut s.chars());
-        match v {
-            Some(v) => {
-                if v.to_string() == s {
-                    Ok(v)
-                } else {
-                    Err(IncorrectParse(v, s.to_string()))
-                }
-            }
-            None => Err(GenericFailure)
+    pub fn parse(version: &str) -> Result<Version> {
+        let res = parser::try_parse(version.trim().as_bytes());
+
+        match res {
+            // Convert plain String error into proper ParseError
+            Err(e) => Err(SemVerError::ParseError(e)),
+            Ok(v) => Ok(v),
         }
     }
 
@@ -201,34 +190,6 @@ impl cmp::Ord for Version {
     }
 }
 
-impl Error for ParseError {
-    fn description(&self) -> &str {
-        match *self {
-            ParseError::NonAsciiIdentifier
-                => "identifiers can only contain ascii characters",
-            ParseError::GenericFailure
-                | ParseError::IncorrectParse(..)
-                => "failed to parse semver from string",
-        }
-    }
-}
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ParseError::NonAsciiIdentifier => {
-                write!(f, "{}", self.description())
-            }
-            ParseError::GenericFailure => {
-                write!(f, "{}", self.description())
-            }
-            ParseError::IncorrectParse(ref a, ref b) => {
-                write!(f, "{}: {} could not be parsed from {:?}", self.description(), a, b)
-            }
-        }
-    }
-}
-
 impl hash::Hash for Version {
     fn hash<H: hash::Hasher>(&self, into: &mut H) {
         self.major.hash(into);
@@ -238,207 +199,104 @@ impl hash::Hash for Version {
     }
 }
 
-fn take_nonempty_prefix<T, F>(rdr: &mut T, pred: F) -> (String, Option<char>) where
-    T: Iterator<Item = char>,
-    F: Fn(char) -> bool
-{
-    let mut buf = String::new();
-    let mut ch = rdr.next();
-    loop {
-        match ch {
-            None => break,
-            Some(c) if !pred(c) => break,
-            Some(c) => {
-                buf.push(c);
-                ch = rdr.next();
-            }
-        }
-    }
-    (buf, ch)
-}
-
-fn take_num<T: Iterator<Item=char>>(rdr: &mut T) -> Option<(u64, Option<char>)> {
-    let (s, ch) = take_nonempty_prefix(rdr, |c| c.is_digit(10));
-    match s.parse::<u64>().ok() {
-        None => None,
-        Some(i) => Some((i, ch))
-    }
-}
-
-fn take_ident<T: Iterator<Item=char>>(rdr: &mut T) -> Option<(Identifier, Option<char>)> {
-    let (s,ch) = take_nonempty_prefix(rdr, |c| c.is_alphanumeric());
-
-    if s.len() == 0 {
-        None
-    } else if s.chars().all(|c| c.is_digit(10)) && s.chars().next() != Some('0') {
-        match s.parse::<u64>().ok() {
-            None => None,
-            Some(i) => Some((Numeric(i), ch))
-        }
-    } else {
-        Some((AlphaNumeric(s), ch))
-    }
-}
-
-fn expect(ch: Option<char>, c: char) -> Option<()> {
-    if ch != Some(c) {
-        None
-    } else {
-        Some(())
-    }
-}
-
-fn parse_iter<T: Iterator<Item=char>>(rdr: &mut T) -> Option<Version> {
-    let maybe_vers = take_num(rdr).and_then(|(major, ch)| {
-        expect(ch, '.').and_then(|_| Some(major))
-    }).and_then(|major| {
-        take_num(rdr).and_then(|(minor, ch)| {
-            expect(ch, '.').and_then(|_| Some((major, minor)))
-        })
-    }).and_then(|(major, minor)| {
-        take_num(rdr).and_then(|(patch, ch)| {
-           Some((major, minor, patch, ch))
-        })
-    });
-
-    let (major, minor, patch, ch) = match maybe_vers {
-        Some((a, b, c, d)) => (a, b, c, d),
-        None => return None
-    };
-
-    let mut pre = vec!();
-    let mut build = vec!();
-
-    let mut ch = ch;
-    if ch == Some('-') {
-        loop {
-            let (id, c) = match take_ident(rdr) {
-                Some((id, c)) => (id, c),
-                None => return None
-            };
-            pre.push(id);
-            ch = c;
-            if ch != Some('.') { break; }
-        }
-    }
-
-    if ch == Some('+') {
-        loop {
-            let (id, c) = match take_ident(rdr) {
-                Some((id, c)) => (id, c),
-                None => return None
-            };
-            build.push(id);
-            ch = c;
-            if ch != Some('.') { break; }
-        }
-    }
-
-    Some(Version {
-        major: major,
-        minor: minor,
-        patch: patch,
-        pre: pre,
-        build: build,
-    })
-}
-
 #[cfg(test)]
-mod test {
-    use super::{Version};
-    use super::ParseError::{IncorrectParse, GenericFailure};
-    use super::Identifier::{AlphaNumeric, Numeric};
+mod tests {
+    use std::result;
+    use super::Version;
+    use super::Identifier;
+    use super::SemVerError;
 
     #[test]
     fn test_parse() {
-        assert_eq!(Version::parse(""), Err(GenericFailure));
-        assert_eq!(Version::parse("  "), Err(GenericFailure));
-        assert_eq!(Version::parse("1"), Err(GenericFailure));
-        assert_eq!(Version::parse("1.2"), Err(GenericFailure));
-        assert_eq!(Version::parse("1.2.3-"), Err(GenericFailure));
-        assert_eq!(Version::parse("a.b.c"), Err(GenericFailure));
+        fn parse_error(e: &str) -> result::Result<Version, SemVerError> {
+            return Err(SemVerError::ParseError(e.to_string()))
+        }
 
-        let version = Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-            pre: vec!(),
-            build: vec!(),
-        };
-        let error = Err(IncorrectParse(version, "1.2.3 abc".to_string()));
-        assert_eq!(Version::parse("1.2.3 abc"), error);
+        assert_eq!(Version::parse(""),          parse_error("Parse error"));
+        assert_eq!(Version::parse("  "),        parse_error("Parse error"));
+        assert_eq!(Version::parse("1"),         parse_error("Parse error"));
+        assert_eq!(Version::parse("1.2"),       parse_error("Parse error"));
+        assert_eq!(Version::parse("1.2.3-"),    parse_error("Failed with unparsed input: '-'"));
+        assert_eq!(Version::parse("a.b.c"),     parse_error("Parse error"));
+        assert_eq!(Version::parse("1.2.3 abc"), parse_error("Failed with unparsed input: ' abc'"));
 
-        assert!(Version::parse("1.2.3") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec!(),
-            build: vec!(),
+            pre: Vec::new(),
+            build: Vec::new(),
         }));
-        assert!(Version::parse("  1.2.3  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec!(),
-            build: vec!(),
+            pre: Vec::new(),
+            build: Vec::new(),
         }));
-        assert!(Version::parse("1.2.3-alpha1") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3-alpha1"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec!(AlphaNumeric("alpha1".to_string())),
-            build: vec!(),
+            pre: vec![Identifier::Alphanumeric(String::from("alpha1"))],
+            build: Vec::new(),
         }));
-        assert!(Version::parse("  1.2.3-alpha1  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3-alpha1  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec!(AlphaNumeric("alpha1".to_string())),
-            build: vec!()
+            pre: vec![Identifier::Alphanumeric(String::from("alpha1"))],
+            build: Vec::new(),
         }));
-        assert!(Version::parse("1.2.3+build5") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3+build5"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec!(),
-            build: vec!(AlphaNumeric("build5".to_string()))
+            pre: Vec::new(),
+            build: vec![Identifier::Alphanumeric(String::from("build5"))],
         }));
-        assert!(Version::parse("  1.2.3+build5  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3+build5  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec!(),
-            build: vec!(AlphaNumeric("build5".to_string()))
+            pre: Vec::new(),
+            build: vec![Identifier::Alphanumeric(String::from("build5"))],
         }));
-        assert!(Version::parse("1.2.3-alpha1+build5") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3-alpha1+build5"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec!(AlphaNumeric("alpha1".to_string())),
-            build: vec!(AlphaNumeric("build5".to_string()))
+            pre: vec![Identifier::Alphanumeric(String::from("alpha1"))],
+            build: vec![Identifier::Alphanumeric(String::from("build5"))],
         }));
-        assert!(Version::parse("  1.2.3-alpha1+build5  ") == Ok(Version {
+        assert_eq!(Version::parse("  1.2.3-alpha1+build5  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec!(AlphaNumeric("alpha1".to_string())),
-            build: vec!(AlphaNumeric("build5".to_string()))
+            pre: vec![Identifier::Alphanumeric(String::from("alpha1"))],
+            build: vec![Identifier::Alphanumeric(String::from("build5"))],
         }));
-        assert!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  ") == Ok(Version {
+        assert_eq!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec!(Numeric(1),AlphaNumeric("alpha1".to_string()),Numeric(9)),
-            build: vec!(AlphaNumeric("build5".to_string()),
-                     Numeric(7),
-                     AlphaNumeric("3aedf".to_string()))
+            pre: vec![Identifier::Numeric(1),
+                      Identifier::Alphanumeric(String::from("alpha1")),
+                      Identifier::Numeric(9),
+            ],
+            build: vec![Identifier::Alphanumeric(String::from("build5")),
+                        Identifier::Numeric(7),
+                        Identifier::Alphanumeric(String::from("3aedf")),
+            ],
         }));
         assert_eq!(Version::parse("0.4.0-beta.1+0851523"), Ok(Version {
             major: 0,
             minor: 4,
             patch: 0,
-            pre: vec![AlphaNumeric("beta".to_string()), Numeric(1)],
-            build: vec![AlphaNumeric("0851523".to_string())],
+            pre: vec![Identifier::Alphanumeric(String::from("beta")),
+                      Identifier::Numeric(1),
+            ],
+            build: vec![Identifier::Alphanumeric(String::from("0851523"))],
         }));
 
     }
@@ -501,19 +359,19 @@ mod test {
 
     #[test]
     fn test_eq() {
-        assert_eq!(Version::parse("1.2.3"), Version::parse("1.2.3"));
-        assert_eq!(Version::parse("1.2.3-alpha1"), Version::parse("1.2.3-alpha1"));
-        assert_eq!(Version::parse("1.2.3+build.42"), Version::parse("1.2.3+build.42"));
-        assert_eq!(Version::parse("1.2.3-alpha1+42"), Version::parse("1.2.3-alpha1+42"));
-        assert_eq!(Version::parse("1.2.3+23"), Version::parse("1.2.3+42"));
+        assert_eq!(Version::parse("1.2.3").unwrap(), Version::parse("1.2.3").unwrap());
+        assert_eq!(Version::parse("1.2.3-alpha1").unwrap(), Version::parse("1.2.3-alpha1").unwrap());
+        assert_eq!(Version::parse("1.2.3+build.42").unwrap(), Version::parse("1.2.3+build.42").unwrap());
+        assert_eq!(Version::parse("1.2.3-alpha1+42").unwrap(), Version::parse("1.2.3-alpha1+42").unwrap());
+        assert_eq!(Version::parse("1.2.3+23").unwrap(), Version::parse("1.2.3+42").unwrap());
     }
 
     #[test]
     fn test_ne() {
-        assert!(Version::parse("0.0.0")       != Version::parse("0.0.1"));
-        assert!(Version::parse("0.0.0")       != Version::parse("0.1.0"));
-        assert!(Version::parse("0.0.0")       != Version::parse("1.0.0"));
-        assert!(Version::parse("1.2.3-alpha") != Version::parse("1.2.3-beta"));
+        assert!(Version::parse("0.0.0").unwrap()       != Version::parse("0.0.1").unwrap());
+        assert!(Version::parse("0.0.0").unwrap()       != Version::parse("0.1.0").unwrap());
+        assert!(Version::parse("0.0.0").unwrap()       != Version::parse("1.0.0").unwrap());
+        assert!(Version::parse("1.2.3-alpha").unwrap() != Version::parse("1.2.3-beta").unwrap());
     }
 
     #[test]
@@ -538,44 +396,44 @@ mod test {
 
     #[test]
     fn test_lt() {
-        assert!(Version::parse("0.0.0")          < Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.0.0")          < Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.0")          < Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.3-alpha1")   < Version::parse("1.2.3"));
-        assert!(Version::parse("1.2.3-alpha1")   < Version::parse("1.2.3-alpha2"));
-        assert!(!(Version::parse("1.2.3-alpha2") < Version::parse("1.2.3-alpha2")));
-        assert!(!(Version::parse("1.2.3+23")     < Version::parse("1.2.3+42")));
+        assert!(Version::parse("0.0.0").unwrap()          < Version::parse("1.2.3-alpha2").unwrap());
+        assert!(Version::parse("1.0.0").unwrap()          < Version::parse("1.2.3-alpha2").unwrap());
+        assert!(Version::parse("1.2.0").unwrap()          < Version::parse("1.2.3-alpha2").unwrap());
+        assert!(Version::parse("1.2.3-alpha1").unwrap()   < Version::parse("1.2.3").unwrap());
+        assert!(Version::parse("1.2.3-alpha1").unwrap()   < Version::parse("1.2.3-alpha2").unwrap());
+        assert!(!(Version::parse("1.2.3-alpha2").unwrap() < Version::parse("1.2.3-alpha2").unwrap()));
+        assert!(!(Version::parse("1.2.3+23").unwrap()     < Version::parse("1.2.3+42").unwrap()));
     }
 
     #[test]
     fn test_le() {
-        assert!(Version::parse("0.0.0")        <= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.0.0")        <= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.0")        <= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.3-alpha1") <= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.3-alpha2") <= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.3+23")     <= Version::parse("1.2.3+42"));
+        assert!(Version::parse("0.0.0").unwrap()        <= Version::parse("1.2.3-alpha2").unwrap());
+        assert!(Version::parse("1.0.0").unwrap()        <= Version::parse("1.2.3-alpha2").unwrap());
+        assert!(Version::parse("1.2.0").unwrap()        <= Version::parse("1.2.3-alpha2").unwrap());
+        assert!(Version::parse("1.2.3-alpha1").unwrap() <= Version::parse("1.2.3-alpha2").unwrap());
+        assert!(Version::parse("1.2.3-alpha2").unwrap() <= Version::parse("1.2.3-alpha2").unwrap());
+        assert!(Version::parse("1.2.3+23").unwrap()     <= Version::parse("1.2.3+42").unwrap());
     }
 
     #[test]
     fn test_gt() {
-        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("0.0.0"));
-        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("1.0.0"));
-        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("1.2.0"));
-        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("1.2.3-alpha1"));
-        assert!(Version::parse("1.2.3")          > Version::parse("1.2.3-alpha2"));
-        assert!(!(Version::parse("1.2.3-alpha2") > Version::parse("1.2.3-alpha2")));
-        assert!(!(Version::parse("1.2.3+23")     > Version::parse("1.2.3+42")));
+        assert!(Version::parse("1.2.3-alpha2").unwrap()   > Version::parse("0.0.0").unwrap());
+        assert!(Version::parse("1.2.3-alpha2").unwrap()   > Version::parse("1.0.0").unwrap());
+        assert!(Version::parse("1.2.3-alpha2").unwrap()   > Version::parse("1.2.0").unwrap());
+        assert!(Version::parse("1.2.3-alpha2").unwrap()   > Version::parse("1.2.3-alpha1").unwrap());
+        assert!(Version::parse("1.2.3").unwrap()          > Version::parse("1.2.3-alpha2").unwrap());
+        assert!(!(Version::parse("1.2.3-alpha2").unwrap() > Version::parse("1.2.3-alpha2").unwrap()));
+        assert!(!(Version::parse("1.2.3+23").unwrap()     > Version::parse("1.2.3+42").unwrap()));
     }
 
     #[test]
     fn test_ge() {
-        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("0.0.0"));
-        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.0.0"));
-        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.2.0"));
-        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.2.3-alpha1"));
-        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.3+23")     >= Version::parse("1.2.3+42"));
+        assert!(Version::parse("1.2.3-alpha2").unwrap() >= Version::parse("0.0.0").unwrap());
+        assert!(Version::parse("1.2.3-alpha2").unwrap() >= Version::parse("1.0.0").unwrap());
+        assert!(Version::parse("1.2.3-alpha2").unwrap() >= Version::parse("1.2.0").unwrap());
+        assert!(Version::parse("1.2.3-alpha2").unwrap() >= Version::parse("1.2.3-alpha1").unwrap());
+        assert!(Version::parse("1.2.3-alpha2").unwrap() >= Version::parse("1.2.3-alpha2").unwrap());
+        assert!(Version::parse("1.2.3+23").unwrap()     >= Version::parse("1.2.3+42").unwrap());
     }
 
     #[test]
@@ -600,7 +458,7 @@ mod test {
         while i < vs.len() {
             let a = Version::parse(vs[i-1]).unwrap();
             let b = Version::parse(vs[i]).unwrap();
-            assert!(a < b);
+            assert!(a < b, "nope {} < {}", a, b);
             i += 1;
         }
     }

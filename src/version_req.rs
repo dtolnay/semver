@@ -12,7 +12,8 @@ use std::error::Error;
 use std::fmt;
 use std::str::CharIndices;
 
-use super::version::{Identifier, Version};
+use Version;
+use version::Identifier;
 
 use self::VersionComponent::{NumericVersionComponent, WildcardVersionComponent};
 use self::Op::{Ex, Gt, GtEq, Lt, LtEq, Tilde, Compatible, Wildcard};
@@ -784,7 +785,7 @@ fn parse_ident(s: &str) -> Result<Identifier, ReqParseError> {
     } else if s.chars().all(|c| c.is_digit(10)) && s.chars().next() != Some('0') {
         s.parse::<u64>().map(Identifier::Numeric).or(Err(InvalidIdentifier))
     } else {
-        Ok(Identifier::AlphaNumeric(s.to_owned()))
+        Ok(Identifier::Alphanumeric(s.to_owned()))
     }
 }
 
@@ -901,7 +902,7 @@ mod test {
     fn version(s: &str) -> Version {
         match Version::parse(s) {
             Ok(v) => v,
-            Err(e) => panic!("`{}` is not a valid version. Reason: {}", s, e)
+            Err(e) => panic!("`{}` is not a valid version. Reason: {:?}", s, e)
         }
     }
 

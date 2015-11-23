@@ -59,8 +59,8 @@
 //! ```{rust}
 //! use semver::Version;
 //!
-//! assert!(Version::parse("1.2.3-alpha")  != Version::parse("1.2.3-beta"));
-//! assert!(Version::parse("1.2.3-alpha2") >  Version::parse("1.2.0"));
+//! assert!(Version::parse("1.2.3-alpha").unwrap()  != Version::parse("1.2.3-beta").unwrap());
+//! assert!(Version::parse("1.2.3-alpha2").unwrap() >  Version::parse("1.2.0").unwrap());
 //! ```
 //!
 //! If you explicitly need to modify a Version, SemVer also allows you to
@@ -162,11 +162,13 @@
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
 
+#[macro_use]
+extern crate nom;
+
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.
 
-pub use version::{Version, Identifier, ParseError};
-pub use version::Identifier::{Numeric, AlphaNumeric};
+pub use version::Version;
 pub use version_req::{VersionReq, VersionSet, ReqParseError};
 
 // SemVer-compliant versions.
@@ -174,3 +176,6 @@ mod version;
 
 // advanced version comparisons
 mod version_req;
+
+/// lol
+pub mod parser;
