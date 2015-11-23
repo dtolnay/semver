@@ -1,308 +1,181 @@
+// Copyright 2012-2013 The Rust Project Developers. See the COPYRIGHT
+// file at the top-level directory of this distribution and at
+// http://rust-lang.org/COPYRIGHT.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+
+//! Semantic version parsing and comparison.
+//!
+//! Semantic versioning (see http://semver.org/) is a set of rules for
+//! assigning version numbers.
+//!
+//! ## SemVer overview
+//!
+//! Given a version number MAJOR.MINOR.PATCH, increment the:
+//!
+//! 1. MAJOR version when you make incompatible API changes,
+//! 2. MINOR version when you add functionality in a backwards-compatible
+//!    manner, and
+//! 3. PATCH version when you make backwards-compatible bug fixes.
+//!
+//! Additional labels for pre-release and build metadata are available as
+//! extensions to the MAJOR.MINOR.PATCH format.
+//!
+//! Any references to 'the spec' in this documentation refer to [version 2.0 of
+//! the SemVer spec](http://semver.org/spec/v2.0.0.html).
+//!
+//! ## SemVer and the Rust ecosystem
+//!
+//! Rust itself follows the SemVer specification, as does its standard
+//! libraries. The two are not tied together.
+//!
+//! [Cargo](http://crates.io), Rust's package manager, uses SemVer to determine
+//! which versions of packages you need installed.
+//!
+//! ## Versions
+//!
+//! At its simplest, the `semver` crate allows you to construct `Version`
+//! objects using the `parse` method:
+//!
+//! ```{rust}
+//! use semver::Version;
+//!
+//! assert!(Version::parse("1.2.3") == Ok(Version {
+//!    major: 1,
+//!    minor: 2,
+//!    patch: 3,
+//!    pre: vec!(),
+//!    build: vec!(),
+//! }));
+//! ```
+//!
+//! If you have multiple `Version`s, you can use the usual comparison operators
+//! to compare them:
+//!
+//! ```{rust}
+//! use semver::Version;
+//!
+//! assert!(Version::parse("1.2.3-alpha")  != Version::parse("1.2.3-beta"));
+//! assert!(Version::parse("1.2.3-alpha2") >  Version::parse("1.2.0"));
+//! ```
+//!
+//! If you explicitly need to modify a Version, SemVer also allows you to
+//! increment the major, minor, and patch numbers in accordance with the spec.
+//!
+//! Please note that in order to do this, you must use a mutable Version:
+//!
+//! ```{rust}
+//! use semver::Version;
+//!
+//! let mut bugfix_release = Version::parse("1.0.0").unwrap();
+//! bugfix_release.increment_patch();
+//!
+//! assert_eq!(bugfix_release, Version::parse("1.0.1").unwrap());
+//! ```
+//!
+//! When incrementing the minor version number, the patch number resets to zero
+//! (in accordance with section 7 of the spec)
+//!
+//! ```{rust}
+//! use semver::Version;
+//!
+//! let mut feature_release = Version::parse("1.4.6").unwrap();
+//! feature_release.increment_minor();
+//!
+//! assert_eq!(feature_release, Version::parse("1.5.0").unwrap());
+//! ```
+//!
+//! Similarly, when incrementing the major version number, the patch and minor
+//! numbers reset to zero (in accordance with section 8 of the spec)
+//!
+//! ```{rust}
+//! use semver::Version;
+//!
+//! let mut chrome_release = Version::parse("41.5.5377").unwrap();
+//! chrome_release.increment_major();
+//!
+//! assert_eq!(chrome_release, Version::parse("42.0.0").unwrap());
+//! ```
+//!
+//! ## Requirements
+//!
+//! The `semver` crate also provides the ability to compare requirements, which
+//! are more complex comparisons.
+//!
+//! For example, creating a requirement that only matches versions greater than
+//! or equal to 1.0.0:
+//!
+//! ```{rust}
+//! # #![allow(unstable)]
+//! use semver::Version;
+//! use semver::VersionReq;
+//!
+//! let r = VersionReq::parse(">= 1.0.0").unwrap();
+//! let v = Version::parse("1.0.0").unwrap();
+//!
+//! assert!(r.to_string() == ">= 1.0.0".to_string());
+//! assert!(r.matches(&v))
+//! ```
+//!
+//! It also allows parsing of `~x.y.z` and `^x.y.z` requirements as defined at
+//! https://www.npmjs.org/doc/misc/semver.html
+//!
+//! **Tilde requirements** specify a minimal version with some updates:
+//!
+//! ```notrust
+//! ~1.2.3 := >=1.2.3 <1.3.0
+//! ~1.2   := >=1.2.0 <1.3.0
+//! ~1     := >=1.0.0 <2.0.0
+//! ```
+//!
+//! **Caret requirements** allow SemVer compatible updates to a specified
+//! verion, `0.x` and `0.x+1` are not considered compatible, but `1.x` and
+//! `1.x+1` are.
+//!
+//! `0.0.x` is not considered compatible with any other version.
+//! Missing minor and patch versions are desugared to `0` but allow flexibility
+//! for that value.
+//!
+//! ```notrust
+//! ^1.2.3 := >=1.2.3 <2.0.0
+//! ^0.2.3 := >=0.2.3 <0.3.0
+//! ^0.0.3 := >=0.0.3 <0.0.4
+//! ^0.0   := >=0.0.0 <0.1.0
+//! ^0     := >=0.0.0 <1.0.0
+//! ```
+//!
+//! **Wildcard requirements** allows parsing of version requirements of the
+//! formats `*`, `x.*` and `x.y.*`.
+//!
+//! ```notrust
+//! *     := >=0.0.0
+//! 1.*   := >=1.0.0 <2.0.0
+//! 1.2.* := >=1.2.0 <1.3.0
+//! ```
+
+#![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
+       html_favicon_url = "https://www.rust-lang.org/favicon.ico")]
+#![deny(missing_docs)]
+#![cfg_attr(test, deny(warnings))]
+
 #[macro_use]
 extern crate nom;
 
+// We take the common approach of keeping our own module system private, and
+// just re-exporting the interface that we want.
+
+pub use version::Version;
+pub use version_req::{VersionReq, VersionSet, ReqParseError};
+
+// SemVer-compliant versions.
+mod version;
+
+// advanced version comparisons
+mod version_req;
+
+/// lol
 pub mod parser;
-
-use std::result;
-
-/// A SemVer Version
-#[derive(PartialEq,Debug)]
-pub struct Version {
-    major: u32,
-    minor: u32,
-    patch: u32,
-    pre: Vec<String>,
-    build: Vec<String>,
-}
-
-/// An error type for this crate
-///
-/// Currently, just a generic error. Will make this nicer later.
-#[derive(PartialEq,Debug)]
-enum SemVerError {
-    ParseError(String),
-}
-
-/// A Result type for errors
-pub type Result<T> = result::Result<T, SemVerError>;
-
-impl Version {
-    /// Create a Version from a string
-    ///
-    /// Currently supported: x, x.y, and x.y.z versions.
-    pub fn parse(version: &str) -> Result<Version> {
-        let res = parser::try_parse(version.trim().as_bytes());
-
-        match res {
-            // Convert plain String error into proper ParseError
-            Err(e) => Err(SemVerError::ParseError(e)),
-            Ok(v) => Ok(v),
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::result;
-    use super::Version;
-    use super::SemVerError;
-
-    #[test]
-    fn test_parse() {
-        fn parse_error(e: &str) -> result::Result<Version, SemVerError> {
-            return Err(SemVerError::ParseError(e.to_string()))
-        }
-
-        assert_eq!(Version::parse(""),          parse_error("Parse error"));
-        assert_eq!(Version::parse("  "),        parse_error("Parse error"));
-        assert_eq!(Version::parse("1"),         parse_error("Parse error"));
-        assert_eq!(Version::parse("1.2"),       parse_error("Parse error"));
-        assert_eq!(Version::parse("1.2.3-"),    parse_error("Failed with unparsed input: '-'"));
-        assert_eq!(Version::parse("a.b.c"),     parse_error("Parse error"));
-        assert_eq!(Version::parse("1.2.3 abc"), parse_error("Failed with unparsed input: ' abc'"));
-
-        assert_eq!(Version::parse("1.2.3"), Ok(Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-            pre: Vec::new(),
-            build: Vec::new(),
-        }));
-        assert_eq!(Version::parse("  1.2.3  "), Ok(Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-            pre: Vec::new(),
-            build: Vec::new(),
-        }));
-        assert_eq!(Version::parse("1.2.3-alpha1"), Ok(Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-            pre: vec![String::from("alpha1")],
-            build: Vec::new(),
-        }));
-        assert_eq!(Version::parse("  1.2.3-alpha1  "), Ok(Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-            pre: vec![String::from("alpha1")],
-            build: Vec::new(),
-        }));
-        assert_eq!(Version::parse("1.2.3+build5"), Ok(Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-            pre: Vec::new(),
-            build: vec![String::from("build5")],
-        }));
-        assert_eq!(Version::parse("  1.2.3+build5  "), Ok(Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-            pre: Vec::new(),
-            build: vec![String::from("build5")],
-        }));
-        assert_eq!(Version::parse("1.2.3-alpha1+build5"), Ok(Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-            pre: vec![String::from("alpha1")],
-            build: vec![String::from("build5")],
-        }));
-        assert_eq!(Version::parse("  1.2.3-alpha1+build5  "), Ok(Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-            pre: vec![String::from("alpha1")],
-            build: vec![String::from("build5")],
-        }));
-        assert_eq!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  "), Ok(Version {
-            major: 1,
-            minor: 2,
-            patch: 3,
-            pre: vec![String::from("1"),
-                      String::from("alpha1"),
-                      String::from("9"),
-            ],
-            build: vec![String::from("build5"),
-                        String::from("7"),
-                        String::from("3aedf"),
-            ],
-        }));
-        assert_eq!(Version::parse("0.4.0-beta.1+0851523"), Ok(Version {
-            major: 0,
-            minor: 4,
-            patch: 0,
-            pre: vec![String::from("beta"),
-                      String::from("1"),
-            ],
-            build: vec![String::from("0851523")],
-        }));
-
-    }
-
-    /*
-    #[test]
-    fn test_increment_patch() {
-        let mut buggy_release = Version::parse("0.1.0").unwrap();
-        buggy_release.increment_patch();
-        assert_eq!(buggy_release, Version::parse("0.1.1").unwrap());
-    }
-
-    #[test]
-    fn test_increment_minor() {
-        let mut feature_release = Version::parse("1.4.6").unwrap();
-        feature_release.increment_minor();
-        assert_eq!(feature_release, Version::parse("1.5.0").unwrap());
-    }
-
-    #[test]
-    fn test_increment_major() {
-        let mut chrome_release = Version::parse("46.1.246773").unwrap();
-        chrome_release.increment_major();
-        assert_eq!(chrome_release, Version::parse("47.0.0").unwrap());
-    }
-
-    #[test]
-    fn test_increment_keep_prerelease() {
-        let mut release = Version::parse("1.0.0-alpha").unwrap();
-        release.increment_patch();
-
-        assert_eq!(release, Version::parse("1.0.1").unwrap());
-
-        release.increment_minor();
-
-        assert_eq!(release, Version::parse("1.1.0").unwrap());
-
-        release.increment_major();
-
-        assert_eq!(release, Version::parse("2.0.0").unwrap());
-    }
-
-
-    #[test]
-    fn test_increment_clear_metadata() {
-        let mut release = Version::parse("1.0.0+4442").unwrap();
-        release.increment_patch();
-
-        assert_eq!(release, Version::parse("1.0.1").unwrap());
-        release = Version::parse("1.0.1+hello").unwrap();
-
-        release.increment_minor();
-
-        assert_eq!(release, Version::parse("1.1.0").unwrap());
-        release = Version::parse("1.1.3747+hello").unwrap();
-
-        release.increment_major();
-
-        assert_eq!(release, Version::parse("2.0.0").unwrap());
-    }
-
-    #[test]
-    fn test_eq() {
-        assert_eq!(Version::parse("1.2.3"), Version::parse("1.2.3"));
-        assert_eq!(Version::parse("1.2.3-alpha1"), Version::parse("1.2.3-alpha1"));
-        assert_eq!(Version::parse("1.2.3+build.42"), Version::parse("1.2.3+build.42"));
-        assert_eq!(Version::parse("1.2.3-alpha1+42"), Version::parse("1.2.3-alpha1+42"));
-        assert_eq!(Version::parse("1.2.3+23"), Version::parse("1.2.3+42"));
-    }
-
-    #[test]
-    fn test_ne() {
-        assert!(Version::parse("0.0.0")       != Version::parse("0.0.1"));
-        assert!(Version::parse("0.0.0")       != Version::parse("0.1.0"));
-        assert!(Version::parse("0.0.0")       != Version::parse("1.0.0"));
-        assert!(Version::parse("1.2.3-alpha") != Version::parse("1.2.3-beta"));
-    }
-
-    #[test]
-    fn test_show() {
-        assert_eq!(format!("{}", Version::parse("1.2.3").unwrap()),
-                   "1.2.3".to_string());
-        assert_eq!(format!("{}", Version::parse("1.2.3-alpha1").unwrap()),
-                   "1.2.3-alpha1".to_string());
-        assert_eq!(format!("{}", Version::parse("1.2.3+build.42").unwrap()),
-                   "1.2.3+build.42".to_string());
-        assert_eq!(format!("{}", Version::parse("1.2.3-alpha1+42").unwrap()),
-                   "1.2.3-alpha1+42".to_string());
-    }
-
-    #[test]
-    fn test_to_string() {
-        assert_eq!(Version::parse("1.2.3").unwrap().to_string(), "1.2.3".to_string());
-        assert_eq!(Version::parse("1.2.3-alpha1").unwrap().to_string(), "1.2.3-alpha1".to_string());
-        assert_eq!(Version::parse("1.2.3+build.42").unwrap().to_string(), "1.2.3+build.42".to_string());
-        assert_eq!(Version::parse("1.2.3-alpha1+42").unwrap().to_string(), "1.2.3-alpha1+42".to_string());
-    }
-
-    #[test]
-    fn test_lt() {
-        assert!(Version::parse("0.0.0")          < Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.0.0")          < Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.0")          < Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.3-alpha1")   < Version::parse("1.2.3"));
-        assert!(Version::parse("1.2.3-alpha1")   < Version::parse("1.2.3-alpha2"));
-        assert!(!(Version::parse("1.2.3-alpha2") < Version::parse("1.2.3-alpha2")));
-        assert!(!(Version::parse("1.2.3+23")     < Version::parse("1.2.3+42")));
-    }
-
-    #[test]
-    fn test_le() {
-        assert!(Version::parse("0.0.0")        <= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.0.0")        <= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.0")        <= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.3-alpha1") <= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.3-alpha2") <= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.3+23")     <= Version::parse("1.2.3+42"));
-    }
-
-    #[test]
-    fn test_gt() {
-        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("0.0.0"));
-        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("1.0.0"));
-        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("1.2.0"));
-        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("1.2.3-alpha1"));
-        assert!(Version::parse("1.2.3")          > Version::parse("1.2.3-alpha2"));
-        assert!(!(Version::parse("1.2.3-alpha2") > Version::parse("1.2.3-alpha2")));
-        assert!(!(Version::parse("1.2.3+23")     > Version::parse("1.2.3+42")));
-    }
-
-    #[test]
-    fn test_ge() {
-        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("0.0.0"));
-        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.0.0"));
-        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.2.0"));
-        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.2.3-alpha1"));
-        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.2.3-alpha2"));
-        assert!(Version::parse("1.2.3+23")     >= Version::parse("1.2.3+42"));
-    }
-
-    #[test]
-    fn test_prerelease_check() {
-        assert!(Version::parse("1.0.0").unwrap().is_prerelease() == false);
-        assert!(Version::parse("0.0.1").unwrap().is_prerelease() == false);
-        assert!(Version::parse("4.1.4-alpha").unwrap().is_prerelease());
-        assert!(Version::parse("1.0.0-beta294296").unwrap().is_prerelease());
-    }
-
-    #[test]
-    fn test_spec_order() {
-        let vs = ["1.0.0-alpha",
-                  "1.0.0-alpha.1",
-                  "1.0.0-alpha.beta",
-                  "1.0.0-beta",
-                  "1.0.0-beta.2",
-                  "1.0.0-beta.11",
-                  "1.0.0-rc.1",
-                  "1.0.0"];
-        let mut i = 1;
-        while i < vs.len() {
-            let a = Version::parse(vs[i-1]).unwrap();
-            let b = Version::parse(vs[i]).unwrap();
-            assert!(a < b);
-            i += 1;
-        }
-    }
-    */
-}

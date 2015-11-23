@@ -20,8 +20,8 @@ pub fn try_parse(i: &[u8]) -> Result<super::Version, String> {
     }
 }
 
-/// parse a u32
-fn number(i: &[u8]) -> IResult<&[u8], u32> {
+/// parse a u64
+fn number(i: &[u8]) -> IResult<&[u8], u64> {
     map_res!(i,
              nom::digit,
              |d| str::FromStr::from_str(str::from_utf8(d).unwrap()))
@@ -58,7 +58,7 @@ fn identifiers(i: &[u8]) -> IResult<&[u8], Vec<String>> {
 }
 
 /// parse a . and then a u32
-named!(dot_number<&[u8], u32>, preceded!(char!('.'), number));
+named!(dot_number<&[u8], u64>, preceded!(char!('.'), number));
 
 named!(pre<&[u8], Option<Vec<String> > >,   opt!(complete!(preceded!(tag!("-"), identifiers))));
 named!(build<&[u8], Option<Vec<String> > >, opt!(complete!(preceded!(tag!("+"), identifiers))));
