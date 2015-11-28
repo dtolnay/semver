@@ -33,6 +33,8 @@ fn number(i: &[u8]) -> IResult<&[u8], u64> {
 fn ascii_or_hyphen(chr: u8) -> bool {
     // dot
     chr == 46 ||
+    // dot
+    chr == 45 ||
     // 0-9
     (chr >= 48 && chr <= 57) ||
     // A-Z
@@ -197,6 +199,20 @@ mod tests {
             patch: 0,
             pre: Vec::new(),
             build: vec![Identifier::Numeric(1)],
+        };
+
+        assert_eq!(version(v1), done(v2));
+    }
+
+    #[test]
+    fn parse_hypen_in_pre() {
+        let v1 = "3.0.0-rc1-1".as_bytes();
+        let v2 = Version {
+            major: 3,
+            minor: 0,
+            patch: 0,
+            pre: vec![Identifier::Alphanumeric(String::from("rc1-1"))],
+            build: Vec::new(),
         };
 
         assert_eq!(version(v1), done(v2));
