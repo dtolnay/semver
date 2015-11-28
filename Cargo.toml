@@ -14,6 +14,12 @@ Semantic version parsing and comparison.
 [dependencies]
 nom = "1.0.1"
 
+[features]
+default = []
+
+# are we testing on CI?
+ci = []
+
 [dev-dependencies]
-crates-index = { branch = "master", path = "/home/steve/src/rust-crates-index" }
+crates-index = { branch = "master", path = "/home/steve/src/rust-crates-index"}
 tempdir = "0.3.4"

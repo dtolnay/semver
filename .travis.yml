@@ -9,7 +9,7 @@ rust:
 sudo: false
 script:
   - cargo build --verbose
-  - cargo test --verbose
+  - cargo test --verbose --features ci
   - cargo doc
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&

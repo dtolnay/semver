@@ -6,9 +6,10 @@ use tempdir::TempDir;
 use crates_index::Index;
 use semver::Version;
 
-//! This test checks to see if every existing crate parses successfully. Important to not break the
-//! Rust universe!
+// This test checks to see if every existing crate parses successfully. Important to not break the
+// Rust universe!
 
+#[cfg(feature = "ci")]
 #[test]
 fn test_regressions() {
     let dir = TempDir::new("semver").unwrap();
