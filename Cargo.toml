@@ -21,5 +21,5 @@ default = []
 ci = []
 
 [dev-dependencies]
-crates-index = { branch = "master", path = "/home/steve/src/rust-crates-index"}
+crates-index = "0.4.0"
 tempdir = "0.3.4"
