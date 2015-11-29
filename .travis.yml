@@ -6,8 +6,8 @@ rust:
   - beta
   - nightly
   - stable
+sudo: false
 script:
-  - sudo apt-get install cmake -y
   - cargo build --verbose
   - cargo test --verbose --features ci
   - cargo doc
