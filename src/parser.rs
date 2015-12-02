@@ -24,16 +24,15 @@ pub fn try_parse(i: &[u8]) -> Result<super::Version, String> {
 
 /// parse a u64
 fn number(i: &[u8]) -> IResult<&[u8], u64> {
+    use std::str::from_utf8;
     map_res!(i,
-             nom::digit,
-             |d| str::FromStr::from_str(str::from_utf8(d).unwrap()))
+             map_res!(nom::digit, from_utf8),
+             |d| str::FromStr::from_str(d))
 }
 
 /// Parse an alphanumeric or a dot ("[0-9A-Za-z.]" in regex)
 fn ascii_or_hyphen(chr: u8) -> bool {
-    // dot
-    chr == 46 ||
-    // dot
+    // hyphen
     chr == 45 ||
     // 0-9
     (chr >= 48 && chr <= 57) ||
@@ -43,31 +42,27 @@ fn ascii_or_hyphen(chr: u8) -> bool {
     (chr >= 97 && chr <= 122)
 }
 
+named!(take_ascii_or_hyphen, take_while!(ascii_or_hyphen));
+
+fn convert_identifiers(identifiers: Vec<&str>) -> Vec<Identifier> {
+    let mut result = Vec::new();
+
+    for identifier in identifiers {
+       match identifier.parse() {
+           Ok(n)  => result.push(Identifier::Numeric(n)),
+           Err(_) => result.push(Identifier::AlphaNumeric(identifier.to_string())),
+       }
+    }
+
+    result
+}
+
 /// Parse an identifier
 fn identifiers(i: &[u8]) -> IResult<&[u8], Vec<Identifier>> {
-    map_res!(i,
-             take_while!(ascii_or_hyphen),
-             |d: &[u8]|
-                 match d.len() {
-                     0 => Err("Expected 1 or more characters"),
-                     _ => { 
-                        // too much allocation here because I'm lazy 
-                        let s = String::from_utf8(d.to_vec()).unwrap();
-                        let identifiers: Vec<&str> = s.split('.').collect();
-
-                        let mut result = Vec::new();
-
-                        for identifier in identifiers {
-                            match identifier.parse() {
-                                Ok(n) => result.push(Identifier::Numeric(n)),
-                                Err(_) => result.push(Identifier::AlphaNumeric(identifier.to_string())),
-                            }
-                        }
-
-                        Ok(result)
-                     },
-                 }
-             )
+    use std::str::from_utf8;
+    map!(i,
+         separated_list!(tag!("."), map_res!(take_ascii_or_hyphen, from_utf8)),
+         convert_identifiers)
 }
 
 /// parse a . and then a u32
@@ -76,11 +71,7 @@ named!(dot_number<&[u8], u64>, preceded!(char!('.'), number));
 named!(pre<&[u8], Option<Vec<Identifier> > >,   opt!(complete!(preceded!(tag!("-"), identifiers))));
 named!(build<&[u8], Option<Vec<Identifier> > >, opt!(complete!(preceded!(tag!("+"), identifiers))));
 
-named!(extras<&[u8], (Option<Vec<Identifier>>, Option<Vec<Identifier>>) >, chain!(
-        pre: pre ~
-        build: build,
-        || { (pre, build) }
-));
+named!(extras<&[u8], (Option<Vec<Identifier>>, Option<Vec<Identifier>>) >, pair!(pre, build));
 
 /// parse a version
 ///
