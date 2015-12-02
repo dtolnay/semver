@@ -60,7 +60,7 @@ fn identifiers(i: &[u8]) -> IResult<&[u8], Vec<Identifier>> {
                         for identifier in identifiers {
                             match identifier.parse() {
                                 Ok(n) => result.push(Identifier::Numeric(n)),
-                                Err(_) => result.push(Identifier::Alphanumeric(identifier.to_string())),
+                                Err(_) => result.push(Identifier::AlphaNumeric(identifier.to_string())),
                             }
                         }
 
@@ -155,7 +155,7 @@ mod tests {
             major: 1,
             minor: 0,
             patch: 0,
-            pre: vec![Identifier::Alphanumeric(String::from("alpha"))],
+            pre: vec![Identifier::AlphaNumeric(String::from("alpha"))],
             build: Vec::new(),
         };
 
@@ -169,7 +169,7 @@ mod tests {
             major: 1,
             minor: 0,
             patch: 0,
-            pre: vec![Identifier::Alphanumeric(String::from("alpha")), Identifier::Numeric(1)],
+            pre: vec![Identifier::AlphaNumeric(String::from("alpha")), Identifier::Numeric(1)],
             build: Vec::new(),
         };
 
@@ -183,7 +183,7 @@ mod tests {
             major: 1,
             minor: 0,
             patch: 0,
-            pre: vec![Identifier::Alphanumeric(String::from("alpha"))],
+            pre: vec![Identifier::AlphaNumeric(String::from("alpha"))],
             build: vec![Identifier::Numeric(1)],
         };
 
@@ -211,7 +211,7 @@ mod tests {
             major: 3,
             minor: 0,
             patch: 0,
-            pre: vec![Identifier::Alphanumeric(String::from("rc1-1"))],
+            pre: vec![Identifier::AlphaNumeric(String::from("rc1-1"))],
             build: Vec::new(),
         };
 

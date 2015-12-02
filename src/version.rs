@@ -28,7 +28,7 @@ pub enum Identifier {
     /// An identifier that's solely numbers.
     Numeric(u64),
     /// An identifier with letters and numbers.
-    Alphanumeric(String)
+    AlphaNumeric(String)
 }
 
 impl fmt::Display for Identifier {
@@ -36,7 +36,7 @@ impl fmt::Display for Identifier {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Identifier::Numeric(ref n) => fmt::Display::fmt(n, f),
-            Identifier::Alphanumeric(ref s) => fmt::Display::fmt(s, f),
+            Identifier::AlphaNumeric(ref s) => fmt::Display::fmt(s, f),
         }
     }
 }
@@ -238,14 +238,14 @@ mod tests {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec![Identifier::Alphanumeric(String::from("alpha1"))],
+            pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
             build: Vec::new(),
         }));
         assert_eq!(Version::parse("  1.2.3-alpha1  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec![Identifier::Alphanumeric(String::from("alpha1"))],
+            pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
             build: Vec::new(),
         }));
         assert_eq!(Version::parse("1.2.3+build5"), Ok(Version {
@@ -253,50 +253,50 @@ mod tests {
             minor: 2,
             patch: 3,
             pre: Vec::new(),
-            build: vec![Identifier::Alphanumeric(String::from("build5"))],
+            build: vec![Identifier::AlphaNumeric(String::from("build5"))],
         }));
         assert_eq!(Version::parse("  1.2.3+build5  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: Vec::new(),
-            build: vec![Identifier::Alphanumeric(String::from("build5"))],
+            build: vec![Identifier::AlphaNumeric(String::from("build5"))],
         }));
         assert_eq!(Version::parse("1.2.3-alpha1+build5"), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec![Identifier::Alphanumeric(String::from("alpha1"))],
-            build: vec![Identifier::Alphanumeric(String::from("build5"))],
+            pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
+            build: vec![Identifier::AlphaNumeric(String::from("build5"))],
         }));
         assert_eq!(Version::parse("  1.2.3-alpha1+build5  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
-            pre: vec![Identifier::Alphanumeric(String::from("alpha1"))],
-            build: vec![Identifier::Alphanumeric(String::from("build5"))],
+            pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
+            build: vec![Identifier::AlphaNumeric(String::from("build5"))],
         }));
         assert_eq!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  "), Ok(Version {
             major: 1,
             minor: 2,
             patch: 3,
             pre: vec![Identifier::Numeric(1),
-                      Identifier::Alphanumeric(String::from("alpha1")),
+                      Identifier::AlphaNumeric(String::from("alpha1")),
                       Identifier::Numeric(9),
             ],
-            build: vec![Identifier::Alphanumeric(String::from("build5")),
+            build: vec![Identifier::AlphaNumeric(String::from("build5")),
                         Identifier::Numeric(7),
-                        Identifier::Alphanumeric(String::from("3aedf")),
+                        Identifier::AlphaNumeric(String::from("3aedf")),
             ],
         }));
         assert_eq!(Version::parse("0.4.0-beta.1+0851523"), Ok(Version {
             major: 0,
             minor: 4,
             patch: 0,
-            pre: vec![Identifier::Alphanumeric(String::from("beta")),
+            pre: vec![Identifier::AlphaNumeric(String::from("beta")),
                       Identifier::Numeric(1),
             ],
-            build: vec![Identifier::Alphanumeric(String::from("0851523"))],
+            build: vec![Identifier::AlphaNumeric(String::from("0851523"))],
         }));
 
     }

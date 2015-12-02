@@ -785,7 +785,7 @@ fn parse_ident(s: &str) -> Result<Identifier, ReqParseError> {
     } else if s.chars().all(|c| c.is_digit(10)) && s.chars().next() != Some('0') {
         s.parse::<u64>().map(Identifier::Numeric).or(Err(InvalidIdentifier))
     } else {
-        Ok(Identifier::Alphanumeric(s.to_owned()))
+        Ok(Identifier::AlphaNumeric(s.to_owned()))
     }
 }
 
