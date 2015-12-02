@@ -32,8 +32,6 @@ fn number(i: &[u8]) -> IResult<&[u8], u64> {
 
 /// Parse an alphanumeric or a dot ("[0-9A-Za-z.]" in regex)
 fn ascii_or_hyphen(chr: u8) -> bool {
-    // dot
-    chr == 46 ||
     // hyphen
     chr == 45 ||
     // 0-9
@@ -44,31 +42,27 @@ fn ascii_or_hyphen(chr: u8) -> bool {
     (chr >= 97 && chr <= 122)
 }
 
+named!(take_ascii_or_hyphen, take_while!(ascii_or_hyphen));
+
+fn convert_identifiers(identifiers: Vec<&str>) -> Vec<Identifier> {
+    let mut result = Vec::new();
+
+    for identifier in identifiers {
+       match identifier.parse() {
+           Ok(n)  => result.push(Identifier::Numeric(n)),
+           Err(_) => result.push(Identifier::AlphaNumeric(identifier.to_string())),
+       }
+    }
+
+    result
+}
+
 /// Parse an identifier
 fn identifiers(i: &[u8]) -> IResult<&[u8], Vec<Identifier>> {
-    map_res!(i,
-             take_while!(ascii_or_hyphen),
-             |d: &[u8]|
-                 match d.len() {
-                     0 => Err("Expected 1 or more characters"),
-                     _ => { 
-                        // too much allocation here because I'm lazy 
-                        let s = String::from_utf8(d.to_vec()).unwrap();
-                        let identifiers: Vec<&str> = s.split('.').collect();
-
-                        let mut result = Vec::new();
-
-                        for identifier in identifiers {
-                            match identifier.parse() {
-                                Ok(n) => result.push(Identifier::Numeric(n)),
-                                Err(_) => result.push(Identifier::AlphaNumeric(identifier.to_string())),
-                            }
-                        }
-
-                        Ok(result)
-                     },
-                 }
-             )
+    use std::str::from_utf8;
+    map!(i,
+         separated_list!(tag!("."), map_res!(take_ascii_or_hyphen, from_utf8)),
+         convert_identifiers)
 }
 
 /// parse a . and then a u32
