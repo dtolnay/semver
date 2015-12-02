@@ -10,16 +10,13 @@
 
 use std::error::Error;
 use std::fmt;
-use std::str::CharIndices;
+use std::result;
 
 use Version;
 use version::Identifier;
 
 use self::VersionComponent::{NumericVersionComponent, WildcardVersionComponent};
 use self::Op::{Ex, Gt, GtEq, Lt, LtEq, Tilde, Compatible, Wildcard};
-use self::LexState::{LexInit, LexStart, LexVersionComponent, LexSigil, LexErr};
-use self::LexState::{LexIdentInit, LexIdentStart, LexIdent};
-use self::Token::{Sigil, AlphaNum, Comma, Dot, Dash};
 use self::WildcardVersion::{Major, Minor, Patch};
 use self::ReqParseError::{
     InvalidVersionRequirement,
@@ -31,12 +28,15 @@ use self::ReqParseError::{
     UnimplementedVersionRequirement
 };
 
+use parser;
+
 /// A `VersionReq` is a set of version comparator sets; it corresponds to the top-level
 /// "version range" in the Npm implementation of SemVer:
 ///   https://docs.npmjs.com/misc/semver#ranges
 #[derive(Clone, PartialEq, Debug)]
 pub struct VersionReq {
-    sets: Vec<VersionSet>
+    /// FIXME: this pub is bad but I'm lazy for now
+    pub sets: Vec<VersionSet>,
 }
 
 /// `VersionSet` is composed of a set of one or more comparators (predicates). A specific
@@ -80,15 +80,6 @@ struct Predicate {
     pre: Vec<Identifier>,
 }
 
-struct PredBuilder {
-    op: Option<Op>,
-    major: Option<u64>,
-    minor: Option<u64>,
-    patch: Option<u64>,
-    pre: Vec<Identifier>,
-    has_pre: bool,
-}
-
 /// A `ReqParseError` is returned from methods which parse a string into a `VersionReq`. Each
 /// enumeration is one of the possible errors that can occur.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -129,24 +120,18 @@ impl Error for ReqParseError {
     }
 }
 
+pub type Result<T> = result::Result<T, ReqParseError>;
+
 impl VersionReq {
-    /// Primary constructor of a `VersionReq`. It takes a string containing version
-    /// comparator sets and parses them, first separating them by "||"'s into a comparator
-    /// sets, then passing off each comparator set to be parsed by `VersionSet::parse` (see that
-    /// function for more details on how sets of comparator predicates are parsed).
-    pub fn parse(input: &str) -> Result<VersionReq, ReqParseError> {
-        let input_sets: Vec<_> = input.split("||").map(|s| s.trim()).collect();
+    /// Primary constructor of a `VersionReq`.
+    pub fn parse(input: &str) -> Result<VersionReq> {
 
-        let mut sets = Vec::new();
+        let res = parser::try_parse_req(input.trim().as_bytes());
 
-        for input in input_sets {
-            match VersionSet::parse(input) {
-                Ok(set) => sets.push(set),
-                Err(e)  => return Err(e),
-            }
+        match res {
+            Ok(a) => Ok(a),
+            Err(_) => Err(ReqParseError::OpAlreadySet), // for now
         }
-
-        Ok(VersionReq { sets: sets })
     }
 
     /// `matches()` checks if the given `Version` satisfies any (1 or more) of its
@@ -205,55 +190,8 @@ impl VersionSet {
     ///     Err(e) => panic!("There was a problem parsing: {}", e),
     /// }
     /// ```
-    pub fn parse(input: &str) -> Result<VersionSet, ReqParseError> {
-        if input == "" {
-            return Ok(VersionSet { predicates: vec![
-                Predicate {
-                    op: Wildcard(Major),
-                    major: 0,
-                    minor: None,
-                    patch: None,
-                    pre: vec!(),
-                }
-            ]});
-        }
-
-        let mut lexer = Lexer::new(input);
-        let mut builder = PredBuilder::new();
-        let mut predicates = Vec::new();
-
-        for token in lexer.by_ref() {
-            let result = match token {
-                Sigil(x) => builder.set_sigil(x),
-                AlphaNum(x) => builder.set_version_part(x),
-                Dot => Ok(()), // Nothing to do for now
-                Comma => {
-                    let result = builder.build().map(|p| predicates.push(p));
-                    builder = PredBuilder::new();
-                    result
-                }
-                Dash => {
-                    builder.has_pre = true;
-                    Ok(())
-                }
-            };
-
-            match result {
-                Ok(_) => (),
-                Err(e) => return Err(e),
-            }
-        }
-
-        if lexer.is_error() {
-            return Err(InvalidVersionRequirement);
-        }
-
-        match builder.build() {
-            Ok(e) => predicates.push(e),
-            Err(e) => return Err(e),
-        }
-
-        Ok(VersionSet { predicates: predicates })
+    pub fn parse(_: &str) -> Result<VersionSet> {
+        Ok(VersionSet { predicates: Vec::new() })
     }
 
     /// `exact()` is a factory method which creates a `VersionSet` with one exact constraint.
@@ -453,346 +391,6 @@ impl Predicate {
             }
             _ => false  // unreachable
         }
-    }
-}
-
-impl PredBuilder {
-    fn new() -> PredBuilder {
-        PredBuilder {
-            op: None,
-            major: None,
-            minor: None,
-            patch: None,
-            pre: vec!(),
-            has_pre: false,
-        }
-    }
-
-    fn set_sigil(&mut self, sigil: &str) -> Result<(), ReqParseError> {
-        if self.op.is_some() {
-            return Err(OpAlreadySet);
-        }
-
-        match Op::from_sigil(sigil) {
-            Some(op) => self.op = Some(op),
-            _ => return Err(InvalidSigil),
-        }
-
-        Ok(())
-    }
-
-    fn set_version_part(&mut self, part: &str) -> Result<(), ReqParseError> {
-        if self.op.is_none() {
-            // If no op is specified, then the predicate is an exact match on
-            // the version
-            self.op = Some(Compatible);
-        }
-
-        if self.has_pre {
-            match parse_ident(part) {
-                Ok(ident) => self.pre.push(ident),
-                Err(e) => return Err(e),
-            }
-        }
-        else if self.major.is_none() {
-            match parse_version_part(part) {
-                Ok(NumericVersionComponent(e)) => self.major = Some(e),
-                Ok(WildcardVersionComponent) => {
-                    self.major = Some(0);
-                    self.op = Some(Wildcard(Major))
-                }
-                Err(e) => return Err(e),
-            }
-        } else if self.minor.is_none() {
-            match parse_version_part(part) {
-                Ok(NumericVersionComponent(e)) => self.minor = Some(e),
-                Ok(WildcardVersionComponent) => self.op = Some(Wildcard(Minor)),
-                Err(e) => return Err(e),
-            }
-        }
-        else if self.patch.is_none() {
-            match parse_version_part(part) {
-                Ok(NumericVersionComponent(e)) => self.patch = Some(e),
-                Ok(WildcardVersionComponent) => self.op = Some(Wildcard(Patch)),
-                Err(e) => return Err(e),
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Validates that a version predicate can be created given the present
-    /// information.
-    fn build(self) -> Result<Predicate, ReqParseError> {
-        let op = match self.op {
-            Some(ref x) => x.clone(),
-            None => return Err(InvalidVersionRequirement),
-        };
-
-        let major = match self.major {
-            Some(x) => x,
-            None => return Err(MajorVersionRequired),
-        };
-
-        if self.has_pre && self.pre.is_empty() {
-            // Identifiers MUST NOT be empty.
-            return Err(InvalidIdentifier)
-        }
-
-        Ok(Predicate {
-            op: op,
-            major: major,
-            minor: self.minor,
-            patch: self.patch,
-            pre: self.pre,
-        })
-    }
-}
-
-struct Lexer<'a> {
-    c: char,
-    idx: usize,
-    iter: CharIndices<'a>,
-    mark: Option<usize>,
-    input: &'a str,
-    state: LexState
-}
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-enum LexState {
-    LexInit,
-    LexStart,
-    LexVersionComponent,
-    LexSigil,
-    LexErr,
-    LexIdentInit,
-    LexIdentStart,
-    LexIdent,
-}
-
-#[derive(Debug)]
-enum Token<'a> {
-    Sigil(&'a str),
-    AlphaNum(&'a str),
-    Comma,
-    Dot,
-    Dash,
-}
-
-impl<'a> Lexer<'a> {
-    fn new(input: &'a str) -> Lexer<'a> {
-        Lexer {
-            c: '\0',
-            idx: 0,
-            iter: input.char_indices(),
-            mark: None,
-            input: input,
-            state: LexInit
-        }
-    }
-
-    fn is_error(&self) -> bool {
-        self.state == LexErr
-    }
-
-    fn mark(&mut self, at: usize) {
-        self.mark = Some(at)
-    }
-
-    fn flush(&mut self, to: usize, kind: LexState) -> Option<Token<'a>> {
-        match self.mark {
-            Some(mark) => {
-                if to <= mark {
-                    return None;
-                }
-
-                let s = &self.input[mark..to];
-
-                self.mark = None;
-
-                match kind {
-                    LexVersionComponent => Some(AlphaNum(s)),
-                    LexIdent => Some(AlphaNum(s)),
-                    LexSigil => Some(Sigil(s)),
-                    _ => None // bug
-                }
-            }
-            None => None
-        }
-    }
-}
-
-impl<'a> Iterator for Lexer<'a> {
-    type Item = Token<'a>;
-
-    fn next(&mut self) -> Option<Token<'a>> {
-        let mut c;
-        let mut idx = 0;
-
-        macro_rules! next {
-            () => (
-                match self.iter.next() {
-                    Some((n_idx, n_char)) => {
-                        c = n_char;
-                        idx = n_idx;
-                    }
-                    _ => {
-                      let s = self.state;
-                      return self.flush(idx + 1, s)
-                    }
-                }
-            )
-        }
-
-        macro_rules! flush {
-            ($s:expr) => ({
-                self.c = c;
-                self.idx = idx;
-                self.flush(idx, $s)
-            })
-        }
-
-
-        if self.state == LexInit {
-            self.state = LexStart;
-            next!();
-        } else if self.state == LexIdentInit {
-            self.state = LexIdentStart;
-            next!();
-        } else {
-            c = self.c;
-            idx = self.idx;
-        }
-
-        loop {
-            match self.state {
-                LexStart => {
-                    if c.is_whitespace() {
-                        next!(); // Ignore
-                    }
-                    else if c.is_alphanumeric() || c == '*' {
-                        self.mark(idx);
-                        self.state = LexVersionComponent;
-                        next!();
-                    }
-                    else if is_sigil(c) {
-                        self.mark(idx);
-                        self.state = LexSigil;
-                        next!();
-                    }
-                    else if c == '.' {
-                        self.state = LexInit;
-                        return Some(Dot);
-                    }
-                    else if c == ',' {
-                        self.state = LexInit;
-                        return Some(Comma);
-                    }
-                    else if c == '-' {
-                        self.state = LexIdentInit;
-                        return Some(Dash);
-                    } else {
-                        self.state = LexErr;
-                        return None;
-                    }
-                }
-                LexVersionComponent => {
-                    if c.is_alphanumeric() {
-                        next!();
-                    } else {
-                        self.state = LexStart;
-                        return flush!(LexVersionComponent);
-                    }
-                }
-                LexSigil => {
-                    if is_sigil(c) {
-                        next!();
-                    } else {
-                        self.state = LexStart;
-                        return flush!(LexSigil);
-                    }
-                }
-                LexIdentStart => {
-                    if c.is_alphanumeric() || c == '-' {
-                        self.mark(idx);
-                        self.state = LexIdent;
-                        next!();
-                    } else if c == '.' {
-                        self.state = LexIdentInit;
-                        return Some(Dot)
-                    } else if c == ',' {
-                        self.state = LexInit;
-                        return Some(Comma)
-                    } else {
-                        self.state = LexErr;
-                        return None
-                    }
-                }
-                LexIdent => {
-                    if c.is_alphanumeric() || c == '-'{
-                        next!();
-                    } else {
-                        self.state = LexIdentStart;
-                        return flush!(LexIdent);
-                    }
-                }
-                LexErr => return None,
-                LexInit | LexIdentInit => return None // bug
-            }
-        }
-    }
-}
-
-impl Op {
-    fn from_sigil(sigil: &str) -> Option<Op> {
-        match sigil {
-            "=" => Some(Ex),
-            ">" => Some(Gt),
-            ">=" => Some(GtEq),
-            "<" => Some(Lt),
-            "<=" => Some(LtEq),
-            "~" => Some(Tilde),
-            "^" => Some(Compatible),
-            _ => None
-        }
-    }
-}
-
-fn parse_version_part(s: &str) -> Result<VersionComponent, ReqParseError> {
-    let mut ret = 0;
-
-    if ["*", "x", "X"].contains(&s) {
-        return Ok(WildcardVersionComponent)
-    }
-
-    for c in s.chars() {
-        let n = (c as u64) - ('0' as u64);
-
-        if n > 9 {
-            return Err(VersionComponentsMustBeNumeric);
-        }
-
-        ret *= 10;
-        ret +=  n;
-    }
-
-    Ok(NumericVersionComponent(ret))
-}
-
-fn parse_ident(s: &str) -> Result<Identifier, ReqParseError> {
-    if s.is_empty() {
-        return Err(InvalidIdentifier)
-    } else if s.chars().all(|c| c.is_digit(10)) && s.chars().next() != Some('0') {
-        s.parse::<u64>().map(Identifier::Numeric).or(Err(InvalidIdentifier))
-    } else {
-        Ok(Identifier::AlphaNumeric(s.to_owned()))
-    }
-}
-
-fn is_sigil(c: char) -> bool {
-    match c {
-        '>' | '<' | '=' | '~' | '^' => true,
-        _ => false
     }
 }
 
