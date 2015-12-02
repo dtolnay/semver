@@ -177,5 +177,5 @@ mod version;
 // advanced version comparisons
 mod version_req;
 
-/// lol
-pub mod parser;
+// parsing
+mod parser;
