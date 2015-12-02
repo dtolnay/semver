@@ -3,6 +3,7 @@ use nom;
 use nom::IResult;
 
 use version::Identifier;
+use version_req::VersionReq;
 
 /// Try to parse a version
 ///
@@ -21,6 +22,34 @@ pub fn try_parse(i: &[u8]) -> Result<super::Version, String> {
         _ => Err("Parse error".to_string()),
     }
 }
+
+pub fn try_parse_req(i: &[u8]) -> Result<VersionReq, String> {
+    match version_req(i) {
+        IResult::Done(rest, version) => {
+            if rest.len() > 0 {
+                let err = format!("Failed with unparsed input: '{}'",
+                                  String::from_utf8(rest.to_vec()).unwrap());
+                Err(err)
+            } else{
+                Ok(version)
+            }
+        },
+        _ => Err("Parse error".to_string()),
+    }
+}
+
+named!(version_req<&[u8], VersionReq>, chain!(
+        major: number ~
+        minor: dot_number ~
+        patch: dot_number ~
+        extras: extras,
+        || {
+            let (_, _, _, _) = (major, minor, patch, extras);
+            VersionReq {
+                sets: Vec::new(),
+            }
+        }
+));
 
 /// parse a u64
 fn number(i: &[u8]) -> IResult<&[u8], u64> {
