@@ -131,7 +131,7 @@ impl Version {
     }
 
     /// Checks to see if the current Version is in pre-release status
-    pub fn is_prerelease(&self) -> bool {
+    pub fn is_prerelease(&mut self) -> bool {
         !self.pre.is_empty()
     }
 }
