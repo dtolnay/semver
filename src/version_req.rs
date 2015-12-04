@@ -246,8 +246,13 @@ impl VersionReq {
     /// assert!(exact.matches(&version));
     /// ```
     pub fn matches(&self, version: &Version) -> bool {
+        // no predicates means anything matches
+        if self.predicates.is_empty() {
+            return true;
+        }
+
         self.predicates.iter().all(|p| p.matches(version)) &&
-            self.predicates.iter().any(|p| p.pre_tag_is_compatible(version))
+        self.predicates.iter().any(|p| p.pre_tag_is_compatible(version))
     }
 }
 
@@ -1051,6 +1056,12 @@ mod test {
         let r = req("1.2.X");
         assert_match(&r, &["1.2.0", "1.2.2", "1.2.4"]);
         assert_not_match(&r, &["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
+    }
+
+    #[test]
+    pub fn test_any() {
+        let r = VersionReq::any();
+        assert_match(&r, &["0.0.1", "0.1.0", "1.0.0"]);
     }
 
 
