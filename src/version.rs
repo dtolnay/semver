@@ -66,6 +66,14 @@ enum SemVerError {
     ParseError(String),
 }
 
+impl fmt::Display for SemVerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &SemVerError::ParseError(ref m) => write!(f, "{}", m),
+        }
+    }
+}
+
 /// A Result type for errors
 pub type Result<T> = result::Result<T, SemVerError>;
 
