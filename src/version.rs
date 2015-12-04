@@ -14,6 +14,7 @@
 use std::cmp::{self, Ordering};
 use std::fmt;
 use std::hash;
+use std::error::Error;
 
 use std::result;
 
@@ -74,6 +75,14 @@ impl fmt::Display for SemVerError {
     }
 }
 
+impl Error for SemVerError {
+    fn description(&self) -> &str {
+        match self {
+            &SemVerError::ParseError(ref m) => m,
+        }
+    }
+}
+ 
 /// A Result type for errors
 pub type Result<T> = result::Result<T, SemVerError>;
 
