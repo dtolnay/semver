@@ -13,17 +13,20 @@ use std::fmt;
 use std::str::CharIndices;
 
 use Version;
+use version::Identifier;
 
 use self::VersionComponent::{NumericVersionComponent, WildcardVersionComponent};
 use self::Op::{Ex, Gt, GtEq, Lt, LtEq, Tilde, Compatible, Wildcard};
 use self::LexState::{LexInit, LexStart, LexVersionComponent, LexSigil, LexErr};
-use self::Token::{Sigil, AlphaNum, Comma, Dot};
+use self::LexState::{LexIdentInit, LexIdentStart, LexIdent};
+use self::Token::{Sigil, AlphaNum, Comma, Dot, Dash};
 use self::WildcardVersion::{Major, Minor, Patch};
 use self::ReqParseError::{
     InvalidVersionRequirement,
     OpAlreadySet,
     InvalidSigil,
     VersionComponentsMustBeNumeric,
+    InvalidIdentifier,
     MajorVersionRequired,
     UnimplementedVersionRequirement
 };
@@ -65,14 +68,17 @@ struct Predicate {
     op: Op,
     major: u64,
     minor: Option<u64>,
-    patch: Option<u64>
+    patch: Option<u64>,
+    pre: Vec<Identifier>,
 }
 
 struct PredBuilder {
     op: Option<Op>,
     major: Option<u64>,
     minor: Option<u64>,
-    patch: Option<u64>
+    patch: Option<u64>,
+    pre: Vec<Identifier>,
+    has_pre: bool,
 }
 
 /// A `ReqParseError` is returned from methods which parse a string into a `VersionReq`. Each
@@ -87,6 +93,8 @@ pub enum ReqParseError {
     InvalidSigil,
     /// All components of a version must be numeric.
     VersionComponentsMustBeNumeric,
+    /// There was an error parsing an identifier.
+    InvalidIdentifier,
     /// At least a major version is required.
     MajorVersionRequired,
     /// An unimplemented version requirement.
@@ -106,6 +114,7 @@ impl Error for ReqParseError {
             OpAlreadySet => "you have already provided an operation, such as =, ~, or ^; only use one",
             InvalidSigil => "the sigil you have written is not correct",
             VersionComponentsMustBeNumeric => "version components must be numeric",
+            InvalidIdentifier => "invalid identifier",
             MajorVersionRequired => "at least a major version number is required",
             UnimplementedVersionRequirement => "the given version requirement is not implemented, yet",
         }
@@ -164,7 +173,8 @@ impl VersionReq {
                     op: Wildcard(Major),
                     major: 0,
                     minor: None,
-                    patch: None
+                    patch: None,
+                    pre: vec!(),
                 }
             ]});
         }
@@ -182,6 +192,10 @@ impl VersionReq {
                     let result = builder.build().map(|p| predicates.push(p));
                     builder = PredBuilder::new();
                     result
+                }
+                Dash => {
+                    builder.has_pre = true;
+                    Ok(())
                 }
             };
 
@@ -232,7 +246,13 @@ impl VersionReq {
     /// assert!(exact.matches(&version));
     /// ```
     pub fn matches(&self, version: &Version) -> bool {
-        self.predicates.iter().all(|p| p.matches(version))
+        // no predicates means anything matches
+        if self.predicates.is_empty() {
+            return true;
+        }
+
+        self.predicates.iter().all(|p| p.matches(version)) &&
+        self.predicates.iter().any(|p| p.pre_tag_is_compatible(version))
     }
 }
 
@@ -242,7 +262,8 @@ impl Predicate {
             op: Ex,
             major: version.major,
             minor: Some(version.minor),
-            patch: Some(version.patch)
+            patch: Some(version.patch),
+            pre: version.pre.clone(),
         }
     }
 
@@ -283,7 +304,22 @@ impl Predicate {
             None => return true
         }
 
+        if self.pre != ver.pre {
+            return false;
+        }
+
         true
+    }
+
+    // https://docs.npmjs.com/misc/semver#prerelease-tags
+    fn pre_tag_is_compatible(&self, ver: &Version) -> bool {
+        // If a version has a prerelease tag (for example, 1.2.3-alpha.3) then it will only be
+        // allowed to satisfy comparator sets if at least one comparator with the same [major,
+        // minor, patch] tuple also has a prerelease tag.
+        !ver.is_prerelease() || (self.major == ver.major &&
+                                 self.minor == Some(ver.minor) &&
+                                 self.patch == Some(ver.patch) &&
+                                 !self.pre.is_empty())
     }
 
     fn is_greater(&self, ver: &Version) -> bool {
@@ -309,6 +345,10 @@ impl Predicate {
             None => return false
         }
 
+        if !self.pre.is_empty() {
+            return ver.pre.is_empty() || ver.pre > self.pre
+        }
+
         false
     }
 
@@ -321,7 +361,8 @@ impl Predicate {
 
         match self.patch {
             Some(patch) => {
-                self.major == ver.major && minor == ver.minor && ver.patch >= patch
+                self.major == ver.major && minor == ver.minor &&
+                    (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver)))
             }
             None => {
                 self.major == ver.major && minor == ver.minor
@@ -343,12 +384,15 @@ impl Predicate {
         match self.patch {
             Some(patch) => if self.major == 0 {
                 if minor == 0 {
-                    ver.minor == minor && ver.patch == patch
+                    ver.minor == minor && ver.patch == patch && self.pre_is_compatible(ver)
                 } else {
-                    ver.minor == minor && ver.patch >= patch
+                    ver.minor == minor && (ver.patch > patch ||
+                                          (ver.patch == patch && self.pre_is_compatible(ver)))
                 }
             } else {
-                ver.minor > minor || (ver.minor == minor && ver.patch >= patch)
+                ver.minor > minor ||
+                    (ver.minor == minor && (ver.patch > patch ||
+                                           (ver.patch == patch && self.pre_is_compatible(ver))))
             },
             None => if self.major == 0 {
                 ver.minor == minor
@@ -356,6 +400,10 @@ impl Predicate {
                 ver.minor >= minor
             }
         }
+    }
+
+    fn pre_is_compatible(&self, ver: &Version) -> bool {
+        ver.pre.is_empty() || ver.pre >= self.pre
     }
 
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
@@ -380,7 +428,9 @@ impl PredBuilder {
             op: None,
             major: None,
             minor: None,
-            patch: None
+            patch: None,
+            pre: vec!(),
+            has_pre: false,
         }
     }
 
@@ -404,7 +454,13 @@ impl PredBuilder {
             self.op = Some(Compatible);
         }
 
-        if self.major.is_none() {
+        if self.has_pre {
+            match parse_ident(part) {
+                Ok(ident) => self.pre.push(ident),
+                Err(e) => return Err(e),
+            }
+        }
+        else if self.major.is_none() {
             match parse_version_part(part) {
                 Ok(NumericVersionComponent(e)) => self.major = Some(e),
                 Ok(WildcardVersionComponent) => {
@@ -433,7 +489,7 @@ impl PredBuilder {
 
     /// Validates that a version predicate can be created given the present
     /// information.
-    fn build(&self) -> Result<Predicate, ReqParseError> {
+    fn build(self) -> Result<Predicate, ReqParseError> {
         let op = match self.op {
             Some(ref x) => x.clone(),
             None => return Err(InvalidVersionRequirement),
@@ -444,11 +500,17 @@ impl PredBuilder {
             None => return Err(MajorVersionRequired),
         };
 
+        if self.has_pre && self.pre.is_empty() {
+            // Identifiers MUST NOT be empty.
+            return Err(InvalidIdentifier)
+        }
+
         Ok(Predicate {
             op: op,
             major: major,
             minor: self.minor,
-            patch: self.patch
+            patch: self.patch,
+            pre: self.pre,
         })
     }
 }
@@ -469,6 +531,9 @@ enum LexState {
     LexVersionComponent,
     LexSigil,
     LexErr,
+    LexIdentInit,
+    LexIdentStart,
+    LexIdent,
 }
 
 #[derive(Debug)]
@@ -476,7 +541,8 @@ enum Token<'a> {
     Sigil(&'a str),
     AlphaNum(&'a str),
     Comma,
-    Dot
+    Dot,
+    Dash,
 }
 
 impl<'a> Lexer<'a> {
@@ -512,6 +578,7 @@ impl<'a> Lexer<'a> {
 
                 match kind {
                     LexVersionComponent => Some(AlphaNum(s)),
+                    LexIdent => Some(AlphaNum(s)),
                     LexSigil => Some(Sigil(s)),
                     _ => None // bug
                 }
@@ -555,6 +622,9 @@ impl<'a> Iterator for Lexer<'a> {
         if self.state == LexInit {
             self.state = LexStart;
             next!();
+        } else if self.state == LexIdentInit {
+            self.state = LexIdentStart;
+            next!();
         } else {
             c = self.c;
             idx = self.idx;
@@ -583,6 +653,10 @@ impl<'a> Iterator for Lexer<'a> {
                     else if c == ',' {
                         self.state = LexInit;
                         return Some(Comma);
+                    }
+                    else if c == '-' {
+                        self.state = LexIdentInit;
+                        return Some(Dash);
                     } else {
                         self.state = LexErr;
                         return None;
@@ -604,8 +678,32 @@ impl<'a> Iterator for Lexer<'a> {
                         return flush!(LexSigil);
                     }
                 }
+                LexIdentStart => {
+                    if c.is_alphanumeric() || c == '-' {
+                        self.mark(idx);
+                        self.state = LexIdent;
+                        next!();
+                    } else if c == '.' {
+                        self.state = LexIdentInit;
+                        return Some(Dot)
+                    } else if c == ',' {
+                        self.state = LexInit;
+                        return Some(Comma)
+                    } else {
+                        self.state = LexErr;
+                        return None
+                    }
+                }
+                LexIdent => {
+                    if c.is_alphanumeric() || c == '-'{
+                        next!();
+                    } else {
+                        self.state = LexIdentStart;
+                        return flush!(LexIdent);
+                    }
+                }
                 LexErr => return None,
-                LexInit => return None // bug
+                LexInit | LexIdentInit => return None // bug
             }
         }
     }
@@ -645,6 +743,16 @@ fn parse_version_part(s: &str) -> Result<VersionComponent, ReqParseError> {
     }
 
     Ok(NumericVersionComponent(ret))
+}
+
+fn parse_ident(s: &str) -> Result<Identifier, ReqParseError> {
+    if s.is_empty() {
+        return Err(InvalidIdentifier)
+    } else if s.chars().all(|c| c.is_digit(10)) && s.chars().next() != Some('0') {
+        s.parse::<u64>().map(Identifier::Numeric).or(Err(InvalidIdentifier))
+    } else {
+        Ok(Identifier::AlphaNumeric(s.to_owned()))
+    }
 }
 
 fn is_sigil(c: char) -> bool {
@@ -690,6 +798,14 @@ impl fmt::Display for Predicate {
                     Some(v) => try!(write!(fmt, ".{}", v)),
                     None => ()
                 }
+
+                if !self.pre.is_empty() {
+                    try!(write!(fmt, "-"));
+                    for (i, x) in self.pre.iter().enumerate() {
+                        if i != 0 { try!(write!(fmt, ".")) };
+                        try!(write!(fmt, "{}", x));
+                    }
+                }
             },
         }
 
@@ -723,6 +839,7 @@ mod test {
         OpAlreadySet,
         InvalidSigil,
         VersionComponentsMustBeNumeric,
+        InvalidIdentifier,
         MajorVersionRequired,
     };
 
@@ -767,7 +884,7 @@ mod test {
         assert_eq!(r.to_string(), "= 1.0.0".to_string());
 
         assert_match(&r, &["1.0.0"]);
-        assert_not_match(&r, &["1.0.1", "0.9.9", "0.10.0", "0.1.0"]);
+        assert_not_match(&r, &["1.0.1", "0.9.9", "0.10.0", "0.1.0", "1.0.0-pre"]);
 
         let r = req("=0.9.0");
 
@@ -775,6 +892,13 @@ mod test {
 
         assert_match(&r, &["0.9.0"]);
         assert_not_match(&r, &["0.9.1", "1.9.0", "0.0.9"]);
+
+        let r = req("=0.1.0-beta2.a");
+
+        assert_eq!(r.to_string(), "= 0.1.0-beta2.a".to_string());
+
+        assert_match(&r, &["0.1.0-beta2.a"]);
+        assert_not_match(&r, &["0.9.1", "0.1.0", "0.1.1-beta2.a", "0.1.0-beta2"]);
     }
 
     #[test]
@@ -783,7 +907,28 @@ mod test {
 
         assert_eq!(r.to_string(), ">= 1.0.0".to_string());
 
-        assert_match(&r, &["1.0.0"]);
+        assert_match(&r, &["1.0.0", "2.0.0"]);
+        assert_not_match(&r, &["0.1.0", "0.0.1", "1.0.0-pre", "2.0.0-pre"]);
+
+        let r = req(">= 2.1.0-alpha2");
+
+        assert_match(&r, &["2.1.0-alpha2", "2.1.0-alpha3", "2.1.0", "3.0.0"]);
+        assert_not_match(&r, &["2.0.0", "2.1.0-alpha1", "2.0.0-alpha2", "3.0.0-alpha2"]);
+    }
+
+    #[test]
+    pub fn test_parsing_less_than() {
+        let r = req("< 1.0.0");
+
+        assert_eq!(r.to_string(), "< 1.0.0".to_string());
+
+        assert_match(&r, &["0.1.0", "0.0.1"]);
+        assert_not_match(&r, &["1.0.0", "1.0.0-beta", "1.0.1", "0.9.9-alpha"]);
+
+        let r = req("<= 2.1.0-alpha2");
+
+        assert_match(&r, &["2.1.0-alpha2", "2.1.0-alpha1", "2.0.0", "1.0.0"]);
+        assert_not_match(&r, &["2.1.0", "2.2.0-alpha1", "2.0.0-alpha2", "1.0.0-alpha2"]);
     }
 
     #[test]
@@ -808,6 +953,12 @@ mod test {
 
         assert!(VersionReq::parse("> 0.1.0,").is_err());
         assert!(VersionReq::parse("> 0.3.0, ,").is_err());
+
+        let r = req(">=0.5.1-alpha3, <0.6");
+        assert_eq!(r.to_string(), ">= 0.5.1-alpha3, < 0.6".to_string());
+        assert_match(&r, &["0.5.1-alpha3", "0.5.1-alpha4", "0.5.1-beta", "0.5.1", "0.5.5"]);
+        assert_not_match(&r, &["0.5.1-alpha1", "0.5.2-alpha3", "0.5.5-pre", "0.5.0-pre"]);
+        assert_not_match(&r, &["0.6.0", "0.6.0-pre"]);
     }
 
     #[test]
@@ -823,6 +974,10 @@ mod test {
         let r = req("~1.2.2");
         assert_match(&r, &["1.2.2", "1.2.4"]);
         assert_not_match(&r, &["1.2.1", "1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
+
+        let r = req("~1.2.3-beta.2");
+        assert_match(&r, &["1.2.3", "1.2.4", "1.2.3-beta.2", "1.2.3-beta.4"]);
+        assert_not_match(&r, &["1.3.3", "1.1.4", "1.2.3-beta.1", "1.2.4-beta.2"]);
     }
 
     #[test]
@@ -830,6 +985,7 @@ mod test {
         let r = req("^1");
         assert_match(&r, &["1.1.2", "1.1.0", "1.2.1", "1.0.1"]);
         assert_not_match(&r, &["0.9.1", "2.9.0", "0.1.4"]);
+        assert_not_match(&r, &["1.0.0-beta1", "0.1.0-alpha", "1.0.1-pre"]);
 
         let r = req("^1.1");
         assert_match(&r, &["1.1.2", "1.1.0", "1.2.1"]);
@@ -838,10 +994,16 @@ mod test {
         let r = req("^1.1.2");
         assert_match(&r, &["1.1.2", "1.1.4", "1.2.1"]);
         assert_not_match(&r, &["0.9.1", "2.9.0", "1.1.1", "0.0.1"]);
+        assert_not_match(&r, &["1.1.2-alpha1", "1.1.3-alpha1", "2.9.0-alpha1"]);
 
         let r = req("^0.1.2");
         assert_match(&r, &["0.1.2", "0.1.4"]);
         assert_not_match(&r, &["0.9.1", "2.9.0", "1.1.1", "0.0.1"]);
+        assert_not_match(&r, &["0.1.2-beta", "0.1.3-alpha", "0.2.0-pre"]);
+
+        let r = req("^0.5.1-alpha3");
+        assert_match(&r, &["0.5.1-alpha3", "0.5.1-alpha4", "0.5.1-beta", "0.5.1", "0.5.5"]);
+        assert_not_match(&r, &["0.5.1-alpha1", "0.5.2-alpha3", "0.5.5-pre", "0.5.0-pre", "0.6.0"]);
 
         let r = req("^0.0.2");
         assert_match(&r, &["0.0.2"]);
@@ -854,6 +1016,10 @@ mod test {
         let r = req("^0");
         assert_match(&r, &["0.9.1", "0.0.2", "0.0.0"]);
         assert_not_match(&r, &["2.9.0", "1.1.1"]);
+
+        let r = req("^1.4.2-beta.5");
+        assert_match(&r, &["1.4.2", "1.4.3", "1.4.2-beta.5", "1.4.2-beta.6", "1.4.2-c"]);
+        assert_not_match(&r, &["0.9.9", "2.0.0", "1.4.2-alpha", "1.4.2-beta.4", "1.4.3-beta.5"]);
     }
 
     #[test]
@@ -892,18 +1058,20 @@ mod test {
         assert_not_match(&r, &["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
     }
 
-
     #[test]
-    pub fn test_parse_errors() {
-        assert_eq!(Err(InvalidVersionRequirement), VersionReq::parse("0-0.1"));
-        assert_eq!(Err(OpAlreadySet), VersionReq::parse(">= >= 0.0.2"));
-        assert_eq!(Err(InvalidSigil), VersionReq::parse(">== 0.0.2"));
-        assert_eq!(Err(VersionComponentsMustBeNumeric), VersionReq::parse("a.0.0"));
-        assert_eq!(Err(MajorVersionRequired), VersionReq::parse(">="));
+    pub fn test_any() {
+        let r = VersionReq::any();
+        assert_match(&r, &["0.0.1", "0.1.0", "1.0.0"]);
     }
 
 
-    /* TODO:
-     * - Handle pre releases
-     */
+    #[test]
+    pub fn test_parse_errors() {
+        assert_eq!(Err(InvalidVersionRequirement), VersionReq::parse("\0"));
+        assert_eq!(Err(OpAlreadySet), VersionReq::parse(">= >= 0.0.2"));
+        assert_eq!(Err(InvalidSigil), VersionReq::parse(">== 0.0.2"));
+        assert_eq!(Err(VersionComponentsMustBeNumeric), VersionReq::parse("a.0.0"));
+        assert_eq!(Err(InvalidIdentifier), VersionReq::parse("1.0.0-"));
+        assert_eq!(Err(MajorVersionRequired), VersionReq::parse(">="));
+    }
 }
