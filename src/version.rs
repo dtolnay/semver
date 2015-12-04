@@ -14,6 +14,7 @@
 use std::cmp::{self, Ordering};
 use std::fmt;
 use std::hash;
+use std::error::Error;
 
 use std::result;
 
@@ -66,6 +67,22 @@ enum SemVerError {
     ParseError(String),
 }
 
+impl fmt::Display for SemVerError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &SemVerError::ParseError(ref m) => write!(f, "{}", m),
+        }
+    }
+}
+
+impl Error for SemVerError {
+    fn description(&self) -> &str {
+        match self {
+            &SemVerError::ParseError(ref m) => m,
+        }
+    }
+}
+ 
 /// A Result type for errors
 pub type Result<T> = result::Result<T, SemVerError>;
 
@@ -114,7 +131,7 @@ impl Version {
     }
 
     /// Checks to see if the current Version is in pre-release status
-    pub fn is_prerelease(&self) -> bool {
+    pub fn is_prerelease(&mut self) -> bool {
         !self.pre.is_empty()
     }
 }
