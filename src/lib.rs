@@ -59,8 +59,8 @@
 //! ```{rust}
 //! use semver::Version;
 //!
-//! assert!(Version::parse("1.2.3-alpha").unwrap()  != Version::parse("1.2.3-beta").unwrap());
-//! assert!(Version::parse("1.2.3-alpha2").unwrap() >  Version::parse("1.2.0").unwrap());
+//! assert!(Version::parse("1.2.3-alpha") != Version::parse("1.2.3-beta"));
+//! assert!(Version::parse("1.2.3-alpha2") >  Version::parse("1.2.0"));
 //! ```
 //!
 //! If you explicitly need to modify a Version, SemVer also allows you to
@@ -74,7 +74,7 @@
 //! let mut bugfix_release = Version::parse("1.0.0").unwrap();
 //! bugfix_release.increment_patch();
 //!
-//! assert_eq!(bugfix_release, Version::parse("1.0.1").unwrap());
+//! assert_eq!(Ok(bugfix_release), Version::parse("1.0.1"));
 //! ```
 //!
 //! When incrementing the minor version number, the patch number resets to zero
@@ -86,7 +86,7 @@
 //! let mut feature_release = Version::parse("1.4.6").unwrap();
 //! feature_release.increment_minor();
 //!
-//! assert_eq!(feature_release, Version::parse("1.5.0").unwrap());
+//! assert_eq!(Ok(feature_release), Version::parse("1.5.0"));
 //! ```
 //!
 //! Similarly, when incrementing the major version number, the patch and minor
@@ -98,7 +98,7 @@
 //! let mut chrome_release = Version::parse("41.5.5377").unwrap();
 //! chrome_release.increment_major();
 //!
-//! assert_eq!(chrome_release, Version::parse("42.0.0").unwrap());
+//! assert_eq!(Ok(chrome_release), Version::parse("42.0.0"));
 //! ```
 //!
 //! ## Requirements

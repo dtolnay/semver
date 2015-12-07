@@ -62,7 +62,7 @@ pub struct Version {
 /// An error type for this crate
 ///
 /// Currently, just a generic error. Will make this nicer later.
-#[derive(PartialEq,Debug)]
+#[derive(Clone,PartialEq,Debug,PartialOrd)]
 enum SemVerError {
     ParseError(String),
 }
@@ -376,19 +376,19 @@ mod tests {
 
     #[test]
     fn test_eq() {
-        assert_eq!(Version::parse("1.2.3").unwrap(), Version::parse("1.2.3").unwrap());
-        assert_eq!(Version::parse("1.2.3-alpha1").unwrap(), Version::parse("1.2.3-alpha1").unwrap());
-        assert_eq!(Version::parse("1.2.3+build.42").unwrap(), Version::parse("1.2.3+build.42").unwrap());
-        assert_eq!(Version::parse("1.2.3-alpha1+42").unwrap(), Version::parse("1.2.3-alpha1+42").unwrap());
-        assert_eq!(Version::parse("1.2.3+23").unwrap(), Version::parse("1.2.3+42").unwrap());
+        assert_eq!(Version::parse("1.2.3"), Version::parse("1.2.3"));
+        assert_eq!(Version::parse("1.2.3-alpha1"), Version::parse("1.2.3-alpha1"));
+        assert_eq!(Version::parse("1.2.3+build.42"), Version::parse("1.2.3+build.42"));
+        assert_eq!(Version::parse("1.2.3-alpha1+42"), Version::parse("1.2.3-alpha1+42"));
+        assert_eq!(Version::parse("1.2.3+23"), Version::parse("1.2.3+42"));
     }
 
     #[test]
     fn test_ne() {
-        assert!(Version::parse("0.0.0").unwrap()       != Version::parse("0.0.1").unwrap());
-        assert!(Version::parse("0.0.0").unwrap()       != Version::parse("0.1.0").unwrap());
-        assert!(Version::parse("0.0.0").unwrap()       != Version::parse("1.0.0").unwrap());
-        assert!(Version::parse("1.2.3-alpha").unwrap() != Version::parse("1.2.3-beta").unwrap());
+        assert!(Version::parse("0.0.0")       != Version::parse("0.0.1"));
+        assert!(Version::parse("0.0.0")       != Version::parse("0.1.0"));
+        assert!(Version::parse("0.0.0")       != Version::parse("1.0.0"));
+        assert!(Version::parse("1.2.3-alpha") != Version::parse("1.2.3-beta"));
     }
 
     #[test]
@@ -413,44 +413,44 @@ mod tests {
 
     #[test]
     fn test_lt() {
-        assert!(Version::parse("0.0.0").unwrap()          < Version::parse("1.2.3-alpha2").unwrap());
-        assert!(Version::parse("1.0.0").unwrap()          < Version::parse("1.2.3-alpha2").unwrap());
-        assert!(Version::parse("1.2.0").unwrap()          < Version::parse("1.2.3-alpha2").unwrap());
-        assert!(Version::parse("1.2.3-alpha1").unwrap()   < Version::parse("1.2.3").unwrap());
-        assert!(Version::parse("1.2.3-alpha1").unwrap()   < Version::parse("1.2.3-alpha2").unwrap());
-        assert!(!(Version::parse("1.2.3-alpha2").unwrap() < Version::parse("1.2.3-alpha2").unwrap()));
-        assert!(!(Version::parse("1.2.3+23").unwrap()     < Version::parse("1.2.3+42").unwrap()));
+        assert!(Version::parse("0.0.0")          < Version::parse("1.2.3-alpha2"));
+        assert!(Version::parse("1.0.0")          < Version::parse("1.2.3-alpha2"));
+        assert!(Version::parse("1.2.0")          < Version::parse("1.2.3-alpha2"));
+        assert!(Version::parse("1.2.3-alpha1")   < Version::parse("1.2.3"));
+        assert!(Version::parse("1.2.3-alpha1")   < Version::parse("1.2.3-alpha2"));
+        assert!(!(Version::parse("1.2.3-alpha2") < Version::parse("1.2.3-alpha2")));
+        assert!(!(Version::parse("1.2.3+23")     < Version::parse("1.2.3+42")));
     }
 
     #[test]
     fn test_le() {
-        assert!(Version::parse("0.0.0").unwrap()        <= Version::parse("1.2.3-alpha2").unwrap());
-        assert!(Version::parse("1.0.0").unwrap()        <= Version::parse("1.2.3-alpha2").unwrap());
-        assert!(Version::parse("1.2.0").unwrap()        <= Version::parse("1.2.3-alpha2").unwrap());
-        assert!(Version::parse("1.2.3-alpha1").unwrap() <= Version::parse("1.2.3-alpha2").unwrap());
-        assert!(Version::parse("1.2.3-alpha2").unwrap() <= Version::parse("1.2.3-alpha2").unwrap());
-        assert!(Version::parse("1.2.3+23").unwrap()     <= Version::parse("1.2.3+42").unwrap());
+        assert!(Version::parse("0.0.0")        <= Version::parse("1.2.3-alpha2"));
+        assert!(Version::parse("1.0.0")        <= Version::parse("1.2.3-alpha2"));
+        assert!(Version::parse("1.2.0")        <= Version::parse("1.2.3-alpha2"));
+        assert!(Version::parse("1.2.3-alpha1") <= Version::parse("1.2.3-alpha2"));
+        assert!(Version::parse("1.2.3-alpha2") <= Version::parse("1.2.3-alpha2"));
+        assert!(Version::parse("1.2.3+23")     <= Version::parse("1.2.3+42"));
     }
 
     #[test]
     fn test_gt() {
-        assert!(Version::parse("1.2.3-alpha2").unwrap()   > Version::parse("0.0.0").unwrap());
-        assert!(Version::parse("1.2.3-alpha2").unwrap()   > Version::parse("1.0.0").unwrap());
-        assert!(Version::parse("1.2.3-alpha2").unwrap()   > Version::parse("1.2.0").unwrap());
-        assert!(Version::parse("1.2.3-alpha2").unwrap()   > Version::parse("1.2.3-alpha1").unwrap());
-        assert!(Version::parse("1.2.3").unwrap()          > Version::parse("1.2.3-alpha2").unwrap());
-        assert!(!(Version::parse("1.2.3-alpha2").unwrap() > Version::parse("1.2.3-alpha2").unwrap()));
-        assert!(!(Version::parse("1.2.3+23").unwrap()     > Version::parse("1.2.3+42").unwrap()));
+        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("0.0.0"));
+        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("1.0.0"));
+        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("1.2.0"));
+        assert!(Version::parse("1.2.3-alpha2")   > Version::parse("1.2.3-alpha1"));
+        assert!(Version::parse("1.2.3")          > Version::parse("1.2.3-alpha2"));
+        assert!(!(Version::parse("1.2.3-alpha2") > Version::parse("1.2.3-alpha2")));
+        assert!(!(Version::parse("1.2.3+23")     > Version::parse("1.2.3+42")));
     }
 
     #[test]
     fn test_ge() {
-        assert!(Version::parse("1.2.3-alpha2").unwrap() >= Version::parse("0.0.0").unwrap());
-        assert!(Version::parse("1.2.3-alpha2").unwrap() >= Version::parse("1.0.0").unwrap());
-        assert!(Version::parse("1.2.3-alpha2").unwrap() >= Version::parse("1.2.0").unwrap());
-        assert!(Version::parse("1.2.3-alpha2").unwrap() >= Version::parse("1.2.3-alpha1").unwrap());
-        assert!(Version::parse("1.2.3-alpha2").unwrap() >= Version::parse("1.2.3-alpha2").unwrap());
-        assert!(Version::parse("1.2.3+23").unwrap()     >= Version::parse("1.2.3+42").unwrap());
+        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("0.0.0"));
+        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.0.0"));
+        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.2.0"));
+        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.2.3-alpha1"));
+        assert!(Version::parse("1.2.3-alpha2") >= Version::parse("1.2.3-alpha2"));
+        assert!(Version::parse("1.2.3+23")     >= Version::parse("1.2.3+42"));
     }
 
     #[test]
@@ -473,9 +473,9 @@ mod tests {
                   "1.0.0"];
         let mut i = 1;
         while i < vs.len() {
-            let a = Version::parse(vs[i-1]).unwrap();
-            let b = Version::parse(vs[i]).unwrap();
-            assert!(a < b, "nope {} < {}", a, b);
+            let a = Version::parse(vs[i-1]);
+            let b = Version::parse(vs[i]);
+            assert!(a < b, "nope {:?} < {:?}", a, b);
             i += 1;
         }
     }
