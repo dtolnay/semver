@@ -20,11 +20,10 @@ packages you need installed.
 
 ## Installation
 
-To use `semver`, add these lines to your `Cargo.toml`:
+To use `semver`, add this to your `[dependencies]` section:
 
 ```toml
-[dependencies]
-semver = "*"
+semver = "0.2.0"
 ```
 
 And this to your crate root:
@@ -38,7 +37,7 @@ extern crate semver;
 At its simplest, the `semver` crate allows you to construct `Version` objects using the `parse`
 method:
 
-```{rust}
+```rust
 use semver::Version;
 
 assert!(Version::parse("1.2.3") == Ok(Version {
@@ -52,7 +51,7 @@ assert!(Version::parse("1.2.3") == Ok(Version {
 
 If you have multiple `Version`s, you can use the usual comparison operators to compare them:
 
-```{rust}
+```rust
 use semver::Version;
 
 assert!(Version::parse("1.2.3-alpha")  != Version::parse("1.2.3-beta"));
@@ -67,7 +66,7 @@ comparisons.
 For example, creating a requirement that only matches versions greater than or
 equal to 1.0.0:
 
-```{rust}
+```rust
 use semver::Version;
 use semver::VersionReq;
 
