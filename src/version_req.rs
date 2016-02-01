@@ -748,7 +748,7 @@ fn parse_version_part(s: &str) -> Result<VersionComponent, ReqParseError> {
 fn parse_ident(s: &str) -> Result<Identifier, ReqParseError> {
     if s.is_empty() {
         return Err(InvalidIdentifier)
-    } else if s.chars().all(|c| c.is_digit(10)) && s.chars().next() != Some('0') {
+    } else if s.chars().all(|c| c.is_digit(10)) {
         s.parse::<u64>().map(Identifier::Numeric).or(Err(InvalidIdentifier))
     } else {
         Ok(Identifier::AlphaNumeric(s.to_owned()))
@@ -1064,6 +1064,11 @@ mod test {
         assert_match(&r, &["0.0.1", "0.1.0", "1.0.0"]);
     }
 
+    #[test]
+    pub fn test_pre() {
+        let r = req("=2.1.1-really.0");
+        assert_match(&r, &["2.1.1-really.0"]);
+    }
 
     #[test]
     pub fn test_parse_errors() {
