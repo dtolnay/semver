@@ -14,10 +14,10 @@ pub fn try_parse(i: &[u8]) -> Result<super::Version, String> {
                 let err = format!("Failed with unparsed input: '{}'",
                                   String::from_utf8(rest.to_vec()).unwrap());
                 Err(err)
-            } else{
+            } else {
                 Ok(version)
             }
-        },
+        }
         _ => Err("Parse error".to_string()),
     }
 }
@@ -33,13 +33,7 @@ fn number(i: &[u8]) -> IResult<&[u8], u64> {
 /// Parse an alphanumeric or a dot ("[0-9A-Za-z.]" in regex)
 fn ascii_or_hyphen(chr: u8) -> bool {
     // hyphen
-    chr == 45 ||
-    // 0-9
-    (chr >= 48 && chr <= 57) ||
-    // A-Z
-    (chr >= 65 && chr <= 90) ||
-    // a-z
-    (chr >= 97 && chr <= 122)
+    chr == 45 || (chr >= 48 && chr <= 57) || (chr >= 65 && chr <= 90) || (chr >= 97 && chr <= 122)
 }
 
 named!(take_ascii_or_hyphen, take_while!(ascii_or_hyphen));
@@ -48,10 +42,10 @@ fn convert_identifiers(identifiers: Vec<&str>) -> Vec<Identifier> {
     let mut result = Vec::new();
 
     for identifier in identifiers {
-       match identifier.parse() {
-           Ok(n)  => result.push(Identifier::Numeric(n)),
-           Err(_) => result.push(Identifier::AlphaNumeric(identifier.to_string())),
-       }
+        match identifier.parse() {
+            Ok(n) => result.push(Identifier::Numeric(n)),
+            Err(_) => result.push(Identifier::AlphaNumeric(identifier.to_string())),
+        }
     }
 
     result
