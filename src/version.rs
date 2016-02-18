@@ -65,6 +65,7 @@ pub struct Version {
 /// Currently, just a generic error. Will make this nicer later.
 #[derive(Clone,PartialEq,Debug,PartialOrd)]
 pub enum SemVerError {
+    /// An error ocurred while parsing.
     ParseError(String),
 }
 
