@@ -10,7 +10,7 @@
 
 use std::error::Error;
 use std::fmt;
-use std::str::CharIndices;
+use std::str::{self, CharIndices};
 
 use Version;
 use version::Identifier;
@@ -249,6 +249,14 @@ impl VersionReq {
 
         self.predicates.iter().all(|p| p.matches(version)) &&
         self.predicates.iter().any(|p| p.pre_tag_is_compatible(version))
+    }
+}
+
+impl str::FromStr for VersionReq {
+    type Err = ReqParseError;
+
+    fn from_str(s: &str) -> Result<VersionReq, ReqParseError> {
+        VersionReq::parse(s)
     }
 }
 
@@ -1074,5 +1082,29 @@ mod test {
                    VersionReq::parse("a.0.0"));
         assert_eq!(Err(InvalidIdentifier), VersionReq::parse("1.0.0-"));
         assert_eq!(Err(MajorVersionRequired), VersionReq::parse(">="));
+    }
+
+    #[test]
+    pub fn test_from_str() {
+        assert_eq!("1.0.0".parse::<VersionReq>().unwrap().to_string(), "^1.0.0".to_string());
+        assert_eq!("=1.0.0".parse::<VersionReq>().unwrap().to_string(), "= 1.0.0".to_string());
+        assert_eq!("~1".parse::<VersionReq>().unwrap().to_string(), "~1".to_string());
+        assert_eq!("~1.2".parse::<VersionReq>().unwrap().to_string(), "~1.2".to_string());
+        assert_eq!("^1".parse::<VersionReq>().unwrap().to_string(), "^1".to_string());
+        assert_eq!("^1.1".parse::<VersionReq>().unwrap().to_string(), "^1.1".to_string());
+        assert_eq!("*".parse::<VersionReq>().unwrap().to_string(), "*".to_string());
+        assert_eq!("1.*".parse::<VersionReq>().unwrap().to_string(), "1.*".to_string());
+        assert_eq!("< 1.0.0".parse::<VersionReq>().unwrap().to_string(), "< 1.0.0".to_string());
+    }
+
+    #[test]
+    pub fn test_from_str_errors() {
+        assert_eq!(Err(InvalidVersionRequirement), "\0".parse::<VersionReq>());
+        assert_eq!(Err(OpAlreadySet), ">= >= 0.0.2".parse::<VersionReq>());
+        assert_eq!(Err(InvalidSigil), ">== 0.0.2".parse::<VersionReq>());
+        assert_eq!(Err(VersionComponentsMustBeNumeric),
+                   "a.0.0".parse::<VersionReq>());
+        assert_eq!(Err(InvalidIdentifier), "1.0.0-".parse::<VersionReq>());
+        assert_eq!(Err(MajorVersionRequired), ">=".parse::<VersionReq>());
     }
 }

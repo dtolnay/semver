@@ -17,6 +17,7 @@ use std::hash;
 use std::error::Error;
 
 use std::result;
+use std::str;
 
 use parser;
 
@@ -136,6 +137,13 @@ impl Version {
     }
 }
 
+impl str::FromStr for Version {
+    type Err = SemVerError;
+
+    fn from_str(s: &str) -> Result<Version> {
+        Version::parse(s)
+    }
+}
 
 impl fmt::Display for Version {
     #[inline]
@@ -499,5 +507,115 @@ mod tests {
             assert!(a < b, "nope {:?} < {:?}", a, b);
             i += 1;
         }
+    }
+
+    #[test]
+    fn test_from_str() {
+        assert_eq!("1.2.3".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: Vec::new(),
+                       build: Vec::new(),
+                   }));
+        assert_eq!("  1.2.3  ".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: Vec::new(),
+                       build: Vec::new(),
+                   }));
+        assert_eq!("1.2.3-alpha1".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
+                       build: Vec::new(),
+                   }));
+        assert_eq!("  1.2.3-alpha1  ".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
+                       build: Vec::new(),
+                   }));
+        assert_eq!("1.2.3+build5".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: Vec::new(),
+                       build: vec![Identifier::AlphaNumeric(String::from("build5"))],
+                   }));
+        assert_eq!("  1.2.3+build5  ".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: Vec::new(),
+                       build: vec![Identifier::AlphaNumeric(String::from("build5"))],
+                   }));
+        assert_eq!("1.2.3-alpha1+build5".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
+                       build: vec![Identifier::AlphaNumeric(String::from("build5"))],
+                   }));
+        assert_eq!("  1.2.3-alpha1+build5  ".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
+                       build: vec![Identifier::AlphaNumeric(String::from("build5"))],
+                   }));
+        assert_eq!("1.2.3-1.alpha1.9+build5.7.3aedf  ".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: vec![Identifier::Numeric(1),
+                      Identifier::AlphaNumeric(String::from("alpha1")),
+                      Identifier::Numeric(9),
+            ],
+                       build: vec![Identifier::AlphaNumeric(String::from("build5")),
+                        Identifier::Numeric(7),
+                        Identifier::AlphaNumeric(String::from("3aedf")),
+            ],
+                   }));
+        assert_eq!("0.4.0-beta.1+0851523".parse(),
+                   Ok(Version {
+                       major: 0,
+                       minor: 4,
+                       patch: 0,
+                       pre: vec![Identifier::AlphaNumeric(String::from("beta")),
+                      Identifier::Numeric(1),
+            ],
+                       build: vec![Identifier::AlphaNumeric(String::from("0851523"))],
+                   }));
+
+    }
+
+    #[test]
+    fn test_from_str_errors() {
+        fn parse_error(e: &str) -> result::Result<Version, SemVerError> {
+            return Err(SemVerError::ParseError(e.to_string()));
+        }
+
+        assert_eq!("".parse(), parse_error("Parse error"));
+        assert_eq!("  ".parse(), parse_error("Parse error"));
+        assert_eq!("1".parse(), parse_error("Parse error"));
+        assert_eq!("1.2".parse(), parse_error("Parse error"));
+        assert_eq!("1.2.3-".parse(),
+                   parse_error("Failed with unparsed input: '-'"));
+        assert_eq!("a.b.c".parse(), parse_error("Parse error"));
+        assert_eq!("1.2.3 abc".parse(),
+                   parse_error("Failed with unparsed input: ' abc'"));
     }
 }
