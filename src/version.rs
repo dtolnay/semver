@@ -91,7 +91,7 @@ pub type Result<T> = result::Result<T, SemVerError>;
 impl Version {
     /// Parse a string into a semver object.
     pub fn parse(version: &str) -> Result<Version> {
-        let res = parser::try_parse(version.trim().as_bytes());
+        let res = parser::version::try_parse(version.trim().as_bytes());
 
         match res {
             // Convert plain String error into proper ParseError

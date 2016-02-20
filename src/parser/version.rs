@@ -1,13 +1,14 @@
 use std::str;
 use nom;
 use nom::IResult;
+use Version;
 
 use version::Identifier;
 
 /// Try to parse a version
 ///
 /// If there's an error, then you just get (). for now.
-pub fn try_parse(i: &[u8]) -> Result<super::Version, String> {
+pub fn try_parse(i: &[u8]) -> Result<Version, String> {
     match version(i) {
         IResult::Done(rest, version) => {
             if rest.len() > 0 {
@@ -76,13 +77,13 @@ named!(extras<&[u8], (Option<Vec<Identifier>>, Option<Vec<Identifier>>) >, pair!
 /// - optionally followed by a dot and a patch version number
 ///
 /// If some of the versions aren't present, gives a zero.
-named!(version<&[u8], super::Version>, chain!(
+named!(version<&[u8], Version>, chain!(
         major: number ~
         minor: dot_number ~
         patch: dot_number ~
         extras: extras,
         || {
-            super::Version {
+            Version {
                 major: major,
                 minor: minor,
                 patch: patch,
