@@ -162,8 +162,7 @@
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
 
-#[macro_use]
-extern crate nom;
+extern crate semver_parser;
 
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.
@@ -177,6 +176,3 @@ mod version;
 
 // advanced version comparisons
 mod version_req;
-
-// parsing
-mod parser;
