@@ -32,9 +32,7 @@ pub struct VersionReq {
 
 impl From<semver_parser::range::VersionReq> for VersionReq {
     fn from(other: semver_parser::range::VersionReq) -> VersionReq {
-        VersionReq {
-            predicates: other.predicates.into_iter().map(From::from).collect(),
-        }
+        VersionReq { predicates: other.predicates.into_iter().map(From::from).collect() }
     }
 }
 
@@ -130,14 +128,16 @@ impl Error for ReqParseError {
     fn description(&self) -> &str {
         match *self {
             InvalidVersionRequirement => "the given version requirement is invalid",
-            OpAlreadySet =>
-                "you have already provided an operation, such as =, ~, or ^; only use one",
+            OpAlreadySet => {
+                "you have already provided an operation, such as =, ~, or ^; only use one"
+            }
             InvalidSigil => "the sigil you have written is not correct",
             VersionComponentsMustBeNumeric => "version components must be numeric",
             InvalidIdentifier => "invalid identifier",
             MajorVersionRequired => "at least a major version number is required",
-            UnimplementedVersionRequirement =>
-                "the given version requirement is not implemented, yet",
+            UnimplementedVersionRequirement => {
+                "the given version requirement is not implemented, yet"
+            }
         }
     }
 }
@@ -146,7 +146,7 @@ impl From<String> for ReqParseError {
     fn from(other: String) -> ReqParseError {
         match &*other {
             "Null is not a valid VersionReq" => ReqParseError::InvalidVersionRequirement,
-            "VersionReq did not parse properly." =>  ReqParseError::OpAlreadySet,
+            "VersionReq did not parse properly." => ReqParseError::OpAlreadySet,
             _ => ReqParseError::InvalidVersionRequirement,
         }
     }
@@ -363,9 +363,7 @@ impl Predicate {
                 self.major == ver.major && minor == ver.minor &&
                 (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver)))
             }
-            None => {
-                self.major == ver.major && minor == ver.minor
-            }
+            None => self.major == ver.major && minor == ver.minor,
         }
     }
 
@@ -381,23 +379,27 @@ impl Predicate {
         };
 
         match self.patch {
-            Some(patch) => if self.major == 0 {
-                if minor == 0 {
-                    ver.minor == minor && ver.patch == patch && self.pre_is_compatible(ver)
+            Some(patch) => {
+                if self.major == 0 {
+                    if minor == 0 {
+                        ver.minor == minor && ver.patch == patch && self.pre_is_compatible(ver)
+                    } else {
+                        ver.minor == minor &&
+                        (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver)))
+                    }
                 } else {
-                    ver.minor == minor &&
-                    (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver)))
+                    ver.minor > minor ||
+                    (ver.minor == minor &&
+                     (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver))))
                 }
-            } else {
-                ver.minor > minor ||
-                (ver.minor == minor &&
-                 (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver))))
-            },
-            None => if self.major == 0 {
-                ver.minor == minor
-            } else {
-                ver.minor >= minor
-            },
+            }
+            None => {
+                if self.major == 0 {
+                    ver.minor == minor
+                } else {
+                    ver.minor >= minor
+                }
+            }
         }
     }
 
@@ -495,9 +497,6 @@ impl fmt::Display for Op {
 mod test {
     use super::VersionReq;
     use super::super::version::Version;
-    use super::ReqParseError::{InvalidVersionRequirement, OpAlreadySet, InvalidSigil,
-                               VersionComponentsMustBeNumeric, InvalidIdentifier,
-                               MajorVersionRequired};
 
     fn req(s: &str) -> VersionReq {
         VersionReq::parse(s).unwrap()
@@ -734,8 +733,8 @@ mod test {
         assert_match(&r, &["2.1.1-really.0"]);
     }
 
-    //#[test]
-    //pub fn test_parse_errors() {
+    // #[test]
+    // pub fn test_parse_errors() {
     //    assert_eq!(Err(InvalidVersionRequirement), VersionReq::parse("\0"));
     //    assert_eq!(Err(OpAlreadySet), VersionReq::parse(">= >= 0.0.2"));
     //    assert_eq!(Err(InvalidSigil), VersionReq::parse(">== 0.0.2"));
@@ -743,23 +742,32 @@ mod test {
     //               VersionReq::parse("a.0.0"));
     //    assert_eq!(Err(InvalidIdentifier), VersionReq::parse("1.0.0-"));
     //    assert_eq!(Err(MajorVersionRequired), VersionReq::parse(">="));
-    //}
+    // }
 
     #[test]
     pub fn test_from_str() {
-        assert_eq!("1.0.0".parse::<VersionReq>().unwrap().to_string(), "^1.0.0".to_string());
-        assert_eq!("=1.0.0".parse::<VersionReq>().unwrap().to_string(), "= 1.0.0".to_string());
-        assert_eq!("~1".parse::<VersionReq>().unwrap().to_string(), "~1".to_string());
-        assert_eq!("~1.2".parse::<VersionReq>().unwrap().to_string(), "~1.2".to_string());
-        assert_eq!("^1".parse::<VersionReq>().unwrap().to_string(), "^1".to_string());
-        assert_eq!("^1.1".parse::<VersionReq>().unwrap().to_string(), "^1.1".to_string());
-        assert_eq!("*".parse::<VersionReq>().unwrap().to_string(), "*".to_string());
-        assert_eq!("1.*".parse::<VersionReq>().unwrap().to_string(), "1.*".to_string());
-        assert_eq!("< 1.0.0".parse::<VersionReq>().unwrap().to_string(), "< 1.0.0".to_string());
+        assert_eq!("1.0.0".parse::<VersionReq>().unwrap().to_string(),
+                   "^1.0.0".to_string());
+        assert_eq!("=1.0.0".parse::<VersionReq>().unwrap().to_string(),
+                   "= 1.0.0".to_string());
+        assert_eq!("~1".parse::<VersionReq>().unwrap().to_string(),
+                   "~1".to_string());
+        assert_eq!("~1.2".parse::<VersionReq>().unwrap().to_string(),
+                   "~1.2".to_string());
+        assert_eq!("^1".parse::<VersionReq>().unwrap().to_string(),
+                   "^1".to_string());
+        assert_eq!("^1.1".parse::<VersionReq>().unwrap().to_string(),
+                   "^1.1".to_string());
+        assert_eq!("*".parse::<VersionReq>().unwrap().to_string(),
+                   "*".to_string());
+        assert_eq!("1.*".parse::<VersionReq>().unwrap().to_string(),
+                   "1.*".to_string());
+        assert_eq!("< 1.0.0".parse::<VersionReq>().unwrap().to_string(),
+                   "< 1.0.0".to_string());
     }
 
-    //#[test]
-    //pub fn test_from_str_errors() {
+    // #[test]
+    // pub fn test_from_str_errors() {
     //    assert_eq!(Err(InvalidVersionRequirement), "\0".parse::<VersionReq>());
     //    assert_eq!(Err(OpAlreadySet), ">= >= 0.0.2".parse::<VersionReq>());
     //    assert_eq!(Err(InvalidSigil), ">== 0.0.2".parse::<VersionReq>());
@@ -767,5 +775,5 @@ mod test {
     //               "a.0.0".parse::<VersionReq>());
     //    assert_eq!(Err(InvalidIdentifier), "1.0.0-".parse::<VersionReq>());
     //    assert_eq!(Err(MajorVersionRequired), ">=".parse::<VersionReq>());
-    //}
+    // }
 }
