@@ -33,11 +33,11 @@ pub enum Identifier {
     AlphaNumeric(String),
 }
 
-impl From<semver_parser::Identifier> for Identifier {
-    fn from(other: semver_parser::Identifier) -> Identifier {
+impl From<semver_parser::version::Identifier> for Identifier {
+    fn from(other: semver_parser::version::Identifier) -> Identifier {
         match other {
-            semver_parser::Identifier::Numeric(n) => Identifier::Numeric(n),
-            semver_parser::Identifier::AlphaNumeric(s) => Identifier::AlphaNumeric(s),
+            semver_parser::version::Identifier::Numeric(n) => Identifier::Numeric(n),
+            semver_parser::version::Identifier::AlphaNumeric(s) => Identifier::AlphaNumeric(s),
         }
     }
 }
@@ -69,14 +69,14 @@ pub struct Version {
     pub build: Vec<Identifier>,
 }
 
-impl From<semver_parser::Version> for Version {
-    fn from(other: semver_parser::Version) -> Version {
+impl From<semver_parser::version::Version> for Version {
+    fn from(other: semver_parser::version::Version) -> Version {
         Version {
             major: other.major,
             minor: other.minor,
             patch: other.patch,
-            pre: other.pre.unwrap_or(Vec::new()).into_iter().map(From::from).collect(),
-            build: other.build.unwrap_or(Vec::new()).into_iter().map(From::from).collect(),
+            pre: other.pre.into_iter().map(From::from).collect(),
+            build: other.build.into_iter().map(From::from).collect(),
         }
     }
 }
@@ -112,7 +112,7 @@ pub type Result<T> = result::Result<T, SemVerError>;
 impl Version {
     /// Parse a string into a semver object.
     pub fn parse(version: &str) -> Result<Version> {
-        let res = semver_parser::parse_version(version);
+        let res = semver_parser::version::parse(version);
 
         match res {
             // Convert plain String error into proper ParseError
@@ -261,13 +261,18 @@ mod tests {
             return Err(SemVerError::ParseError(e.to_string()));
         }
 
-        assert_eq!(Version::parse(""), parse_error("Version did not parse properly."));
-        assert_eq!(Version::parse("  "), parse_error("Version did not parse properly."));
-        assert_eq!(Version::parse("1"), parse_error("Version did not parse properly."));
-        assert_eq!(Version::parse("1.2"), parse_error("Version did not parse properly."));
+        assert_eq!(Version::parse(""),
+                   parse_error("Version did not parse properly."));
+        assert_eq!(Version::parse("  "),
+                   parse_error("Version did not parse properly."));
+        assert_eq!(Version::parse("1"),
+                   parse_error("Version did not parse properly."));
+        assert_eq!(Version::parse("1.2"),
+                   parse_error("Version did not parse properly."));
         assert_eq!(Version::parse("1.2.3-"),
                    parse_error("Version did not parse properly."));
-        assert_eq!(Version::parse("a.b.c"), parse_error("Version did not parse properly."));
+        assert_eq!(Version::parse("a.b.c"),
+                   parse_error("Version did not parse properly."));
         assert_eq!(Version::parse("1.2.3 abc"),
                    parse_error("Version did not parse properly."));
 
@@ -633,10 +638,12 @@ mod tests {
         assert_eq!("".parse(), parse_error("Version did not parse properly."));
         assert_eq!("  ".parse(), parse_error("Version did not parse properly."));
         assert_eq!("1".parse(), parse_error("Version did not parse properly."));
-        assert_eq!("1.2".parse(), parse_error("Version did not parse properly."));
+        assert_eq!("1.2".parse(),
+                   parse_error("Version did not parse properly."));
         assert_eq!("1.2.3-".parse(),
                    parse_error("Version did not parse properly."));
-        assert_eq!("a.b.c".parse(), parse_error("Version did not parse properly."));
+        assert_eq!("a.b.c".parse(),
+                   parse_error("Version did not parse properly."));
         assert_eq!("1.2.3 abc".parse(),
                    parse_error("Version did not parse properly."));
     }
