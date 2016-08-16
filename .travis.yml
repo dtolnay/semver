@@ -6,7 +6,7 @@ rust:
 sudo: false
 script:
   - cargo build --verbose
-  - cargo test --verbose --features ci
+  - cargo test --verbose --features ci -- --nocapture
   - cargo doc
 addons:
   apt:
