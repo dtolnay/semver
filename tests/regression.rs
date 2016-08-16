@@ -18,9 +18,10 @@ fn test_regressions() {
     index.clone().unwrap();
 
     for krate in index.crates() {
+        println!("testing crate: {}", krate.name());
         for version in krate.versions() {
             let v = version.version();
-            println!("testing {}", v);
+            println!("testing version: {}", v);
             assert!(Version::parse(v).is_ok(), "failed: {} ({})", version.name(), v);
 
             for dependency in version.dependencies() {
