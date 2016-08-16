@@ -20,6 +20,11 @@ fn test_regressions() {
         for version in krate.versions() {
             let v = version.version();
             assert!(Version::parse(v).is_ok(), "failed: {} ({})", version.name(), v);
+
+            for dependency in version.dependencies() {
+                let r = dependency.requirement();
+                assert!(VersionReq::parse(r).is_ok(), "failed: {} ({})", dependency.name(), r);
+            }
         }
     }
 }
