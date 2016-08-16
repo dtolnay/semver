@@ -20,10 +20,12 @@ fn test_regressions() {
     for krate in index.crates() {
         for version in krate.versions() {
             let v = version.version();
+            println!("testing {}", v);
             assert!(Version::parse(v).is_ok(), "failed: {} ({})", version.name(), v);
 
             for dependency in version.dependencies() {
                 let r = dependency.requirement();
+                println!("testing dependency: {}", r);
                 assert!(VersionReq::parse(r).is_ok(), "failed: {} ({})", dependency.name(), r);
             }
         }
