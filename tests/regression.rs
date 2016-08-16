@@ -11,6 +11,7 @@ fn test_regressions() {
     use tempdir::TempDir;
     use crates_index::Index;
     use semver::Version;
+    use semver::VersionReq;
 
     let dir = TempDir::new("semver").unwrap();
     let index = Index::new(dir.into_path());
