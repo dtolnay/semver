@@ -12,7 +12,7 @@ Semantic version parsing and comparison.
 """
 
 [dependencies]
-semver-parser = "0.6"
+semver-parser = "0.6.1"
 
 [features]
 default = []
