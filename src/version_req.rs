@@ -495,7 +495,7 @@ impl fmt::Display for Op {
 
 #[cfg(test)]
 mod test {
-    use super::VersionReq;
+    use super::{VersionReq, Op};
     use super::super::version::Version;
 
     fn req(s: &str) -> VersionReq {
@@ -554,6 +554,13 @@ mod test {
 
         assert_match(&r, &["0.1.0-beta2.a"]);
         assert_not_match(&r, &["0.9.1", "0.1.0", "0.1.1-beta2.a", "0.1.0-beta2"]);
+    }
+
+    #[test]
+    fn test_parse_metadata_see_issue_88_see_issue_88() {
+        for op in &[Op::Compatible, Op::Ex, Op::Gt, Op::GtEq, Op::Lt, Op::LtEq, Op::Tilde] {
+            req(&format!("{} 1.2.3+meta", op));
+        }
     }
 
     #[test]
