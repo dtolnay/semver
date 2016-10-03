@@ -18,9 +18,7 @@ use semver_parser;
 
 use self::Op::{Ex, Gt, GtEq, Lt, LtEq, Tilde, Compatible, Wildcard};
 use self::WildcardVersion::{Major, Minor, Patch};
-use self::ReqParseError::{InvalidVersionRequirement, OpAlreadySet, InvalidSigil,
-                          VersionComponentsMustBeNumeric, InvalidIdentifier, MajorVersionRequired,
-                          UnimplementedVersionRequirement};
+use self::ReqParseError::*;
 
 /// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
 /// numbers. Matching operations can then be done with the `VersionReq` against a particular
@@ -100,7 +98,7 @@ impl From<semver_parser::range::Predicate> for Predicate {
 
 /// A `ReqParseError` is returned from methods which parse a string into a `VersionReq`. Each
 /// enumeration is one of the possible errors that can occur.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ReqParseError {
     /// The given version requirement is invalid.
     InvalidVersionRequirement,
@@ -116,6 +114,8 @@ pub enum ReqParseError {
     MajorVersionRequired,
     /// An unimplemented version requirement.
     UnimplementedVersionRequirement,
+    /// This form of requirement is deprecated.
+    DeprecatedVersionRequirement(VersionReq),
 }
 
 impl fmt::Display for ReqParseError {
@@ -126,18 +126,19 @@ impl fmt::Display for ReqParseError {
 
 impl Error for ReqParseError {
     fn description(&self) -> &str {
-        match *self {
-            InvalidVersionRequirement => "the given version requirement is invalid",
-            OpAlreadySet => {
+        match self {
+            &InvalidVersionRequirement => "the given version requirement is invalid",
+            &OpAlreadySet => {
                 "you have already provided an operation, such as =, ~, or ^; only use one"
-            }
-            InvalidSigil => "the sigil you have written is not correct",
-            VersionComponentsMustBeNumeric => "version components must be numeric",
-            InvalidIdentifier => "invalid identifier",
-            MajorVersionRequired => "at least a major version number is required",
-            UnimplementedVersionRequirement => {
+            },
+            &InvalidSigil => "the sigil you have written is not correct",
+            &VersionComponentsMustBeNumeric => "version components must be numeric",
+            &InvalidIdentifier => "invalid identifier",
+            &MajorVersionRequired => "at least a major version number is required",
+            &UnimplementedVersionRequirement => {
                 "the given version requirement is not implemented, yet"
-            }
+            },
+            &DeprecatedVersionRequirement(_) => "This requirement is deprecated",
         }
     }
 }
@@ -200,10 +201,26 @@ impl VersionReq {
     pub fn parse(input: &str) -> Result<VersionReq, ReqParseError> {
         let res = semver_parser::range::parse(input);
 
-        match res {
-            // Convert plain String error into proper ParseError
-            Err(e) => Err(From::from(e)),
-            Ok(v) => Ok(From::from(v)),
+        if let Ok(v) = res {
+            return Ok(From::from(v));
+        }
+
+        return match VersionReq::parse_deprecated(input) {
+            Some(v) => {
+                Err(ReqParseError::DeprecatedVersionRequirement(v))
+            }
+            None => Err(From::from(res.err().unwrap())),
+        }
+    }
+
+    fn parse_deprecated(version: &str) -> Option<VersionReq> {
+        return match version {
+            ".*" => Some(VersionReq::any()),
+            "0.1.0." => Some(VersionReq::parse("0.1.0").unwrap()),
+            "0.3.1.3" => Some(VersionReq::parse("0.3.13").unwrap()),
+            "0.2*" => Some(VersionReq::parse("0.2.*").unwrap()),
+            "*.0" => Some(VersionReq::any()),
+            _ => None,
         }
     }
 
