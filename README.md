@@ -23,7 +23,7 @@ packages you need installed.
 To use `semver`, add this to your `[dependencies]` section:
 
 ```toml
-semver = "0.2.0"
+semver = "0.5.0"
 ```
 
 And this to your crate root:
