@@ -463,7 +463,13 @@ impl fmt::Display for Predicate {
         match self.op {
             Wildcard(Major) => try!(write!(fmt, "*")),
             Wildcard(Minor) => try!(write!(fmt, "{}.*", self.major)),
-            Wildcard(Patch) => try!(write!(fmt, "{}.{}.*", self.major, self.minor.unwrap())),
+            Wildcard(Patch) => {
+                if let Some(minor) = self.minor {
+                    try!(write!(fmt, "{}.{}.*", self.major, minor))
+                } else {
+                    try!(write!(fmt, "{}.*.*", self.major))
+                }
+            }
             _ => {
                 try!(write!(fmt, "{}{}", self.op, self.major));
 
@@ -800,4 +806,15 @@ mod test {
     //    assert_eq!(Err(InvalidIdentifier), "1.0.0-".parse::<VersionReq>());
     //    assert_eq!(Err(MajorVersionRequired), ">=".parse::<VersionReq>());
     // }
+
+    #[test]
+    fn test_cargo3202() {
+        let v = "0.*.*".parse::<VersionReq>().unwrap();
+
+        assert_eq!("0.*.*", format!("{}", v.predicates[0]));
+
+        let v = "0.0.*".parse::<VersionReq>().unwrap();
+
+        assert_eq!("0.0.*", format!("{}", v.predicates[0]));
+    }
 }
