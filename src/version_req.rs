@@ -432,7 +432,10 @@ impl Predicate {
             Wildcard(Patch) => {
                 match self.minor {
                     Some(minor) => self.major == ver.major && minor == ver.minor,
-                    None => false,  // unreachable
+                    None => {
+                        // minor and patch version astericks mean match on major
+                        self.major == ver.major
+                    }
                 }
             }
             _ => false,  // unreachable
@@ -810,11 +813,12 @@ mod test {
     #[test]
     fn test_cargo3202() {
         let v = "0.*.*".parse::<VersionReq>().unwrap();
-
         assert_eq!("0.*.*", format!("{}", v.predicates[0]));
 
         let v = "0.0.*".parse::<VersionReq>().unwrap();
-
         assert_eq!("0.0.*", format!("{}", v.predicates[0]));
+
+        let r = req("0.*.*");
+        assert_match(&r, &["0.5.0"]);
     }
 }
