@@ -13,6 +13,13 @@ Semantic version parsing and comparison.
 
 [dependencies]
 semver-parser = "0.6.1"
+regex = "0.1"
+lazy_static = "0.2.1"
+
+[dependencies.clap]
+version = "~2.20.0"
+# This removes libc from clap dependencies (for windows compatibility).
+default-features = false
 
 [features]
 default = []

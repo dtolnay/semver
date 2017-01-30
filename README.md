@@ -101,3 +101,32 @@ Missing minor and patch versions are desugared to `0` but allow flexibility for 
 ^0.0   := >=0.0.0 <0.1.0
 ^0     := >=0.0.0 <1.0.0
 ```
+
+## Binary
+
+The `semver` crate can be used as standalone application:
+
+Suppose the following versions:
+```notrust
+production    1.2.3
+testing       1.3.0-beta
+testing CI    $testing+CI.git_ci_id
+```
+
+You can use semver to automatically create these versions correctly for you:
+production -> testing
+```bash
+PRODUCTION="1.2.3"
+semver $PRODUCTION -m --pre beta
+"1.3.0-beta"
+```
+
+testing -> CI autodeploy
+```bash
+TESTING="1.3.0-beta"
+semver $TESTING --meta CI --meta 6fe444c  # git rev-parse --short HEAD
+"1.3.0-beta+CI.6fe444c"
+```
+
+These versions can be used for your Dockerfile, docker image tag, application version (for API/binary versioning)
+and others.
