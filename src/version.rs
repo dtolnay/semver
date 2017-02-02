@@ -262,19 +262,19 @@ mod tests {
         }
 
         assert_eq!(Version::parse(""),
-                   parse_error("Version did not parse properly."));
+                   parse_error("Error parsing major identifier"));
         assert_eq!(Version::parse("  "),
-                   parse_error("Version did not parse properly."));
+                   parse_error("Error parsing major identifier"));
         assert_eq!(Version::parse("1"),
-                   parse_error("Version did not parse properly."));
+                   parse_error("Expected dot"));
         assert_eq!(Version::parse("1.2"),
-                   parse_error("Version did not parse properly."));
+                   parse_error("Expected dot"));
         assert_eq!(Version::parse("1.2.3-"),
-                   parse_error("Version did not parse properly."));
+                   parse_error("Error parsing prerelease"));
         assert_eq!(Version::parse("a.b.c"),
-                   parse_error("Version did not parse properly."));
+                   parse_error("Error parsing major identifier"));
         assert_eq!(Version::parse("1.2.3 abc"),
-                   parse_error("Version did not parse properly."));
+                   parse_error("Extra junk after valid version:  abc"));
 
         assert_eq!(Version::parse("1.2.3"),
                    Ok(Version {
@@ -635,16 +635,16 @@ mod tests {
             return Err(SemVerError::ParseError(e.to_string()));
         }
 
-        assert_eq!("".parse(), parse_error("Version did not parse properly."));
-        assert_eq!("  ".parse(), parse_error("Version did not parse properly."));
-        assert_eq!("1".parse(), parse_error("Version did not parse properly."));
+        assert_eq!("".parse(), parse_error("Error parsing major identifier"));
+        assert_eq!("  ".parse(), parse_error("Error parsing major identifier"));
+        assert_eq!("1".parse(), parse_error("Expected dot"));
         assert_eq!("1.2".parse(),
-                   parse_error("Version did not parse properly."));
+                   parse_error("Expected dot"));
         assert_eq!("1.2.3-".parse(),
-                   parse_error("Version did not parse properly."));
+                   parse_error("Error parsing prerelease"));
         assert_eq!("a.b.c".parse(),
-                   parse_error("Version did not parse properly."));
+                   parse_error("Error parsing major identifier"));
         assert_eq!("1.2.3 abc".parse(),
-                   parse_error("Version did not parse properly."));
+                   parse_error("Extra junk after valid version:  abc"));
     }
 }
