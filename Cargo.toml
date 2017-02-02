@@ -1,12 +1,12 @@
 [package]
 
 name = "semver"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["Steve Klabnik <steve@steveklabnik.com>", "The Rust Project Developers"]
 license = "MIT/Apache-2.0"
 repository = "https://github.com/steveklabnik/semver"
 homepage = "https://docs.rs/crate/semver/"
-documentation = "https://docs.rs/crate/semver/^0.4.0"
+documentation = "https://docs.rs/crate/semver/"
 description = """
 Semantic version parsing and comparison.
 """
