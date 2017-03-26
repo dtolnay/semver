@@ -23,7 +23,7 @@ use self::ReqParseError::*;
 /// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
 /// numbers. Matching operations can then be done with the `VersionReq` against a particular
 /// version to see if it satisfies some or all of the constraints.
-#[derive(PartialEq,Clone,Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct VersionReq {
     predicates: Vec<Predicate>,
 }
@@ -34,14 +34,14 @@ impl From<semver_parser::range::VersionReq> for VersionReq {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 enum WildcardVersion {
     Major,
     Minor,
     Patch,
 }
 
-#[derive(PartialEq,Clone,Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 enum Op {
     Ex, // Exact
     Gt, // Greater than
@@ -75,7 +75,7 @@ impl From<semver_parser::range::Op> for Op {
     }
 }
 
-#[derive(PartialEq,Clone,Debug)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 struct Predicate {
     op: Op,
     major: u64,
