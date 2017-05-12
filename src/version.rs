@@ -25,6 +25,7 @@ use semver_parser;
 ///
 /// See sections 9 and 10 of the spec for more about pre-release identifers and
 /// build metadata.
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum Identifier {
     /// An identifier that's solely numbers.
@@ -53,6 +54,7 @@ impl fmt::Display for Identifier {
 }
 
 /// Represents a version number conforming to the semantic versioning scheme.
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 #[derive(Clone, Eq, Debug)]
 pub struct Version {
     /// The major version, to be incremented on incompatible changes.

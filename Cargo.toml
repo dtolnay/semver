@@ -14,11 +14,19 @@ Semantic version parsing and comparison.
 [dependencies]
 semver-parser = "0.7.0"
 
+# Serde (SERialization & DEserialization)
+serde = { version = "0.9.13", optional = true }
+# Allows for use of the derive macro for the [De]Serialize trait
+serde_derive = { version = "0.9.13", optional = true }
+
 [features]
 default = []
 
 # are we testing on CI?
 ci = []
+
+# do we want serde support? we need the library
+serde_support = ["serde", "serde_derive"]
 
 [dev-dependencies]
 crates-index = "0.5.0"
