@@ -19,7 +19,7 @@ serde = { version = "1.0", optional = true }
 default = []
 
 # are we testing on CI?
-ci = []
+ci = ["serde"]
 
 [dev-dependencies]
 crates-index = "0.5.0"
