@@ -21,11 +21,15 @@ use std::str;
 
 use semver_parser;
 
+#[cfg(feature = "serde")]
+use serde::ser::{Serialize, Serializer};
+#[cfg(feature = "serde")]
+use serde::de::{self, Deserialize, Deserializer, Visitor};
+
 /// An identifier in the pre-release or build metadata.
 ///
 /// See sections 9 and 10 of the spec for more about pre-release identifers and
 /// build metadata.
-#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum Identifier {
     /// An identifier that's solely numbers.
@@ -53,8 +57,52 @@ impl fmt::Display for Identifier {
     }
 }
 
+#[cfg(feature = "serde")]
+impl Serialize for Identifier {
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        // Serialize Identifier as a number or string.
+        match *self {
+            Identifier::Numeric(n) => serializer.serialize_u64(n),
+            Identifier::AlphaNumeric(ref s) => serializer.serialize_str(s),
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Identifier {
+    fn deserialize<D>(deserializer: D) -> result::Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
+        struct IdentifierVisitor;
+
+        // Deserialize Identifier from a number or string.
+        impl<'de> Visitor<'de> for IdentifierVisitor {
+            type Value = Identifier;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a SemVer pre-release or build identifier")
+            }
+
+            fn visit_u64<E>(self, numeric: u64) -> result::Result<Self::Value, E>
+                where E: de::Error
+            {
+                Ok(Identifier::Numeric(numeric))
+            }
+
+            fn visit_str<E>(self, alphanumeric: &str) -> result::Result<Self::Value, E>
+                where E: de::Error
+            {
+                Ok(Identifier::AlphaNumeric(alphanumeric.to_owned()))
+            }
+        }
+
+        deserializer.deserialize_any(IdentifierVisitor)
+    }
+}
+
 /// Represents a version number conforming to the semantic versioning scheme.
-#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 #[derive(Clone, Eq, Debug)]
 pub struct Version {
     /// The major version, to be incremented on incompatible changes.
@@ -80,6 +128,42 @@ impl From<semver_parser::version::Version> for Version {
             pre: other.pre.into_iter().map(From::from).collect(),
             build: other.build.into_iter().map(From::from).collect(),
         }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for Version {
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        // Serialize Version as a string.
+        serializer.collect_str(self)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Version {
+    fn deserialize<D>(deserializer: D) -> result::Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
+        struct VersionVisitor;
+
+        // Deserialize Version from a string.
+        impl<'de> Visitor<'de> for VersionVisitor {
+            type Value = Version;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a SemVer version as a string")
+            }
+
+            fn visit_str<E>(self, v: &str) -> result::Result<Self::Value, E>
+                where E: de::Error
+            {
+                Version::parse(v).map_err(de::Error::custom)
+            }
+        }
+
+        deserializer.deserialize_str(VersionVisitor)
     }
 }
 
