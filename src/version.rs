@@ -86,7 +86,7 @@ impl From<semver_parser::version::Version> for Version {
 /// An error type for this crate
 ///
 /// Currently, just a generic error. Will make this nicer later.
-#[derive(Clone,PartialEq,Debug,PartialOrd)]
+#[derive(Clone,PartialEq,Eq,Debug,PartialOrd)]
 pub enum SemVerError {
     /// An error ocurred while parsing.
     ParseError(String),
