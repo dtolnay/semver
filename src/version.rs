@@ -196,6 +196,18 @@ impl Error for SemVerError {
 pub type Result<T> = result::Result<T, SemVerError>;
 
 impl Version {
+
+    /// Contructs the simple case without pre or build.
+    pub fn new(major: u64, minor: u64, patch: u64) -> Version {
+        Version {
+            major: major,
+            minor: minor,
+            patch: patch,
+            pre: Vec::new(),
+            build: Vec::new()
+        }
+    }
+
     /// Parse a string into a semver object.
     pub fn parse(version: &str) -> Result<Version> {
         let res = semver_parser::version::parse(version);
@@ -334,6 +346,13 @@ impl hash::Hash for Version {
     }
 }
 
+impl From<(u64,u64,u64)> for Version {
+    fn from(tuple: (u64,u64,u64)) -> Version {
+        let (major, minor, patch) = tuple;
+        Version::new(major, minor, patch)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::result;
@@ -370,6 +389,10 @@ mod tests {
                        pre: Vec::new(),
                        build: Vec::new(),
                    }));
+
+        assert_eq!(Version::parse("1.2.3"),
+                   Ok(Version::new(1,2,3)));
+
         assert_eq!(Version::parse("  1.2.3  "),
                    Ok(Version {
                        major: 1,
