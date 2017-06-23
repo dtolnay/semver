@@ -168,7 +168,7 @@ impl VersionReq {
         VersionReq { predicates: vec![] }
     }
 
-    /// `parse()` is the main constructor of a `VersionReq`. It turns a string like `"^1.2.3"`
+    /// `parse()` is the main constructor of a `VersionReq`. It takes a string like `"^1.2.3"`
     /// and turns it into a `VersionReq` that matches that particular constraint.
     ///
     /// A `Result` is returned which contains a `ReqParseError` if there was a problem parsing the
