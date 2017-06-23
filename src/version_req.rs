@@ -184,6 +184,7 @@ impl VersionReq {
     /// let version = VersionReq::parse("<1.2.3");
     /// let version = VersionReq::parse("~1.2.3");
     /// let version = VersionReq::parse("^1.2.3");
+    /// let version = VersionReq::parse("1.2.3"); // synonym for ^1.2.3
     /// let version = VersionReq::parse("<=1.2.3");
     /// let version = VersionReq::parse(">=1.2.3");
     /// ```
