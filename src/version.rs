@@ -21,9 +21,9 @@ use std::str;
 
 use semver_parser;
 
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde_support")]
 use serde::ser::{Serialize, Serializer};
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde_support")]
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 
 /// An identifier in the pre-release or build metadata.
@@ -57,7 +57,7 @@ impl fmt::Display for Identifier {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde_support")]
 impl Serialize for Identifier {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
         where S: Serializer
@@ -70,7 +70,7 @@ impl Serialize for Identifier {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde_support")]
 impl<'de> Deserialize<'de> for Identifier {
     fn deserialize<D>(deserializer: D) -> result::Result<Self, D::Error>
         where D: Deserializer<'de>
@@ -131,7 +131,7 @@ impl From<semver_parser::version::Version> for Version {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde_support")]
 impl Serialize for Version {
     fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
         where S: Serializer
@@ -141,7 +141,7 @@ impl Serialize for Version {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde_support")]
 impl<'de> Deserialize<'de> for Version {
     fn deserialize<D>(deserializer: D) -> result::Result<Self, D::Error>
         where D: Deserializer<'de>
