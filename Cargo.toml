@@ -11,6 +11,9 @@ description = """
 Semantic version parsing and comparison.
 """
 
+[badges]
+travis-ci = { repository = "steveklabnik/semver" }
+
 [dependencies]
 semver-parser = "0.7.0"
 serde = { version = "1.0", optional = true }
