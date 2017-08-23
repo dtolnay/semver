@@ -6,7 +6,7 @@ extern crate serde_derive;
 extern crate semver;
 extern crate serde_json;
 
-use semver::{Identifier, Version};
+use semver::{Identifier, Version, VersionReq};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct Identified {
@@ -75,4 +75,16 @@ fn deserialize_version() {
         vers: Version::parse("1.0.0").unwrap(),
     };
     assert_eq!(v, expected);
+}
+
+#[test]
+fn serialize_versionreq() {
+    let v = VersionReq::exact(&Version::parse("1.0.0").unwrap());
+
+    assert_eq!(serde_json::to_string(&v).unwrap(), r#""= 1.0.0""#);
+}
+
+#[test]
+fn deserialize_versionreq() {
+    assert_eq!("1.0.0".parse::<VersionReq>().unwrap(), serde_json::from_str(r#""1.0.0""#).unwrap());
 }
