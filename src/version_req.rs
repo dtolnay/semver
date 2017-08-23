@@ -10,11 +10,17 @@
 
 use std::error::Error;
 use std::fmt;
+use std::result;
 use std::str;
 
 use Version;
 use version::Identifier;
 use semver_parser;
+
+#[cfg(feature = "serde")]
+use serde::ser::{Serialize, Serializer};
+#[cfg(feature = "serde")]
+use serde::de::{self, Deserialize, Deserializer, Visitor};
 
 use self::Op::{Ex, Gt, GtEq, Lt, LtEq, Tilde, Compatible, Wildcard};
 use self::WildcardVersion::{Major, Minor, Patch};
@@ -31,6 +37,42 @@ pub struct VersionReq {
 impl From<semver_parser::range::VersionReq> for VersionReq {
     fn from(other: semver_parser::range::VersionReq) -> VersionReq {
         VersionReq { predicates: other.predicates.into_iter().map(From::from).collect() }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for VersionReq {
+    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+        where S: Serializer
+    {
+        // Serialize VersionReq as a string.
+        serializer.collect_str(self)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for VersionReq {
+    fn deserialize<D>(deserializer: D) -> result::Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
+        struct VersionReqVisitor;
+
+        /// Deserialize `VersionReq` from a string.
+        impl<'de> Visitor<'de> for VersionReqVisitor {
+            type Value = VersionReq;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a SemVer version requirement as a string")
+            }
+
+            fn visit_str<E>(self, v: &str) -> result::Result<Self::Value, E>
+                where E: de::Error
+            {
+                VersionReq::parse(v).map_err(de::Error::custom)
+            }
+        }
+
+        deserializer.deserialize_str(VersionReqVisitor)
     }
 }
 
