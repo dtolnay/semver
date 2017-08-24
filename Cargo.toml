@@ -10,6 +10,7 @@ documentation = "https://docs.rs/crate/semver/"
 description = """
 Semantic version parsing and comparison.
 """
+readme = "README.md"
 
 [badges]
 travis-ci = { repository = "steveklabnik/semver" }
