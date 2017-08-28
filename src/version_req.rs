@@ -29,7 +29,7 @@ use self::ReqParseError::*;
 /// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
 /// numbers. Matching operations can then be done with the `VersionReq` against a particular
 /// version to see if it satisfies some or all of the constraints.
-#[derive(PartialEq,Clone,Debug)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct VersionReq {
     predicates: Vec<Predicate>,
 }
@@ -76,14 +76,14 @@ impl<'de> Deserialize<'de> for VersionReq {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum WildcardVersion {
     Major,
     Minor,
     Patch,
 }
 
-#[derive(PartialEq,Clone,Debug)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum Op {
     Ex, // Exact
     Gt, // Greater than
@@ -117,7 +117,7 @@ impl From<semver_parser::range::Op> for Op {
     }
 }
 
-#[derive(PartialEq,Clone,Debug)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 struct Predicate {
     op: Op,
     major: u64,
@@ -566,6 +566,7 @@ impl fmt::Display for Op {
 mod test {
     use super::{VersionReq, Op};
     use super::super::version::Version;
+    use std::hash::{Hash, Hasher};
 
     fn req(s: &str) -> VersionReq {
         VersionReq::parse(s).unwrap()
@@ -588,6 +589,14 @@ mod test {
         for ver in vers.iter() {
             assert!(!req.matches(&version(*ver)), "matched {}", ver);
         }
+    }
+
+    fn calculate_hash<T: Hash>(t: T) -> u64 {
+        use std::collections::hash_map::DefaultHasher;
+
+        let mut s = DefaultHasher::new();
+        t.hash(&mut s);
+        s.finish()
     }
 
     #[test]
@@ -863,5 +872,24 @@ mod test {
 
         let r = req("0.*.*");
         assert_match(&r, &["0.5.0"]);
+    }
+
+    #[test]
+    fn test_eq_hash() {
+        assert!(req("^1") == req("^1"));
+        assert!(calculate_hash(req("^1")) == calculate_hash(req("^1")));
+        assert!(req("^1") != req("^2"));
+    }
+
+    #[test]
+    fn test_ordering() {
+        assert!(req("=1") < req("*"));
+        assert!(req(">1") < req("*"));
+        assert!(req(">=1") < req("*"));
+        assert!(req("<1") < req("*"));
+        assert!(req("<=1") < req("*"));
+        assert!(req("~1") < req("*"));
+        assert!(req("^1") < req("*"));
+        assert!(req("*") == req("*"));
     }
 }
