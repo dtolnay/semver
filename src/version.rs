@@ -13,6 +13,7 @@
 
 use std::cmp::{self, Ordering};
 use std::fmt;
+use std::fmt::Write;
 use std::hash;
 use std::error::Error;
 
@@ -268,23 +269,24 @@ impl str::FromStr for Version {
 impl fmt::Display for Version {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "{}.{}.{}", self.major, self.minor, self.patch));
+        f.write_str(format!("{}.{}.{}", self.major, self.minor, self.patch).as_ref())?;
+        
         if !self.pre.is_empty() {
-            try!(write!(f, "-"));
+            f.write_char('-')?;
             for (i, x) in self.pre.iter().enumerate() {
                 if i != 0 {
-                    try!(write!(f, "."))
+                    f.write_char('.')?;
                 }
-                try!(write!(f, "{}", x));
+                f.write_str(format!("{}", x).as_ref())?;
             }
         }
         if !self.build.is_empty() {
-            try!(write!(f, "+"));
+            f.write_char('+')?;
             for (i, x) in self.build.iter().enumerate() {
                 if i != 0 {
-                    try!(write!(f, "."))
+                    f.write_char('.')?;
                 }
-                try!(write!(f, "{}", x));
+                f.write_str(format!("{}", x).as_ref())?;
             }
         }
         Ok(())
@@ -562,6 +564,14 @@ mod tests {
                    "1.2.3+build.42".to_string());
         assert_eq!(format!("{}", Version::parse("1.2.3-alpha1+42").unwrap()),
                    "1.2.3-alpha1+42".to_string());
+    }
+
+    #[test]
+    fn test_display() {
+        let version = Version::parse("1.2.3-rc1").unwrap();
+        assert_eq!(format!("{:20}", version), "1.2.3-rc1           ");
+        assert_eq!(format!("{:*^20}", version), "*****1.2.3-rc1******");
+        assert_eq!(format!("{:.4}", version),  "1.2.");
     }
 
     #[test]
