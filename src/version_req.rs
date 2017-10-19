@@ -41,7 +41,7 @@ impl From<semver_parser::range::VersionReq> for VersionReq {
 
 #[cfg(feature = "serde")]
 impl Serialize for VersionReq {
-    fn serialize<S>(&self, serializer: S) -> result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
         where S: Serializer
     {
         // Serialize VersionReq as a string.
@@ -51,7 +51,7 @@ impl Serialize for VersionReq {
 
 #[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for VersionReq {
-    fn deserialize<D>(deserializer: D) -> result::Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
         where D: Deserializer<'de>
     {
         struct VersionReqVisitor;
@@ -64,7 +64,7 @@ impl<'de> Deserialize<'de> for VersionReq {
                 formatter.write_str("a SemVer version requirement as a string")
             }
 
-            fn visit_str<E>(self, v: &str) -> result::Result<Self::Value, E>
+            fn visit_str<E>(self, v: &str) -> ::std::result::Result<Self::Value, E>
                 where E: de::Error
             {
                 VersionReq::parse(v).map_err(de::Error::custom)
