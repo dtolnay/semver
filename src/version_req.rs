@@ -10,7 +10,6 @@
 
 use std::error::Error;
 use std::fmt;
-use std::result;
 use std::str;
 
 use Version;
