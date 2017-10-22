@@ -106,21 +106,79 @@ impl<'de> Deserialize<'de> for Identifier {
     }
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
+pub struct MultiPartIdentifier(Vec<Identifier>);
+
+type Iter<'a> = ::std::slice::Iter<'a, Identifier>;
+type IntoIter = ::std::vec::IntoIter<Identifier>;
+
+impl ::std::iter::FromIterator<Identifier> for MultiPartIdentifier {
+    fn from_iter<I: IntoIterator<Item=Identifier>>(iter: I) -> Self {
+        let mut inner = vec![];
+        inner.extend(iter);
+        MultiPartIdentifier(inner)
+    }
+}
+
+impl IntoIterator for MultiPartIdentifier {
+    type Item = Identifier;
+    type IntoIter = IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a MultiPartIdentifier {
+    type Item = &'a Identifier;
+    type IntoIter = Iter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
+}
+
+impl Extend<Identifier> for MultiPartIdentifier {
+    fn extend<T: IntoIterator<Item=Identifier>>(&mut self, iter: T) {
+        self.0.extend(iter);
+    }
+}
+
+impl MultiPartIdentifier {
+
+    pub fn new() -> MultiPartIdentifier {
+        MultiPartIdentifier(Vec::new())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn iter<'a>(&'a self) -> Iter<'a> {
+        self.into_iter()
+    }
+
+}
+
 /// Represents a version number conforming to the semantic versioning scheme.
 #[derive(Clone, Eq, Debug)]
 pub struct Version {
     /// The major version, to be incremented on incompatible changes.
-    pub major: u64,
+    major: u64,
     /// The minor version, to be incremented when functionality is added in a
     /// backwards-compatible manner.
-    pub minor: u64,
+    minor: u64,
     /// The patch version, to be incremented when backwards-compatible bug
     /// fixes are made.
-    pub patch: u64,
+    patch: u64,
     /// The pre-release version identifier, if one exists.
-    pub pre: Vec<Identifier>,
+    pre: MultiPartIdentifier,
     /// The build metadata, ignored when determining version precedence.
-    pub build: Vec<Identifier>,
+    build: MultiPartIdentifier,
 }
 
 impl From<semver_parser::version::Version> for Version {
@@ -209,8 +267,8 @@ impl Version {
             major: major,
             minor: minor,
             patch: patch,
-            pre: Vec::new(),
-            build: Vec::new(),
+            pre: MultiPartIdentifier::new(),
+            build: MultiPartIdentifier::new()
         }
     }
 
@@ -246,10 +304,45 @@ impl Version {
         }
     }
 
+    /// Gets the Major version number
+    pub fn major(&self) -> u64 {
+        self.major
+    }
+
+    /// Gets the Minor version number
+    pub fn minor(&self) -> u64 {
+        self.minor
+    }
+
+    /// Gets the Patch version number
+    pub fn patch(&self) -> u64 {
+        self.patch
+    }
+
+    /// Gets the Pre version information
+    pub fn pre(&self) -> &MultiPartIdentifier {
+        &self.pre
+    }
+
+    /// Gets the Build information
+    pub fn build(&self) -> &MultiPartIdentifier {
+        &self.build
+    }
+
+    /// Split the Version into its constituent parts, borrowing the pre & build information
+    pub fn as_parts(&self) -> (u64, u64, u64, &MultiPartIdentifier, &MultiPartIdentifier) {
+        (self.major, self.minor, self.patch, self.pre(), self.build())
+    }
+
+    /// Split the Version into its constituent parts, cloning the pre & build information
+    pub fn into_parts(&self) -> (u64, u64, u64, MultiPartIdentifier, MultiPartIdentifier) {
+        (self.major, self.minor, self.patch, self.pre.clone(), self.build.clone())
+    }
+
     /// Clears the build metadata
     fn clear_metadata(&mut self) {
-        self.build = Vec::new();
-        self.pre = Vec::new();
+        self.build = MultiPartIdentifier::new();
+        self.pre = MultiPartIdentifier::new();
     }
 
     /// Increments the patch number for this Version (Must be mutable)

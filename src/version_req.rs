@@ -13,7 +13,7 @@ use std::fmt;
 use std::str;
 
 use Version;
-use version::Identifier;
+use version::MultiPartIdentifier;
 use semver_parser;
 
 #[cfg(feature = "serde")]
@@ -125,7 +125,7 @@ struct Predicate {
     major: u64,
     minor: Option<u64>,
     patch: Option<u64>,
-    pre: Vec<Identifier>,
+    pre: MultiPartIdentifier,
 }
 
 impl From<semver_parser::range::Predicate> for Predicate {
@@ -320,10 +320,10 @@ impl Predicate {
     fn exact(version: &Version) -> Predicate {
         Predicate {
             op: Ex,
-            major: version.major,
-            minor: Some(version.minor),
-            patch: Some(version.patch),
-            pre: version.pre.clone(),
+            major: version.major(),
+            minor: Some(version.minor()),
+            patch: Some(version.patch()),
+            pre: version.pre().clone(),
         }
     }
 
@@ -342,13 +342,13 @@ impl Predicate {
     }
 
     fn is_exact(&self, ver: &Version) -> bool {
-        if self.major != ver.major {
+        if self.major != ver.major() {
             return false;
         }
 
         match self.minor {
             Some(minor) => {
-                if minor != ver.minor {
+                if minor != ver.minor() {
                     return false;
                 }
             }
@@ -357,14 +357,14 @@ impl Predicate {
 
         match self.patch {
             Some(patch) => {
-                if patch != ver.patch {
+                if patch != ver.patch() {
                     return false;
                 }
             }
             None => return true,
         }
 
-        if self.pre != ver.pre {
+        if self.pre != *ver.pre() {
             return false;
         }
 
@@ -379,19 +379,19 @@ impl Predicate {
         // [major,
         // minor, patch] tuple also has a prerelease tag.
         !ver.is_prerelease() ||
-            (self.major == ver.major && self.minor == Some(ver.minor) &&
-                 self.patch == Some(ver.patch) && !self.pre.is_empty())
+        (self.major == ver.major() && self.minor == Some(ver.minor()) &&
+         self.patch == Some(ver.patch()) && !self.pre.is_empty())
     }
 
     fn is_greater(&self, ver: &Version) -> bool {
-        if self.major != ver.major {
-            return ver.major > self.major;
+        if self.major != ver.major() {
+            return ver.major() > self.major;
         }
 
         match self.minor {
             Some(minor) => {
-                if minor != ver.minor {
-                    return ver.minor > minor;
+                if minor != ver.minor() {
+                    return ver.minor() > minor;
                 }
             }
             None => return false,
@@ -399,15 +399,15 @@ impl Predicate {
 
         match self.patch {
             Some(patch) => {
-                if patch != ver.patch {
-                    return ver.patch > patch;
+                if patch != ver.patch() {
+                    return ver.patch() > patch;
                 }
             }
             None => return false,
         }
 
         if !self.pre.is_empty() {
-            return ver.pre.is_empty() || ver.pre > self.pre;
+            return ver.pre().is_empty() || *ver.pre() > self.pre;
         }
 
         false
@@ -417,71 +417,69 @@ impl Predicate {
     fn matches_tilde(&self, ver: &Version) -> bool {
         let minor = match self.minor {
             Some(n) => n,
-            None => return self.major == ver.major,
+            None => return self.major == ver.major(),
         };
 
         match self.patch {
             Some(patch) => {
-                self.major == ver.major && minor == ver.minor &&
-                    (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver)))
+                self.major == ver.major() && minor == ver.minor() &&
+                (ver.patch() > patch || (ver.patch() == patch && self.pre_is_compatible(ver)))
             }
-            None => self.major == ver.major && minor == ver.minor,
+            None => self.major == ver.major() && minor == ver.minor(),
         }
     }
 
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
     fn is_compatible(&self, ver: &Version) -> bool {
-        if self.major != ver.major {
+        if self.major != ver.major() {
             return false;
         }
 
         let minor = match self.minor {
             Some(n) => n,
-            None => return self.major == ver.major,
+            None => return self.major == ver.major(),
         };
 
         match self.patch {
             Some(patch) => {
                 if self.major == 0 {
                     if minor == 0 {
-                        ver.minor == minor && ver.patch == patch && self.pre_is_compatible(ver)
+                        ver.minor() == minor && ver.patch() == patch && self.pre_is_compatible(ver)
                     } else {
-                        ver.minor == minor &&
-                            (ver.patch > patch ||
-                                 (ver.patch == patch && self.pre_is_compatible(ver)))
+                        ver.minor() == minor &&
+                        (ver.patch() > patch || (ver.patch() == patch && self.pre_is_compatible(ver)))
                     }
                 } else {
-                    ver.minor > minor ||
-                        (ver.minor == minor &&
-                             (ver.patch > patch ||
-                                  (ver.patch == patch && self.pre_is_compatible(ver))))
+                    ver.minor() > minor ||
+                    (ver.minor() == minor &&
+                     (ver.patch() > patch || (ver.patch() == patch && self.pre_is_compatible(ver))))
                 }
             }
             None => {
                 if self.major == 0 {
-                    ver.minor == minor
+                    ver.minor() == minor
                 } else {
-                    ver.minor >= minor
+                    ver.minor() >= minor
                 }
             }
         }
     }
 
     fn pre_is_compatible(&self, ver: &Version) -> bool {
-        ver.pre.is_empty() || ver.pre >= self.pre
+        ver.pre().is_empty() || *ver.pre() >= self.pre
     }
 
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
     fn matches_wildcard(&self, ver: &Version) -> bool {
         match self.op {
             Wildcard(Major) => true,
-            Wildcard(Minor) => self.major == ver.major,
+            Wildcard(Minor) => self.major == ver.major(),
             Wildcard(Patch) => {
                 match self.minor {
-                    Some(minor) => self.major == ver.major && minor == ver.minor,
+                    Some(minor) => self.major == ver.major() && minor == ver.minor(),
                     None => {
                         // minor and patch version astericks mean match on major
-                        self.major == ver.major
+                        self.major == ver.major()
                     }
                 }
             }
