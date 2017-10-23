@@ -106,6 +106,7 @@ impl<'de> Deserialize<'de> for Identifier {
     }
 }
 
+/// Pre-release or build metadata, consisting of a collection of Identifiers
 #[derive(Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
 pub struct MultiPartIdentifier(Vec<Identifier>);
 
@@ -146,18 +147,22 @@ impl Extend<Identifier> for MultiPartIdentifier {
 
 impl MultiPartIdentifier {
 
+    /// Creates an empty MultiPartIdentifier
     pub fn new() -> MultiPartIdentifier {
         MultiPartIdentifier(Vec::new())
     }
 
+    /// Returns true if collection of Identifiers is empty
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
+    /// Returns the number of Identifiers in the collection
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
+    /// Returns an Iterator over the collection of Identifiers
     pub fn iter<'a>(&'a self) -> Iter<'a> {
         self.into_iter()
     }

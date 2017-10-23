@@ -172,7 +172,7 @@ extern crate serde;
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.
 
-pub use version::{Version, Identifier, SemVerError};
+pub use version::{Version, Identifier, SemVerError, MultiPartIdentifier};
 pub use version::Identifier::{Numeric, AlphaNumeric};
 pub use version_req::{VersionReq, ReqParseError};
 
