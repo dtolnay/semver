@@ -121,6 +121,16 @@ impl ::std::iter::FromIterator<Identifier> for MultiPartIdentifier {
     }
 }
 
+impl From<Vec<Identifier>> for MultiPartIdentifier {
+
+    fn from(ids: Vec<Identifier>) -> MultiPartIdentifier {
+        let mut multipart = MultiPartIdentifier::new();
+        multipart.extend(ids);
+        multipart
+    }
+
+}
+
 impl IntoIterator for MultiPartIdentifier {
     type Item = Identifier;
     type IntoIter = IntoIter;
@@ -483,6 +493,7 @@ mod tests {
     use std::result;
     use super::Version;
     use super::Identifier;
+    use super::MultiPartIdentifier;
     use super::SemVerError;
 
     #[test]
@@ -491,143 +502,113 @@ mod tests {
             return Err(SemVerError::ParseError(e.to_string()));
         }
 
-        assert_eq!(
-            Version::parse(""),
-            parse_error("Error parsing major identifier")
-        );
-        assert_eq!(
-            Version::parse("  "),
-            parse_error("Error parsing major identifier")
-        );
-        assert_eq!(Version::parse("1"), parse_error("Expected dot"));
-        assert_eq!(Version::parse("1.2"), parse_error("Expected dot"));
-        assert_eq!(
-            Version::parse("1.2.3-"),
-            parse_error("Error parsing prerelease")
-        );
-        assert_eq!(
-            Version::parse("a.b.c"),
-            parse_error("Error parsing major identifier")
-        );
-        assert_eq!(
-            Version::parse("1.2.3 abc"),
-            parse_error("Extra junk after valid version:  abc")
-        );
+        assert_eq!(Version::parse(""),
+                   parse_error("Error parsing major identifier"));
+        assert_eq!(Version::parse("  "),
+                   parse_error("Error parsing major identifier"));
+        assert_eq!(Version::parse("1"),
+                   parse_error("Expected dot"));
+        assert_eq!(Version::parse("1.2"),
+                   parse_error("Expected dot"));
+        assert_eq!(Version::parse("1.2.3-"),
+                   parse_error("Error parsing prerelease"));
+        assert_eq!(Version::parse("a.b.c"),
+                   parse_error("Error parsing major identifier"));
+        assert_eq!(Version::parse("1.2.3 abc"),
+                   parse_error("Extra junk after valid version:  abc"));
 
-        assert_eq!(
-            Version::parse("1.2.3"),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: Vec::new(),
-                build: Vec::new(),
-            })
-        );
+        assert_eq!(Version::parse("1.2.3"),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::new(),
+                       build: MultiPartIdentifier::new(),
+                   }));
 
-        assert_eq!(Version::parse("1.2.3"), Ok(Version::new(1, 2, 3)));
+        assert_eq!(Version::parse("1.2.3"),
+                   Ok(Version::new(1,2,3)));
 
-        assert_eq!(
-            Version::parse("  1.2.3  "),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: Vec::new(),
-                build: Vec::new(),
-            })
-        );
-        assert_eq!(
-            Version::parse("1.2.3-alpha1"),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
-                build: Vec::new(),
-            })
-        );
-        assert_eq!(
-            Version::parse("  1.2.3-alpha1  "),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
-                build: Vec::new(),
-            })
-        );
-        assert_eq!(
-            Version::parse("1.2.3+build5"),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: Vec::new(),
-                build: vec![Identifier::AlphaNumeric(String::from("build5"))],
-            })
-        );
-        assert_eq!(
-            Version::parse("  1.2.3+build5  "),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: Vec::new(),
-                build: vec![Identifier::AlphaNumeric(String::from("build5"))],
-            })
-        );
-        assert_eq!(
-            Version::parse("1.2.3-alpha1+build5"),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
-                build: vec![Identifier::AlphaNumeric(String::from("build5"))],
-            })
-        );
-        assert_eq!(
-            Version::parse("  1.2.3-alpha1+build5  "),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
-                build: vec![Identifier::AlphaNumeric(String::from("build5"))],
-            })
-        );
-        assert_eq!(
-            Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  "),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: vec![
-                    Identifier::Numeric(1),
-                    Identifier::AlphaNumeric(String::from("alpha1")),
-                    Identifier::Numeric(9),
-                ],
-                build: vec![
-                    Identifier::AlphaNumeric(String::from("build5")),
-                    Identifier::Numeric(7),
-                    Identifier::AlphaNumeric(String::from("3aedf")),
-                ],
-            })
-        );
-        assert_eq!(
-            Version::parse("0.4.0-beta.1+0851523"),
-            Ok(Version {
-                major: 0,
-                minor: 4,
-                patch: 0,
-                pre: vec![
-                    Identifier::AlphaNumeric(String::from("beta")),
-                    Identifier::Numeric(1),
-                ],
-                build: vec![Identifier::AlphaNumeric(String::from("0851523"))],
-            })
-        );
+        assert_eq!(Version::parse("  1.2.3  "),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::new(),
+                       build: MultiPartIdentifier::new(),
+                   }));
+        assert_eq!(Version::parse("1.2.3-alpha1"),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MultiPartIdentifier::new(),
+                   }));
+        assert_eq!(Version::parse("  1.2.3-alpha1  "),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MultiPartIdentifier::new(),
+                   }));
+        assert_eq!(Version::parse("1.2.3+build5"),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::new(),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                   }));
+        assert_eq!(Version::parse("  1.2.3+build5  "),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::new(),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                   }));
+        assert_eq!(Version::parse("1.2.3-alpha1+build5"),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                   }));
+        assert_eq!(Version::parse("  1.2.3-alpha1+build5  "),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                   }));
+        assert_eq!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  "),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::from(vec![Identifier::Numeric(1),
+                      Identifier::AlphaNumeric(String::from("alpha1")),
+                      Identifier::Numeric(9),
+            ]),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5")),
+                        Identifier::Numeric(7),
+                        Identifier::AlphaNumeric(String::from("3aedf")),
+            ]),
+                   }));
+        assert_eq!(Version::parse("0.4.0-beta.1+0851523"),
+                   Ok(Version {
+                       major: 0,
+                       minor: 4,
+                       patch: 0,
+                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("beta")),
+                      Identifier::Numeric(1),
+            ]),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("0851523"))],
+            )}));
 
     }
 
@@ -826,117 +807,94 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        assert_eq!(
-            "1.2.3".parse(),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: Vec::new(),
-                build: Vec::new(),
-            })
-        );
-        assert_eq!(
-            "  1.2.3  ".parse(),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: Vec::new(),
-                build: Vec::new(),
-            })
-        );
-        assert_eq!(
-            "1.2.3-alpha1".parse(),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
-                build: Vec::new(),
-            })
-        );
-        assert_eq!(
-            "  1.2.3-alpha1  ".parse(),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
-                build: Vec::new(),
-            })
-        );
-        assert_eq!(
-            "1.2.3+build5".parse(),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: Vec::new(),
-                build: vec![Identifier::AlphaNumeric(String::from("build5"))],
-            })
-        );
-        assert_eq!(
-            "  1.2.3+build5  ".parse(),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: Vec::new(),
-                build: vec![Identifier::AlphaNumeric(String::from("build5"))],
-            })
-        );
-        assert_eq!(
-            "1.2.3-alpha1+build5".parse(),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
-                build: vec![Identifier::AlphaNumeric(String::from("build5"))],
-            })
-        );
-        assert_eq!(
-            "  1.2.3-alpha1+build5  ".parse(),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: vec![Identifier::AlphaNumeric(String::from("alpha1"))],
-                build: vec![Identifier::AlphaNumeric(String::from("build5"))],
-            })
-        );
-        assert_eq!(
-            "1.2.3-1.alpha1.9+build5.7.3aedf  ".parse(),
-            Ok(Version {
-                major: 1,
-                minor: 2,
-                patch: 3,
-                pre: vec![
-                    Identifier::Numeric(1),
-                    Identifier::AlphaNumeric(String::from("alpha1")),
-                    Identifier::Numeric(9),
-                ],
-                build: vec![
-                    Identifier::AlphaNumeric(String::from("build5")),
-                    Identifier::Numeric(7),
-                    Identifier::AlphaNumeric(String::from("3aedf")),
-                ],
-            })
-        );
-        assert_eq!(
-            "0.4.0-beta.1+0851523".parse(),
-            Ok(Version {
-                major: 0,
-                minor: 4,
-                patch: 0,
-                pre: vec![
-                    Identifier::AlphaNumeric(String::from("beta")),
-                    Identifier::Numeric(1),
-                ],
-                build: vec![Identifier::AlphaNumeric(String::from("0851523"))],
-            })
-        );
+        assert_eq!("1.2.3".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::new(),
+                       build: MultiPartIdentifier::new(),
+                   }));
+        assert_eq!("  1.2.3  ".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::new(),
+                       build: MultiPartIdentifier::new(),
+                   }));
+        assert_eq!("1.2.3-alpha1".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MultiPartIdentifier::new(),
+                   }));
+        assert_eq!("  1.2.3-alpha1  ".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MultiPartIdentifier::new(),
+                   }));
+        assert_eq!("1.2.3+build5".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::new(),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                   }));
+        assert_eq!("  1.2.3+build5  ".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::new(),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                   }));
+        assert_eq!("1.2.3-alpha1+build5".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                   }));
+        assert_eq!("  1.2.3-alpha1+build5  ".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                   }));
+        assert_eq!("1.2.3-1.alpha1.9+build5.7.3aedf  ".parse(),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 3,
+                       pre: MultiPartIdentifier::from(vec![Identifier::Numeric(1),
+                      Identifier::AlphaNumeric(String::from("alpha1")),
+                      Identifier::Numeric(9),
+            ]),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5")),
+                        Identifier::Numeric(7),
+                        Identifier::AlphaNumeric(String::from("3aedf")),
+            ]),
+                   }));
+        assert_eq!("0.4.0-beta.1+0851523".parse(),
+                   Ok(Version {
+                       major: 0,
+                       minor: 4,
+                       patch: 0,
+                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("beta")),
+                      Identifier::Numeric(1),
+            ]),
+                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("0851523"))]),
+                   }));
 
     }
 
