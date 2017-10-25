@@ -72,19 +72,17 @@
 //! use semver::Version;
 //! use std::error::Error;
 //!
-//! fn try_increment_patch() -> Result<(), Box<Error>> {
+//! # fn try_increment_patch() -> Result<(), Box<Error>> {
+//! let mut bugfix_release = Version::parse("1.0.0")?;
+//! bugfix_release.increment_patch();
 //!
-//!     let mut bugfix_release = Version::parse("1.0.0")?;
-//!     bugfix_release.increment_patch();
+//! assert_eq!(Ok(bugfix_release), Version::parse("1.0.1"));
 //!
-//!     assert_eq!(Ok(bugfix_release), Version::parse("1.0.1"));
-//!
-//!     Ok(())
-//! }
-//!
-//! fn main() {
-//!     try_increment_patch().unwrap();
-//! }
+//! #    Ok(())
+//! # }
+//! # fn main() {
+//! #    try_increment_patch().unwrap();
+//! # }
 //! ```
 //!
 //! When incrementing the minor version number, the patch number resets to zero
@@ -94,19 +92,17 @@
 //! use semver::Version;
 //! use std::error::Error;
 //!
-//! fn try_increment_minor() -> Result<(), Box<Error>> {
+//! # fn try_increment_minor() -> Result<(), Box<Error>> {
+//! let mut feature_release = Version::parse("1.4.6")?;
+//! feature_release.increment_minor();
 //!
-//!    let mut feature_release = Version::parse("1.4.6")?;
-//!    feature_release.increment_minor();
+//! assert_eq!(Ok(feature_release), Version::parse("1.5.0"));
 //!
-//!    assert_eq!(Ok(feature_release), Version::parse("1.5.0"));
-//!
-//!    Ok(())
-//! }
-//!
-//! fn main() {
-//!     try_increment_minor().unwrap();
-//! }
+//! #   Ok(())
+//! # }
+//! # fn main() {
+//! #    try_increment_minor().unwrap();
+//! # }
 //! ```
 //!
 //! Similarly, when incrementing the major version number, the patch and minor
@@ -116,19 +112,17 @@
 //! use semver::Version;
 //! use std::error::Error;
 //!
-//! fn try_increment_major() -> Result<(), Box<Error>> {
+//! # fn try_increment_major() -> Result<(), Box<Error>> {
+//! let mut chrome_release = Version::parse("41.5.5377")?;
+//! chrome_release.increment_major();
 //!
-//!     let mut chrome_release = Version::parse("41.5.5377")?;
-//!     chrome_release.increment_major();
+//! assert_eq!(Ok(chrome_release), Version::parse("42.0.0"));
 //!
-//!     assert_eq!(Ok(chrome_release), Version::parse("42.0.0"));
-//!
-//!     Ok(())
-//! }
-//!
-//! fn main() {
-//!     try_increment_major().unwrap();
-//! }
+//! #    Ok(())
+//! # }
+//! # fn main() {
+//! #    try_increment_major().unwrap();
+//! # }
 //! ```
 //!
 //! ## Requirements
@@ -145,20 +139,18 @@
 //! use semver::VersionReq;
 //! use std::error::Error;
 //!
-//! fn try_compare() -> Result<(), Box<Error>> {
+//! # fn try_compare() -> Result<(), Box<Error>> {
+//! let r = VersionReq::parse(">= 1.0.0")?;
+//! let v = Version::parse("1.0.0")?;
 //!
-//!     let r = VersionReq::parse(">= 1.0.0")?;
-//!     let v = Version::parse("1.0.0")?;
+//! assert!(r.to_string() == ">= 1.0.0".to_string());
+//! assert!(r.matches(&v));
 //!
-//!     assert!(r.to_string() == ">= 1.0.0".to_string());
-//!     assert!(r.matches(&v));
-//!
-//!     Ok(())
-//! }
-//!
-//! fn main() {
-//!     try_compare().unwrap();
-//! }
+//! #    Ok(())
+//! # }
+//! # fn main() {
+//! #    try_compare().unwrap();
+//! # }
 //! ```
 //!
 //! It also allows parsing of `~x.y.z` and `^x.y.z` requirements as defined at
