@@ -70,11 +70,21 @@
 //!
 //! ```{rust}
 //! use semver::Version;
+//! use std::error::Error;
 //!
-//! let mut bugfix_release = Version::parse("1.0.0").unwrap();
-//! bugfix_release.increment_patch();
+//! fn try_main() -> Result<(), Box<Error>> {
 //!
-//! assert_eq!(Ok(bugfix_release), Version::parse("1.0.1"));
+//!     let mut bugfix_release = Version::parse("1.0.0")?;
+//!     bugfix_release.increment_patch();
+//!
+//!     assert_eq!(Ok(bugfix_release), Version::parse("1.0.1"));
+//!
+//!     Ok(())
+//! }
+//!
+//! fn main() {
+//!     try_main().unwrap();
+//! }
 //! ```
 //!
 //! When incrementing the minor version number, the patch number resets to zero
@@ -82,11 +92,21 @@
 //!
 //! ```{rust}
 //! use semver::Version;
+//! use std::error::Error;
 //!
-//! let mut feature_release = Version::parse("1.4.6").unwrap();
-//! feature_release.increment_minor();
+//! fn try_main() -> Result<(), Box<Error>> {
 //!
-//! assert_eq!(Ok(feature_release), Version::parse("1.5.0"));
+//!    let mut feature_release = Version::parse("1.4.6")?;
+//!    feature_release.increment_minor();
+//!
+//!    assert_eq!(Ok(feature_release), Version::parse("1.5.0"));
+//!
+//!    Ok(())
+//! }
+//!
+//! fn main() {
+//!     try_main().unwrap();
+//! }
 //! ```
 //!
 //! Similarly, when incrementing the major version number, the patch and minor
@@ -94,11 +114,21 @@
 //!
 //! ```{rust}
 //! use semver::Version;
+//! use std::error::Error;
 //!
-//! let mut chrome_release = Version::parse("41.5.5377").unwrap();
-//! chrome_release.increment_major();
+//! fn try_main() -> Result<(), Box<Error>> {
 //!
-//! assert_eq!(Ok(chrome_release), Version::parse("42.0.0"));
+//!     let mut chrome_release = Version::parse("41.5.5377")?;
+//!     chrome_release.increment_major();
+//!
+//!     assert_eq!(Ok(chrome_release), Version::parse("42.0.0"));
+//!
+//!     Ok(())
+//! }
+//!
+//! fn main() {
+//!     try_main().unwrap();
+//! }
 //! ```
 //!
 //! ## Requirements
@@ -113,12 +143,22 @@
 //! # #![allow(unstable)]
 //! use semver::Version;
 //! use semver::VersionReq;
+//! use std::error::Error;
 //!
-//! let r = VersionReq::parse(">= 1.0.0").unwrap();
-//! let v = Version::parse("1.0.0").unwrap();
+//! fn try_main() -> Result<(), Box<Error>> {
 //!
-//! assert!(r.to_string() == ">= 1.0.0".to_string());
-//! assert!(r.matches(&v))
+//!     let r = VersionReq::parse(">= 1.0.0")?;
+//!     let v = Version::parse("1.0.0")?;
+//!
+//!     assert!(r.to_string() == ">= 1.0.0".to_string());
+//!     assert!(r.matches(&v));
+//!
+//!     Ok(())
+//! }
+//!
+//! fn main() {
+//!     try_main().unwrap();
+//! }
 //! ```
 //!
 //! It also allows parsing of `~x.y.z` and `^x.y.z` requirements as defined at
@@ -158,7 +198,8 @@
 //! ```
 
 #![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
-       html_favicon_url = "https://www.rust-lang.org/favicon.ico")]
+      html_favicon_url = "https://www.rust-lang.org/favicon.ico")]
+#![doc(html_root_url = "https://docs.rs/semver/0.9.0")]
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
 
@@ -171,9 +212,9 @@ extern crate serde;
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.
 
-pub use version::{Version, Identifier, SemVerError};
-pub use version::Identifier::{Numeric, AlphaNumeric};
-pub use version_req::{VersionReq, ReqParseError};
+pub use version::{Identifier, SemVerError, Version};
+pub use version::Identifier::{AlphaNumeric, Numeric};
+pub use version_req::{ReqParseError, VersionReq};
 
 // SemVer-compliant versions.
 mod version;
