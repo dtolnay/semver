@@ -77,7 +77,6 @@
 //! bugfix_release.increment_patch();
 //!
 //! assert_eq!(Ok(bugfix_release), Version::parse("1.0.1"));
-//!
 //! #    Ok(())
 //! # }
 //! # fn main() {
@@ -97,7 +96,6 @@
 //! feature_release.increment_minor();
 //!
 //! assert_eq!(Ok(feature_release), Version::parse("1.5.0"));
-//!
 //! #   Ok(())
 //! # }
 //! # fn main() {
@@ -117,7 +115,6 @@
 //! chrome_release.increment_major();
 //!
 //! assert_eq!(Ok(chrome_release), Version::parse("42.0.0"));
-//!
 //! #    Ok(())
 //! # }
 //! # fn main() {
@@ -145,7 +142,6 @@
 //!
 //! assert!(r.to_string() == ">= 1.0.0".to_string());
 //! assert!(r.matches(&v));
-//!
 //! #    Ok(())
 //! # }
 //! # fn main() {
