@@ -362,25 +362,6 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        fn parse_error(e: &str) -> result::Result<Version, SemVerError> {
-            return Err(SemVerError::ParseError(e.to_string()));
-        }
-
-        assert_eq!(Version::parse(""),
-                   parse_error("Error parsing major identifier"));
-        assert_eq!(Version::parse("  "),
-                   parse_error("Error parsing major identifier"));
-        assert_eq!(Version::parse("1"),
-                   parse_error("Expected dot"));
-        assert_eq!(Version::parse("1.2"),
-                   parse_error("Expected dot"));
-        assert_eq!(Version::parse("1.2.3-"),
-                   parse_error("Error parsing prerelease"));
-        assert_eq!(Version::parse("a.b.c"),
-                   parse_error("Error parsing major identifier"));
-        assert_eq!(Version::parse("1.2.3 abc"),
-                   parse_error("Extra junk after valid version:  abc"));
-
         assert_eq!(Version::parse("1.2.3"),
                    Ok(Version {
                        major: 1,
