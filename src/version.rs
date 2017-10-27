@@ -209,6 +209,27 @@ impl Version {
     }
 
     /// Parse a string into a semver object.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error variant if the input could not be parsed as a semver object.
+    ///
+    /// In general, this means that the provided string does not conform to the
+    /// [semver spec][semver].
+    ///
+    /// An error for overflow is returned if any numeric component is larger than what can be
+    /// stored in `u64`.
+    ///
+    /// The following are examples for other common error causes:
+    ///
+    /// * `1.0` - too few numeric components are used. Exactly 3 are expected.
+    /// * `1.0.01` - a numeric component has a leading zero.
+    /// * `1.0.foo` - uses a non-numeric components where one is expected.
+    /// * `1.0.0foo` - metadata is not separated using a legal character like, `+` or `-`.
+    /// * `1.0.0+foo_123` - contains metadata with an illegal character (`_`).
+    ///   Legal characters for metadata include `a-z`, `A-Z`, `0-9`, `-`, and `.` (dot).
+    ///
+    /// [semver]: https://semver.org
     pub fn parse(version: &str) -> Result<Version> {
         let res = semver_parser::version::parse(version);
 
