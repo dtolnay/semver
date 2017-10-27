@@ -458,6 +458,28 @@ mod tests {
     }
 
     #[test]
+    fn test_leniant_parse() {
+        // Test that we can still parse not-quite-semvar versions.
+
+        assert_eq!(Version::parse("1.2"),
+                   Ok(Version {
+                       major: 1,
+                       minor: 2,
+                       patch: 0,
+                       pre: Vec::new(),
+                       build: Vec::new(),
+                   }));
+        assert_eq!(Version::parse("1"),
+                   Ok(Version {
+                       major: 1,
+                       minor: 0,
+                       patch: 0,
+                       pre: Vec::new(),
+                       build: Vec::new(),
+                   }));
+    }
+
+    #[test]
     fn test_increment_patch() {
         let mut buggy_release = Version::parse("0.1.0").unwrap();
         buggy_release.increment_patch();
@@ -727,8 +749,8 @@ mod tests {
 
         assert_eq!("".parse(), parse_error("Error parsing major identifier"));
         assert_eq!("  ".parse(), parse_error("Error parsing major identifier"));
-        assert_eq!("1".parse(), parse_error("Expected dot"));
-        assert_eq!("1.2".parse(),
+        assert_eq!("1a".parse(), parse_error("Expected dot"));
+        assert_eq!("1.2a".parse(),
                    parse_error("Expected dot"));
         assert_eq!("1.2.3-".parse(),
                    parse_error("Error parsing prerelease"));
