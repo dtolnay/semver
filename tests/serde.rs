@@ -86,5 +86,8 @@ fn serialize_versionreq() {
 
 #[test]
 fn deserialize_versionreq() {
-    assert_eq!("1.0.0".parse::<VersionReq>().unwrap(), serde_json::from_str(r#""1.0.0""#).unwrap());
+    assert_eq!(
+        "1.0.0".parse::<VersionReq>().unwrap(),
+        serde_json::from_str(r#""1.0.0""#).unwrap()
+    );
 }
