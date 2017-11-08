@@ -70,9 +70,17 @@
 //!
 //! ```{rust}
 //! use semver::Version;
+//! # use std::error::Error;
 //!
-//! let mut bugfix_release = Version::parse("1.0.0").unwrap();
+//! # fn try_main() -> Result<(), Box<Error>> {
+//! let mut bugfix_release = Version::parse("1.0.0")?;
+//! #    Ok(())
+//! # }
+//! #
+//! # fn main() {
+//! #    try_main().unwrap();
 //! bugfix_release.increment_patch();
+//! # }
 //!
 //! assert_eq!(Ok(bugfix_release), Version::parse("1.0.1"));
 //! ```
