@@ -70,9 +70,8 @@
 //!
 //! ```{rust}
 //! use semver::Version;
-//! use std::error::Error;
 //!
-//! # fn try_increment_patch() -> Result<(), Box<Error>> {
+//! # fn try_increment_patch() -> Result<(), Box<::std::error::Error>> {
 //! let mut bugfix_release = Version::parse("1.0.0")?;
 //! bugfix_release.increment_patch();
 //!
@@ -89,9 +88,8 @@
 //!
 //! ```{rust}
 //! use semver::Version;
-//! use std::error::Error;
 //!
-//! # fn try_increment_minor() -> Result<(), Box<Error>> {
+//! # fn try_increment_minor() -> Result<(), Box<::std::error::Error>> {
 //! let mut feature_release = Version::parse("1.4.6")?;
 //! feature_release.increment_minor();
 //!
@@ -108,9 +106,8 @@
 //!
 //! ```{rust}
 //! use semver::Version;
-//! use std::error::Error;
 //!
-//! # fn try_increment_major() -> Result<(), Box<Error>> {
+//! # fn try_increment_major() -> Result<(), Box<::std::error::Error>> {
 //! let mut chrome_release = Version::parse("41.5.5377")?;
 //! chrome_release.increment_major();
 //!
@@ -134,9 +131,8 @@
 //! # #![allow(unstable)]
 //! use semver::Version;
 //! use semver::VersionReq;
-//! use std::error::Error;
 //!
-//! # fn try_compare() -> Result<(), Box<Error>> {
+//! # fn try_compare() -> Result<(), Box<::std::error::Error>> {
 //! let r = VersionReq::parse(">= 1.0.0")?;
 //! let v = Version::parse("1.0.0")?;
 //!
