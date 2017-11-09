@@ -90,13 +90,13 @@ enum WildcardVersion {
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum Op {
-    Ex,                        // Exact
-    Gt,                        // Greater than
-    GtEq,                      // Greater than or equal to
-    Lt,                        // Less than
-    LtEq,                      // Less than or equal to
-    Tilde,                     // e.g. ~1.0.0
-    Compatible,                // compatible by definition of semver, indicated by ^
+    Ex, // Exact
+    Gt, // Greater than
+    GtEq, // Greater than or equal to
+    Lt, // Less than
+    LtEq, // Less than or equal to
+    Tilde, // e.g. ~1.0.0
+    Compatible, // compatible by definition of semver, indicated by ^
     Wildcard(WildcardVersion), // x.y.*, x.*, *
 }
 
