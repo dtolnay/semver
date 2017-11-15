@@ -354,12 +354,14 @@ impl Version {
         self.build = build;
     }
 
-    /// Split the Version into its constituent parts, borrowing the pre & build information
+    /// Split the Version into its constituent parts (major, minor, patch, pre, build), borrowing
+    /// the pre & build information
     pub fn as_parts(&self) -> (u64, u64, u64, &MetaIdentifier, &MetaIdentifier) {
         (self.major, self.minor, self.patch, self.pre(), self.build())
     }
 
-    /// Split the Version into its constituent parts, cloning the pre & build information
+    /// Split the Version into its constituent parts (major, minor, patch, pre, build), cloning
+    /// the pre & build information
     pub fn into_parts(&self) -> (u64, u64, u64, MetaIdentifier, MetaIdentifier) {
         (self.major, self.minor, self.patch, self.pre.clone(), self.build.clone())
     }
@@ -620,6 +622,70 @@ mod tests {
                        build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("0851523"))],
             )}));
 
+    }
+
+    #[test]
+    fn test_set_pre() {
+        let mut version = Version::new(1, 1, 1);
+        let pre_info = MetaIdentifier::from(vec!(
+            Identifier::AlphaNumeric(String::from("alpha")),
+            Identifier::Numeric(1)
+        ));
+
+        assert_eq!(version.is_prerelease(), false);
+        version.set_pre(pre_info);
+        assert_eq!(version.is_prerelease(), true);
+        assert_eq!(version.to_string(), "1.1.1-alpha.1");
+    }
+
+    #[test]
+    fn test_set_build() {
+        let mut version = Version::new(0, 1, 0);
+        let build = MetaIdentifier::from(vec!(
+            Identifier::AlphaNumeric(String::from("nightly:2017-11-15"))
+        ));
+
+        assert_eq!(version.to_string(), "0.1.0");
+        version.set_build(build);
+        assert_eq!(version.to_string(), "0.1.0+nightly:2017-11-15");
+    }
+
+    #[test]
+    fn test_parts() {
+        {
+            let simple_version = Version::new(1, 2, 3);
+            let (major, minor, patch, pre, build) = simple_version.as_parts();
+            assert_eq!(major, 1);
+            assert_eq!(minor, 2);
+            assert_eq!(patch, 3);
+            assert_eq!(pre, &MetaIdentifier::new());
+            assert_eq!(build, &MetaIdentifier::new());
+        }
+
+        {
+            let mut complex_version = Version::new(3, 1, 2);
+            let pre_meta = MetaIdentifier::from(vec!(
+                Identifier::AlphaNumeric(String::from("beta")),
+                Identifier::Numeric(2)
+            ));
+            let build_meta = MetaIdentifier::from(vec!(
+                Identifier::Numeric(15)
+            ));
+            complex_version.set_pre(pre_meta);
+            complex_version.set_build(build_meta);
+
+            let (major, minor, patch, pre, build) = complex_version.into_parts();
+            assert_eq!(major, 3);
+            assert_eq!(minor, 1);
+            assert_eq!(patch, 2);
+            assert_eq!(pre, MetaIdentifier::from(vec!(
+                Identifier::AlphaNumeric(String::from("beta")),
+                Identifier::Numeric(2)
+            )));
+            assert_eq!(build, MetaIdentifier::from(vec!(
+                Identifier::Numeric(15)
+            )));
+        }
     }
 
     #[test]

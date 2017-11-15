@@ -275,7 +275,7 @@ impl VersionReq {
     /// use semver::VersionReq;
     /// use semver::Version;
     ///
-    /// let version = Version { major: 1, minor: 1, patch: 1, pre: vec![], build: vec![] };
+    /// let version = Version::new(1, 1, 1);
     /// let exact = VersionReq::exact(&version);
     /// ```
     pub fn exact(version: &Version) -> VersionReq {
@@ -290,7 +290,7 @@ impl VersionReq {
     /// use semver::VersionReq;
     /// use semver::Version;
     ///
-    /// let version = Version { major: 1, minor: 1, patch: 1, pre: vec![], build: vec![] };
+    /// let version = Version::new(1, 1, 1);
     /// let exact = VersionReq::exact(&version);
     ///
     /// assert!(exact.matches(&version));
