@@ -13,7 +13,7 @@ use std::fmt;
 use std::str;
 
 use Version;
-use version::MultiPartIdentifier;
+use version::MetaIdentifier;
 use semver_parser;
 
 #[cfg(feature = "serde")]
@@ -125,7 +125,7 @@ struct Predicate {
     major: u64,
     minor: Option<u64>,
     patch: Option<u64>,
-    pre: MultiPartIdentifier,
+    pre: MetaIdentifier,
 }
 
 impl From<semver_parser::range::Predicate> for Predicate {

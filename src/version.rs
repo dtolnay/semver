@@ -106,32 +106,32 @@ impl<'de> Deserialize<'de> for Identifier {
     }
 }
 
-/// Pre-release or build metadata, consisting of a collection of Identifiers
+/// Pre-release or build metadata, consisting of a collection of `Identifiers`.
 #[derive(Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
-pub struct MultiPartIdentifier(Vec<Identifier>);
+pub struct MetaIdentifier(Vec<Identifier>);
 
 type Iter<'a> = ::std::slice::Iter<'a, Identifier>;
 type IntoIter = ::std::vec::IntoIter<Identifier>;
 
-impl ::std::iter::FromIterator<Identifier> for MultiPartIdentifier {
+impl ::std::iter::FromIterator<Identifier> for MetaIdentifier {
     fn from_iter<I: IntoIterator<Item=Identifier>>(iter: I) -> Self {
         let mut inner = vec![];
         inner.extend(iter);
-        MultiPartIdentifier(inner)
+        MetaIdentifier(inner)
     }
 }
 
-impl From<Vec<Identifier>> for MultiPartIdentifier {
+impl From<Vec<Identifier>> for MetaIdentifier {
 
-    fn from(ids: Vec<Identifier>) -> MultiPartIdentifier {
-        let mut multipart = MultiPartIdentifier::new();
+    fn from(ids: Vec<Identifier>) -> MetaIdentifier {
+        let mut multipart = MetaIdentifier::new();
         multipart.extend(ids);
         multipart
     }
 
 }
 
-impl IntoIterator for MultiPartIdentifier {
+impl IntoIterator for MetaIdentifier {
     type Item = Identifier;
     type IntoIter = IntoIter;
 
@@ -140,7 +140,7 @@ impl IntoIterator for MultiPartIdentifier {
     }
 }
 
-impl<'a> IntoIterator for &'a MultiPartIdentifier {
+impl<'a> IntoIterator for &'a MetaIdentifier {
     type Item = &'a Identifier;
     type IntoIter = Iter<'a>;
 
@@ -149,17 +149,17 @@ impl<'a> IntoIterator for &'a MultiPartIdentifier {
     }
 }
 
-impl Extend<Identifier> for MultiPartIdentifier {
+impl Extend<Identifier> for MetaIdentifier {
     fn extend<T: IntoIterator<Item=Identifier>>(&mut self, iter: T) {
         self.0.extend(iter);
     }
 }
 
-impl MultiPartIdentifier {
+impl MetaIdentifier {
 
-    /// Creates an empty MultiPartIdentifier
-    pub fn new() -> MultiPartIdentifier {
-        MultiPartIdentifier(Vec::new())
+    /// Creates a new empty MetaIdentifier
+    pub fn new() -> MetaIdentifier {
+        MetaIdentifier(Vec::new())
     }
 
     /// Returns true if collection of Identifiers is empty
@@ -191,9 +191,9 @@ pub struct Version {
     /// fixes are made.
     patch: u64,
     /// The pre-release version identifier, if one exists.
-    pre: MultiPartIdentifier,
+    pre: MetaIdentifier,
     /// The build metadata, ignored when determining version precedence.
-    build: MultiPartIdentifier,
+    build: MetaIdentifier,
 }
 
 impl From<semver_parser::version::Version> for Version {
@@ -282,8 +282,8 @@ impl Version {
             major: major,
             minor: minor,
             patch: patch,
-            pre: MultiPartIdentifier::new(),
-            build: MultiPartIdentifier::new()
+            pre: MetaIdentifier::new(),
+            build: MetaIdentifier::new()
         }
     }
 
@@ -335,29 +335,39 @@ impl Version {
     }
 
     /// Gets the Pre version information
-    pub fn pre(&self) -> &MultiPartIdentifier {
+    pub fn pre(&self) -> &MetaIdentifier {
         &self.pre
     }
 
-    /// Gets the Build information
-    pub fn build(&self) -> &MultiPartIdentifier {
+    /// Sets the Pre version information
+    pub fn set_pre(&mut self, pre: MetaIdentifier) {
+        self.pre = pre;
+    }
+
+    /// Gets the Build version information
+    pub fn build(&self) -> &MetaIdentifier {
         &self.build
     }
 
+    /// Sets the Build version information
+    pub fn set_build(&mut self, build: MetaIdentifier) {
+        self.build = build;
+    }
+
     /// Split the Version into its constituent parts, borrowing the pre & build information
-    pub fn as_parts(&self) -> (u64, u64, u64, &MultiPartIdentifier, &MultiPartIdentifier) {
+    pub fn as_parts(&self) -> (u64, u64, u64, &MetaIdentifier, &MetaIdentifier) {
         (self.major, self.minor, self.patch, self.pre(), self.build())
     }
 
     /// Split the Version into its constituent parts, cloning the pre & build information
-    pub fn into_parts(&self) -> (u64, u64, u64, MultiPartIdentifier, MultiPartIdentifier) {
+    pub fn into_parts(&self) -> (u64, u64, u64, MetaIdentifier, MetaIdentifier) {
         (self.major, self.minor, self.patch, self.pre.clone(), self.build.clone())
     }
 
     /// Clears the build metadata
     fn clear_metadata(&mut self) {
-        self.build = MultiPartIdentifier::new();
-        self.pre = MultiPartIdentifier::new();
+        self.build = MetaIdentifier::new();
+        self.pre = MetaIdentifier::new();
     }
 
     /// Increments the patch number for this Version (Must be mutable)
@@ -493,7 +503,7 @@ mod tests {
     use std::result;
     use super::Version;
     use super::Identifier;
-    use super::MultiPartIdentifier;
+    use super::MetaIdentifier;
     use super::SemVerError;
 
     #[test]
@@ -522,8 +532,8 @@ mod tests {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::new(),
-                       build: MultiPartIdentifier::new(),
+                       pre: MetaIdentifier::new(),
+                       build: MetaIdentifier::new(),
                    }));
 
         assert_eq!(Version::parse("1.2.3"),
@@ -534,67 +544,67 @@ mod tests {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::new(),
-                       build: MultiPartIdentifier::new(),
+                       pre: MetaIdentifier::new(),
+                       build: MetaIdentifier::new(),
                    }));
         assert_eq!(Version::parse("1.2.3-alpha1"),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
-                       build: MultiPartIdentifier::new(),
+                       pre: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MetaIdentifier::new(),
                    }));
         assert_eq!(Version::parse("  1.2.3-alpha1  "),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
-                       build: MultiPartIdentifier::new(),
+                       pre: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MetaIdentifier::new(),
                    }));
         assert_eq!(Version::parse("1.2.3+build5"),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::new(),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                       pre: MetaIdentifier::new(),
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
                    }));
         assert_eq!(Version::parse("  1.2.3+build5  "),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::new(),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                       pre: MetaIdentifier::new(),
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
                    }));
         assert_eq!(Version::parse("1.2.3-alpha1+build5"),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                       pre: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
                    }));
         assert_eq!(Version::parse("  1.2.3-alpha1+build5  "),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                       pre: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
                    }));
         assert_eq!(Version::parse("1.2.3-1.alpha1.9+build5.7.3aedf  "),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::from(vec![Identifier::Numeric(1),
+                       pre: MetaIdentifier::from(vec![Identifier::Numeric(1),
                       Identifier::AlphaNumeric(String::from("alpha1")),
                       Identifier::Numeric(9),
             ]),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5")),
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5")),
                         Identifier::Numeric(7),
                         Identifier::AlphaNumeric(String::from("3aedf")),
             ]),
@@ -604,10 +614,10 @@ mod tests {
                        major: 0,
                        minor: 4,
                        patch: 0,
-                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("beta")),
+                       pre: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("beta")),
                       Identifier::Numeric(1),
             ]),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("0851523"))],
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("0851523"))],
             )}));
 
     }
@@ -812,75 +822,75 @@ mod tests {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::new(),
-                       build: MultiPartIdentifier::new(),
+                       pre: MetaIdentifier::new(),
+                       build: MetaIdentifier::new(),
                    }));
         assert_eq!("  1.2.3  ".parse(),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::new(),
-                       build: MultiPartIdentifier::new(),
+                       pre: MetaIdentifier::new(),
+                       build: MetaIdentifier::new(),
                    }));
         assert_eq!("1.2.3-alpha1".parse(),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
-                       build: MultiPartIdentifier::new(),
+                       pre: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MetaIdentifier::new(),
                    }));
         assert_eq!("  1.2.3-alpha1  ".parse(),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
-                       build: MultiPartIdentifier::new(),
+                       pre: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MetaIdentifier::new(),
                    }));
         assert_eq!("1.2.3+build5".parse(),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::new(),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                       pre: MetaIdentifier::new(),
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
                    }));
         assert_eq!("  1.2.3+build5  ".parse(),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::new(),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                       pre: MetaIdentifier::new(),
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
                    }));
         assert_eq!("1.2.3-alpha1+build5".parse(),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                       pre: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
                    }));
         assert_eq!("  1.2.3-alpha1+build5  ".parse(),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
+                       pre: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("alpha1"))]),
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5"))]),
                    }));
         assert_eq!("1.2.3-1.alpha1.9+build5.7.3aedf  ".parse(),
                    Ok(Version {
                        major: 1,
                        minor: 2,
                        patch: 3,
-                       pre: MultiPartIdentifier::from(vec![Identifier::Numeric(1),
+                       pre: MetaIdentifier::from(vec![Identifier::Numeric(1),
                       Identifier::AlphaNumeric(String::from("alpha1")),
                       Identifier::Numeric(9),
             ]),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5")),
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("build5")),
                         Identifier::Numeric(7),
                         Identifier::AlphaNumeric(String::from("3aedf")),
             ]),
@@ -890,10 +900,10 @@ mod tests {
                        major: 0,
                        minor: 4,
                        patch: 0,
-                       pre: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("beta")),
+                       pre: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("beta")),
                       Identifier::Numeric(1),
             ]),
-                       build: MultiPartIdentifier::from(vec![Identifier::AlphaNumeric(String::from("0851523"))]),
+                       build: MetaIdentifier::from(vec![Identifier::AlphaNumeric(String::from("0851523"))]),
                    }));
 
     }
