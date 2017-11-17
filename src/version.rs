@@ -110,8 +110,9 @@ impl<'de> Deserialize<'de> for Identifier {
 #[derive(Clone, PartialEq, Eq, Debug, Hash, PartialOrd, Ord)]
 pub struct MetaIdentifier(Vec<Identifier>);
 
-type Iter<'a> = ::std::slice::Iter<'a, Identifier>;
-type IntoIter = ::std::vec::IntoIter<Identifier>;
+pub struct Iter<'a>(::std::slice::Iter<'a, Identifier>);
+pub struct IterMut<'a>(::std::slice::IterMut<'a, Identifier>);
+pub struct IntoIter(::std::vec::IntoIter<Identifier>);
 
 impl ::std::iter::FromIterator<Identifier> for MetaIdentifier {
     fn from_iter<I: IntoIterator<Item=Identifier>>(iter: I) -> Self {
@@ -131,12 +132,36 @@ impl From<Vec<Identifier>> for MetaIdentifier {
 
 }
 
+impl Iterator for IntoIter {
+    type Item = Identifier;
+    
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a> Iterator for Iter<'a> {
+    type Item = &'a Identifier;
+    
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a> Iterator for IterMut<'a> {
+    type Item = &'a mut Identifier;
+    
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
 impl IntoIterator for MetaIdentifier {
     type Item = Identifier;
     type IntoIter = IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
+        IntoIter(self.0.into_iter())
     }
 }
 
@@ -145,7 +170,16 @@ impl<'a> IntoIterator for &'a MetaIdentifier {
     type IntoIter = Iter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.0.iter()
+        Iter(self.0.iter())
+    }
+}
+
+impl<'a> IntoIterator for &'a mut MetaIdentifier {
+    type Item = &'a mut Identifier;
+    type IntoIter = IterMut<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IterMut(self.0.iter_mut())
     }
 }
 
@@ -174,6 +208,11 @@ impl MetaIdentifier {
 
     /// Returns an Iterator over the collection of Identifiers
     pub fn iter<'a>(&'a self) -> Iter<'a> {
+        self.into_iter()
+    }
+
+    /// Returns a mutable Iterator over the collection of Identifiers
+    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a> {
         self.into_iter()
     }
 
@@ -339,9 +378,9 @@ impl Version {
         &self.pre
     }
 
-    /// Sets the Pre version information
-    pub fn set_pre(&mut self, pre: MetaIdentifier) {
-        self.pre = pre;
+    /// Gets mutable Pre version information
+    pub fn pre_mut(&mut self) -> &mut MetaIdentifier {
+        &mut self.pre
     }
 
     /// Gets the Build version information
@@ -349,9 +388,9 @@ impl Version {
         &self.build
     }
 
-    /// Sets the Build version information
-    pub fn set_build(&mut self, build: MetaIdentifier) {
-        self.build = build;
+    /// Gets mutable Build version infomation
+    pub fn build_mut(&mut self) -> &mut MetaIdentifier {
+        &mut self.build
     }
 
     /// Split the Version into its constituent parts (major, minor, patch, pre, build), borrowing
