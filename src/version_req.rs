@@ -306,6 +306,30 @@ impl VersionReq {
                 |p| p.pre_tag_is_compatible(version),
             )
     }
+
+    /// Check if this version requirement is a major wildcard `*` that matches any version.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use semver::VersionReq;
+    /// # use semver::ReqParseError;
+    ///
+    /// # fn try_main() -> Result<(), ReqParseError> {
+    /// assert!(VersionReq::parse("*")?.matches_any());
+    /// assert!(!VersionReq::parse("0.*")?.matches_any());
+    /// # Ok(())
+    /// # }
+    /// #
+    /// # fn main() {
+    /// #   try_main().unwrap();
+    /// # }
+    /// ```
+    pub fn matches_any(&self) -> bool {
+        self.predicates.iter().all(|p| {
+            p.op == Op::Wildcard(WildcardVersion::Major)
+        })
+    }
 }
 
 impl str::FromStr for VersionReq {
@@ -962,5 +986,11 @@ mod test {
         assert!(req("~1") < req("*"));
         assert!(req("^1") < req("*"));
         assert!(req("*") == req("*"));
+    }
+
+    #[test]
+    fn test_wildcard_matches_any() {
+        assert!(VersionReq::any().matches_any());
+        assert!(req("*").matches_any());
     }
 }
