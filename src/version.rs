@@ -572,7 +572,7 @@ mod tests {
         let version = Version::parse("1.2.3-rc1").unwrap();
         assert_eq!(format!("{:20}", version), "1.2.3-rc1           ");
         assert_eq!(format!("{:*^20}", version), "*****1.2.3-rc1******");
-        assert_eq!(format!("{:.4}", version),  "1.2.");
+        assert_eq!(format!("{:.4}", version), "1.2.");
     }
 
     #[test]
