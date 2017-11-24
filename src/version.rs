@@ -13,7 +13,6 @@
 
 use std::cmp::{self, Ordering};
 use std::fmt;
-use std::fmt::Write;
 use std::hash;
 use std::error::Error;
 
@@ -269,26 +268,28 @@ impl str::FromStr for Version {
 impl fmt::Display for Version {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.write_str(format!("{}.{}.{}", self.major, self.minor, self.patch).as_ref())?;
-        
+        let mut result = format!("{}.{}.{}", self.major, self.minor, self.patch);
+
         if !self.pre.is_empty() {
-            f.write_char('-')?;
+            result.push_str("-");
             for (i, x) in self.pre.iter().enumerate() {
                 if i != 0 {
-                    f.write_char('.')?;
+                    result.push_str(".");
                 }
-                f.write_str(format!("{}", x).as_ref())?;
+                result.push_str(format!("{}", x).as_ref());
             }
         }
         if !self.build.is_empty() {
-            f.write_char('+')?;
+            result.push_str("+");
             for (i, x) in self.build.iter().enumerate() {
                 if i != 0 {
-                    f.write_char('.')?;
+                    result.push_str(".");
                 }
-                f.write_str(format!("{}", x).as_ref())?;
+                result.push_str(format!("{}", x).as_ref());
             }
         }
+
+        f.pad(result.as_ref())?;
         Ok(())
     }
 }
