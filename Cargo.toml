@@ -11,6 +11,8 @@ description = """
 Semantic version parsing and comparison.
 """
 readme = "README.md"
+keywords = ["version", "semantic", "compare"]
+categories = ["development-tools", "parsing"]
 
 [badges]
 travis-ci = { repository = "steveklabnik/semver" }
