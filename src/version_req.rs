@@ -140,8 +140,9 @@ impl From<semver_parser::range::Predicate> for Predicate {
     }
 }
 
-/// A `ReqParseError` is returned from methods which parse a string into a `VersionReq`. Each
+/// A `ReqParseError` is returned from methods which parse a string into a [`VersionReq`]. Each
 /// enumeration is one of the possible errors that can occur.
+/// [`VersionReq`]: struct.VersionReq.html
 #[derive(Clone, Debug, PartialEq)]
 pub enum ReqParseError {
     /// The given version requirement is invalid.
@@ -215,8 +216,9 @@ impl VersionReq {
     /// `parse()` is the main constructor of a `VersionReq`. It takes a string like `"^1.2.3"`
     /// and turns it into a `VersionReq` that matches that particular constraint.
     ///
-    /// A `Result` is returned which contains a `ReqParseError` if there was a problem parsing the
+    /// A `Result` is returned which contains a [`ReqParseError`] if there was a problem parsing the
     /// `VersionReq`.
+    /// [`ReqParseError`]: enum.ReqParseError.html
     ///
     /// # Examples
     ///
@@ -282,7 +284,8 @@ impl VersionReq {
         VersionReq { predicates: vec![Predicate::exact(version)] }
     }
 
-    /// `matches()` matches a given `Version` against this `VersionReq`.
+    /// `matches()` matches a given [`Version`] against this `VersionReq`.
+    /// [`Version`]: struct.Version.html
     ///
     /// # Examples
     ///
