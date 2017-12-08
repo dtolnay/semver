@@ -4,15 +4,22 @@ rust:
   - beta
   - stable
 sudo: false
+cache: cargo
+
+before_script: (cargo install rustfmt || true)
+
 script:
+  - cargo fmt -- --write-mode=diff
   - cargo build --verbose
   - cargo test --verbose --features ci
+
 addons:
   apt:
     sources:
       - kalakris-cmake
     packages:
       - cmake
+
 notifications:
   email:
     on_success: never

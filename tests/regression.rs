@@ -19,7 +19,12 @@ fn test_regressions() {
     for krate in index.crates() {
         for version in krate.versions() {
             let v = version.version();
-            assert!(Version::parse(v).is_ok(), "failed: {} ({})", version.name(), v);
+            assert!(
+                Version::parse(v).is_ok(),
+                "failed: {} ({})",
+                version.name(),
+                v
+            );
         }
     }
 }
