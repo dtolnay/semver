@@ -468,7 +468,7 @@ impl Predicate {
     }
 
     fn pre_is_compatible(&self, ver: &Version) -> bool {
-        ver.pre.is_empty() || ver.pre >= self.pre
+        ver.pre >= self.pre
     }
 
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
@@ -585,13 +585,13 @@ mod test {
 
     fn assert_match(req: &VersionReq, vers: &[&str]) {
         for ver in vers.iter() {
-            assert!(req.matches(&version(*ver)), "did not match {}", ver);
+            assert!(req.matches(&version(*ver)), "{} did not match {}", req, ver);
         }
     }
 
     fn assert_not_match(req: &VersionReq, vers: &[&str]) {
         for ver in vers.iter() {
-            assert!(!req.matches(&version(*ver)), "matched {}", ver);
+            assert!(!req.matches(&version(*ver)), "{} matched {}", req, ver);
         }
     }
 
@@ -747,8 +747,8 @@ mod test {
         assert_not_match(&r, &["1.2.1", "1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
 
         let r = req("~1.2.3-beta.2");
-        assert_match(&r, &["1.2.3", "1.2.4", "1.2.3-beta.2", "1.2.3-beta.4"]);
-        assert_not_match(&r, &["1.3.3", "1.1.4", "1.2.3-beta.1", "1.2.4-beta.2"]);
+        assert_match(&r, &["1.2.4", "1.2.3-beta.2", "1.2.3-beta.4"]);
+        assert_not_match(&r, &["1.2.3", "1.3.3", "1.1.4", "1.2.3-beta.1", "1.2.4-beta.2"]);
     }
 
     #[test]
@@ -779,13 +779,13 @@ mod test {
                 "0.5.1-alpha3",
                 "0.5.1-alpha4",
                 "0.5.1-beta",
-                "0.5.1",
                 "0.5.5",
             ],
         );
         assert_not_match(
             &r,
             &[
+                "0.5.1",
                 "0.5.1-alpha1",
                 "0.5.2-alpha3",
                 "0.5.5-pre",
@@ -809,11 +809,12 @@ mod test {
         let r = req("^1.4.2-beta.5");
         assert_match(
             &r,
-            &["1.4.2", "1.4.3", "1.4.2-beta.5", "1.4.2-beta.6", "1.4.2-c"],
+            &["1.4.3", "1.4.2-beta.5", "1.4.2-beta.6", "1.4.2-c"],
         );
         assert_not_match(
             &r,
             &[
+                "1.4.2",
                 "0.9.9",
                 "2.0.0",
                 "1.4.2-alpha",
@@ -821,6 +822,10 @@ mod test {
                 "1.4.3-beta.5",
             ],
         );
+        
+        let r = req("0.11.0-rc.2");
+        assert_match(&r, &["0.11.0-rc.2", "0.11.0-rc.3", "0.11.0-rd", "0.11.1"]);
+        assert_not_match(&r, &["0.11.0", "0.11.0-rc.1", "0.11.0-ra", "0.12.0"]);
     }
 
     #[test]
