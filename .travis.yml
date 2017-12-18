@@ -7,7 +7,7 @@ sudo: false
 cache: cargo
 before_script: (cargo install rustfmt || true)
 script:
-  - cargo fmt -- --write-mode=diff
+  - cargo fmt -- --write-mode=diff --force
   - cargo build --verbose
   - cargo test --verbose --features ci
 addons:
