@@ -5,7 +5,7 @@ rust:
   - stable
 sudo: false
 cache: cargo
-before_script: (cargo install rustfmt || true)
+before_script: (cargo install rustfmt --force || true)
 script:
   - cargo fmt -- --write-mode=diff --force
   - cargo build --verbose
