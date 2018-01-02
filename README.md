@@ -7,7 +7,7 @@ Semantic version parsing and comparison.
 
 [Documentation](https://steveklabnik.github.io/semver)
 
-Semantic versioning (see http://semver.org/) is a set of rules for
+Semantic versioning (see https://semver.org/) is a set of rules for
 assigning version numbers.
 
 ## SemVer and the Rust ecosystem
