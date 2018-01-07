@@ -169,6 +169,11 @@ extern crate semver_parser;
 #[cfg(feature = "serde")]
 extern crate serde;
 
+// Database support for version numbers
+#[cfg(feature = "diesel")]
+#[macro_use]
+extern crate diesel;
+
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.
 
@@ -181,3 +186,7 @@ mod version;
 
 // advanced version comparisons
 mod version_req;
+
+#[cfg(feature = "diesel")]
+// Diesel support
+mod diesel_impls;

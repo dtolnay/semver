@@ -108,6 +108,8 @@ impl<'de> Deserialize<'de> for Identifier {
 
 /// Represents a version number conforming to the semantic versioning scheme.
 #[derive(Clone, Eq, Debug)]
+#[cfg_attr(feature = "diesel", derive(AsExpression))]
+#[cfg_attr(feature = "diesel", sql_type = "diesel::types::Text")]
 pub struct Version {
     /// The major version, to be incremented on incompatible changes.
     pub major: u64,
