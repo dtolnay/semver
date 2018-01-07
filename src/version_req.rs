@@ -29,6 +29,8 @@ use self::ReqParseError::*;
 /// numbers. Matching operations can then be done with the `VersionReq` against a particular
 /// version to see if it satisfies some or all of the constraints.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "diesel", derive(AsExpression))]
+#[cfg_attr(feature = "diesel", sql_type = "diesel::types::Text")]
 pub struct VersionReq {
     predicates: Vec<Predicate>,
 }
