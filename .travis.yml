@@ -19,3 +19,8 @@ addons:
 notifications:
   email:
     on_success: never
+# https://github.com/rust-lang/rust/issues/47139
+matrix:
+  allow_failures:
+    - rust: beta
+    - rust: nightly
