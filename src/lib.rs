@@ -38,8 +38,11 @@
 //!
 //! ## Versions
 //!
-//! At its simplest, the `semver` crate allows you to construct `Version`
-//! objects using the `parse` method:
+//! [`Version`]: struct.Version.html
+//!
+//! At its simplest, the `semver` crate allows you to construct [`Version`]
+//! objects using the [`parse`] method:
+//! [`parse`]: struct.Version.html#method.parse
 //!
 //! ```{rust}
 //! use semver::Version;
@@ -53,7 +56,7 @@
 //! }));
 //! ```
 //!
-//! If you have multiple `Version`s, you can use the usual comparison operators
+//! If you have multiple [`Version`]s, you can use the usual comparison operators
 //! to compare them:
 //!
 //! ```{rust}
@@ -63,7 +66,7 @@
 //! assert!(Version::parse("1.2.3-alpha2") >  Version::parse("1.2.0"));
 //! ```
 //!
-//! If you explicitly need to modify a Version, SemVer also allows you to
+//! If you explicitly need to modify a [`Version`], SemVer also allows you to
 //! increment the major, minor, and patch numbers in accordance with the spec.
 //!
 //! Please note that in order to do this, you must use a mutable Version:
