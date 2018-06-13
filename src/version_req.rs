@@ -243,6 +243,23 @@ impl VersionReq {
     ///     Err(e) => panic!("There was a problem parsing: {}", e),
     /// }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error variant if the input could not be parsed as a semver requirement.
+    ///
+    /// Examples of common error causes are as follows:
+    ///
+    /// * `\0` - an invalid version requirement is used.
+    /// * `>= >= 1.2.3` - multiple operations are used. Only use one.
+    /// * `>== 1.2.3` - an invalid operation is used.
+    /// * `a.0.0` - version components are not numeric.
+    /// * `1.2.3-` - an invalid identifier is present.
+    /// * `>=` - major version was not specified. At least a major version is required.
+    /// * `0.2*` - deprecated requirement syntax. Equivalent would be `0.2.*`.
+    ///
+    /// You may also encounter an `UnimplementedVersionRequirement` error, which indicates that a
+    /// given requirement syntax is not yet implemented in this crate.
     pub fn parse(input: &str) -> Result<VersionReq, ReqParseError> {
         let res = semver_parser::range::parse(input);
 
