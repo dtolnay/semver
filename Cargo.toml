@@ -29,7 +29,5 @@ default = []
 ci = ["serde", "diesel/sqlite"]
 
 [dev-dependencies]
-crates-index = "0.5.0"
-tempdir = "0.3.4"
 serde_json = "1.0"
 serde_derive = "1.0"
