@@ -22,7 +22,7 @@ use serde::ser::{Serialize, Serializer};
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 
 use self::Op::{Ex, Gt, GtEq, Lt, LtEq, Tilde, Compatible, Wildcard};
-use self::WildcardVersion::{Major, Minor, Patch};
+use self::WildcardVersion::{Minor, Patch};
 use self::ReqParseError::*;
 
 /// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
@@ -82,7 +82,6 @@ impl<'de> Deserialize<'de> for VersionReq {
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum WildcardVersion {
-    Major,
     Minor,
     Patch,
 }
@@ -112,7 +111,6 @@ impl From<semver_parser::range::Op> for Op {
             range::Op::Compatible => Op::Compatible,
             range::Op::Wildcard(version) => {
                 match version {
-                    range::WildcardVersion::Major => Op::Wildcard(WildcardVersion::Major),
                     range::WildcardVersion::Minor => Op::Wildcard(WildcardVersion::Minor),
                     range::WildcardVersion::Patch => Op::Wildcard(WildcardVersion::Patch),
                 }
@@ -273,7 +271,7 @@ impl VersionReq {
 
         return match VersionReq::parse_deprecated(input) {
             Some(v) => Err(ReqParseError::DeprecatedVersionRequirement(v)),
-            None => Err(From::from(res.err().unwrap())),
+            None => Err(ReqParseError::from(res.err().unwrap().to_string())),
         };
     }
 
@@ -496,7 +494,6 @@ impl Predicate {
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
     fn matches_wildcard(&self, ver: &Version) -> bool {
         match self.op {
-            Wildcard(Major) => true,
             Wildcard(Minor) => self.major == ver.major,
             Wildcard(Patch) => {
                 match self.minor {
@@ -533,7 +530,6 @@ impl fmt::Display for VersionReq {
 impl fmt::Display for Predicate {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self.op {
-            Wildcard(Major) => try!(write!(fmt, "*")),
             Wildcard(Minor) => try!(write!(fmt, "{}.*", self.major)),
             Wildcard(Patch) => {
                 if let Some(minor) = self.minor {
@@ -976,13 +972,13 @@ mod test {
 
     #[test]
     fn test_ordering() {
-        assert!(req("=1") < req("*"));
-        assert!(req(">1") < req("*"));
-        assert!(req(">=1") < req("*"));
-        assert!(req("<1") < req("*"));
-        assert!(req("<=1") < req("*"));
-        assert!(req("~1") < req("*"));
-        assert!(req("^1") < req("*"));
+        assert!(req("=1") > req("*"));
+        assert!(req(">1") > req("*"));
+        assert!(req(">=1") > req("*"));
+        assert!(req("<1") > req("*"));
+        assert!(req("<=1") > req("*"));
+        assert!(req("~1") > req("*"));
+        assert!(req("^1") > req("*"));
         assert!(req("*") == req("*"));
     }
 }
