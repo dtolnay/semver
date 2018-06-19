@@ -29,6 +29,8 @@ use self::ReqParseError::*;
 /// numbers. Matching operations can then be done with the `VersionReq` against a particular
 /// version to see if it satisfies some or all of the constraints.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[cfg_attr(feature = "diesel", derive(AsExpression, FromSqlRow))]
+#[cfg_attr(feature = "diesel", sql_type = "diesel::sql_types::Text")]
 pub struct VersionReq {
     predicates: Vec<Predicate>,
 }
@@ -42,7 +44,8 @@ impl From<semver_parser::range::VersionReq> for VersionReq {
 #[cfg(feature = "serde")]
 impl Serialize for VersionReq {
     fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
-        where S: Serializer
+    where
+        S: Serializer,
     {
         // Serialize VersionReq as a string.
         serializer.collect_str(self)
@@ -52,7 +55,8 @@ impl Serialize for VersionReq {
 #[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for VersionReq {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         struct VersionReqVisitor;
 
@@ -65,7 +69,8 @@ impl<'de> Deserialize<'de> for VersionReq {
             }
 
             fn visit_str<E>(self, v: &str) -> ::std::result::Result<Self::Value, E>
-                where E: de::Error
+            where
+                E: de::Error,
             {
                 VersionReq::parse(v).map_err(de::Error::custom)
             }
@@ -137,8 +142,9 @@ impl From<semver_parser::range::Predicate> for Predicate {
     }
 }
 
-/// A `ReqParseError` is returned from methods which parse a string into a `VersionReq`. Each
+/// A `ReqParseError` is returned from methods which parse a string into a [`VersionReq`]. Each
 /// enumeration is one of the possible errors that can occur.
+/// [`VersionReq`]: struct.VersionReq.html
 #[derive(Clone, Debug, PartialEq)]
 pub enum ReqParseError {
     /// The given version requirement is invalid.
@@ -171,14 +177,14 @@ impl Error for ReqParseError {
             &InvalidVersionRequirement => "the given version requirement is invalid",
             &OpAlreadySet => {
                 "you have already provided an operation, such as =, ~, or ^; only use one"
-            },
+            }
             &InvalidSigil => "the sigil you have written is not correct",
             &VersionComponentsMustBeNumeric => "version components must be numeric",
             &InvalidIdentifier => "invalid identifier",
             &MajorVersionRequired => "at least a major version number is required",
             &UnimplementedVersionRequirement => {
                 "the given version requirement is not implemented, yet"
-            },
+            }
             &DeprecatedVersionRequirement(_) => "This requirement is deprecated",
         }
     }
@@ -212,8 +218,9 @@ impl VersionReq {
     /// `parse()` is the main constructor of a `VersionReq`. It takes a string like `"^1.2.3"`
     /// and turns it into a `VersionReq` that matches that particular constraint.
     ///
-    /// A `Result` is returned which contains a `ReqParseError` if there was a problem parsing the
+    /// A `Result` is returned which contains a [`ReqParseError`] if there was a problem parsing the
     /// `VersionReq`.
+    /// [`ReqParseError`]: enum.ReqParseError.html
     ///
     /// # Examples
     ///
@@ -240,6 +247,23 @@ impl VersionReq {
     ///     Err(e) => panic!("There was a problem parsing: {}", e),
     /// }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error variant if the input could not be parsed as a semver requirement.
+    ///
+    /// Examples of common error causes are as follows:
+    ///
+    /// * `\0` - an invalid version requirement is used.
+    /// * `>= >= 1.2.3` - multiple operations are used. Only use one.
+    /// * `>== 1.2.3` - an invalid operation is used.
+    /// * `a.0.0` - version components are not numeric.
+    /// * `1.2.3-` - an invalid identifier is present.
+    /// * `>=` - major version was not specified. At least a major version is required.
+    /// * `0.2*` - deprecated requirement syntax. Equivalent would be `0.2.*`.
+    ///
+    /// You may also encounter an `UnimplementedVersionRequirement` error, which indicates that a
+    /// given requirement syntax is not yet implemented in this crate.
     pub fn parse(input: &str) -> Result<VersionReq, ReqParseError> {
         let res = semver_parser::range::parse(input);
 
@@ -248,11 +272,9 @@ impl VersionReq {
         }
 
         return match VersionReq::parse_deprecated(input) {
-            Some(v) => {
-                Err(ReqParseError::DeprecatedVersionRequirement(v))
-            }
+            Some(v) => Err(ReqParseError::DeprecatedVersionRequirement(v)),
             None => Err(From::from(res.err().unwrap())),
-        }
+        };
     }
 
     fn parse_deprecated(version: &str) -> Option<VersionReq> {
@@ -263,7 +285,7 @@ impl VersionReq {
             "0.2*" => Some(VersionReq::parse("0.2.*").unwrap()),
             "*.0" => Some(VersionReq::any()),
             _ => None,
-        }
+        };
     }
 
     /// `exact()` is a factory method which creates a `VersionReq` with one exact constraint.
@@ -281,7 +303,8 @@ impl VersionReq {
         VersionReq { predicates: vec![Predicate::exact(version)] }
     }
 
-    /// `matches()` matches a given `Version` against this `VersionReq`.
+    /// `matches()` matches a given [`Version`] against this `VersionReq`.
+    /// [`Version`]: struct.Version.html
     ///
     /// # Examples
     ///
@@ -301,7 +324,9 @@ impl VersionReq {
         }
 
         self.predicates.iter().all(|p| p.matches(version)) &&
-        self.predicates.iter().any(|p| p.pre_tag_is_compatible(version))
+            self.predicates.iter().any(
+                |p| p.pre_tag_is_compatible(version),
+            )
     }
 }
 
@@ -376,8 +401,8 @@ impl Predicate {
         // [major,
         // minor, patch] tuple also has a prerelease tag.
         !ver.is_prerelease() ||
-        (self.major == ver.major && self.minor == Some(ver.minor) &&
-         self.patch == Some(ver.patch) && !self.pre.is_empty())
+            (self.major == ver.major && self.minor == Some(ver.minor) &&
+                 self.patch == Some(ver.patch) && !self.pre.is_empty())
     }
 
     fn is_greater(&self, ver: &Version) -> bool {
@@ -420,7 +445,7 @@ impl Predicate {
         match self.patch {
             Some(patch) => {
                 self.major == ver.major && minor == ver.minor &&
-                (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver)))
+                    (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver)))
             }
             None => self.major == ver.major && minor == ver.minor,
         }
@@ -444,12 +469,14 @@ impl Predicate {
                         ver.minor == minor && ver.patch == patch && self.pre_is_compatible(ver)
                     } else {
                         ver.minor == minor &&
-                        (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver)))
+                            (ver.patch > patch ||
+                                 (ver.patch == patch && self.pre_is_compatible(ver)))
                     }
                 } else {
                     ver.minor > minor ||
-                    (ver.minor == minor &&
-                     (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver))))
+                        (ver.minor == minor &&
+                             (ver.patch > patch ||
+                                  (ver.patch == patch && self.pre_is_compatible(ver))))
                 }
             }
             None => {
@@ -635,7 +662,16 @@ mod test {
 
     #[test]
     fn test_parse_metadata_see_issue_88_see_issue_88() {
-        for op in &[Op::Compatible, Op::Ex, Op::Gt, Op::GtEq, Op::Lt, Op::LtEq, Op::Tilde] {
+        for op in &[
+            Op::Compatible,
+            Op::Ex,
+            Op::Gt,
+            Op::GtEq,
+            Op::Lt,
+            Op::LtEq,
+            Op::Tilde,
+        ]
+        {
             req(&format!("{} 1.2.3+meta", op));
         }
     }
@@ -652,8 +688,10 @@ mod test {
         let r = req(">= 2.1.0-alpha2");
 
         assert_match(&r, &["2.1.0-alpha2", "2.1.0-alpha3", "2.1.0", "3.0.0"]);
-        assert_not_match(&r,
-                         &["2.0.0", "2.1.0-alpha1", "2.0.0-alpha2", "3.0.0-alpha2"]);
+        assert_not_match(
+            &r,
+            &["2.0.0", "2.1.0-alpha1", "2.0.0-alpha2", "3.0.0-alpha2"],
+        );
     }
 
     #[test]
@@ -668,8 +706,10 @@ mod test {
         let r = req("<= 2.1.0-alpha2");
 
         assert_match(&r, &["2.1.0-alpha2", "2.1.0-alpha1", "2.0.0", "1.0.0"]);
-        assert_not_match(&r,
-                         &["2.1.0", "2.2.0-alpha1", "2.0.0-alpha2", "1.0.0-alpha2"]);
+        assert_not_match(
+            &r,
+            &["2.1.0", "2.2.0-alpha1", "2.0.0-alpha2", "1.0.0-alpha2"],
+        );
     }
 
     #[test]
@@ -697,10 +737,20 @@ mod test {
 
         let r = req(">=0.5.1-alpha3, <0.6");
         assert_eq!(r.to_string(), ">= 0.5.1-alpha3, < 0.6".to_string());
-        assert_match(&r,
-                     &["0.5.1-alpha3", "0.5.1-alpha4", "0.5.1-beta", "0.5.1", "0.5.5"]);
-        assert_not_match(&r,
-                         &["0.5.1-alpha1", "0.5.2-alpha3", "0.5.5-pre", "0.5.0-pre"]);
+        assert_match(
+            &r,
+            &[
+                "0.5.1-alpha3",
+                "0.5.1-alpha4",
+                "0.5.1-beta",
+                "0.5.1",
+                "0.5.5",
+            ],
+        );
+        assert_not_match(
+            &r,
+            &["0.5.1-alpha1", "0.5.2-alpha3", "0.5.5-pre", "0.5.0-pre"],
+        );
         assert_not_match(&r, &["0.6.0", "0.6.0-pre"]);
     }
 
@@ -745,10 +795,26 @@ mod test {
         assert_not_match(&r, &["0.1.2-beta", "0.1.3-alpha", "0.2.0-pre"]);
 
         let r = req("^0.5.1-alpha3");
-        assert_match(&r,
-                     &["0.5.1-alpha3", "0.5.1-alpha4", "0.5.1-beta", "0.5.1", "0.5.5"]);
-        assert_not_match(&r,
-                         &["0.5.1-alpha1", "0.5.2-alpha3", "0.5.5-pre", "0.5.0-pre", "0.6.0"]);
+        assert_match(
+            &r,
+            &[
+                "0.5.1-alpha3",
+                "0.5.1-alpha4",
+                "0.5.1-beta",
+                "0.5.1",
+                "0.5.5",
+            ],
+        );
+        assert_not_match(
+            &r,
+            &[
+                "0.5.1-alpha1",
+                "0.5.2-alpha3",
+                "0.5.5-pre",
+                "0.5.0-pre",
+                "0.6.0",
+            ],
+        );
 
         let r = req("^0.0.2");
         assert_match(&r, &["0.0.2"]);
@@ -763,10 +829,20 @@ mod test {
         assert_not_match(&r, &["2.9.0", "1.1.1"]);
 
         let r = req("^1.4.2-beta.5");
-        assert_match(&r,
-                     &["1.4.2", "1.4.3", "1.4.2-beta.5", "1.4.2-beta.6", "1.4.2-c"]);
-        assert_not_match(&r,
-                         &["0.9.9", "2.0.0", "1.4.2-alpha", "1.4.2-beta.4", "1.4.3-beta.5"]);
+        assert_match(
+            &r,
+            &["1.4.2", "1.4.3", "1.4.2-beta.5", "1.4.2-beta.6", "1.4.2-c"],
+        );
+        assert_not_match(
+            &r,
+            &[
+                "0.9.9",
+                "2.0.0",
+                "1.4.2-alpha",
+                "1.4.2-beta.4",
+                "1.4.3-beta.5",
+            ],
+        );
     }
 
     #[test]
@@ -830,24 +906,42 @@ mod test {
 
     #[test]
     pub fn test_from_str() {
-        assert_eq!("1.0.0".parse::<VersionReq>().unwrap().to_string(),
-                   "^1.0.0".to_string());
-        assert_eq!("=1.0.0".parse::<VersionReq>().unwrap().to_string(),
-                   "= 1.0.0".to_string());
-        assert_eq!("~1".parse::<VersionReq>().unwrap().to_string(),
-                   "~1".to_string());
-        assert_eq!("~1.2".parse::<VersionReq>().unwrap().to_string(),
-                   "~1.2".to_string());
-        assert_eq!("^1".parse::<VersionReq>().unwrap().to_string(),
-                   "^1".to_string());
-        assert_eq!("^1.1".parse::<VersionReq>().unwrap().to_string(),
-                   "^1.1".to_string());
-        assert_eq!("*".parse::<VersionReq>().unwrap().to_string(),
-                   "*".to_string());
-        assert_eq!("1.*".parse::<VersionReq>().unwrap().to_string(),
-                   "1.*".to_string());
-        assert_eq!("< 1.0.0".parse::<VersionReq>().unwrap().to_string(),
-                   "< 1.0.0".to_string());
+        assert_eq!(
+            "1.0.0".parse::<VersionReq>().unwrap().to_string(),
+            "^1.0.0".to_string()
+        );
+        assert_eq!(
+            "=1.0.0".parse::<VersionReq>().unwrap().to_string(),
+            "= 1.0.0".to_string()
+        );
+        assert_eq!(
+            "~1".parse::<VersionReq>().unwrap().to_string(),
+            "~1".to_string()
+        );
+        assert_eq!(
+            "~1.2".parse::<VersionReq>().unwrap().to_string(),
+            "~1.2".to_string()
+        );
+        assert_eq!(
+            "^1".parse::<VersionReq>().unwrap().to_string(),
+            "^1".to_string()
+        );
+        assert_eq!(
+            "^1.1".parse::<VersionReq>().unwrap().to_string(),
+            "^1.1".to_string()
+        );
+        assert_eq!(
+            "*".parse::<VersionReq>().unwrap().to_string(),
+            "*".to_string()
+        );
+        assert_eq!(
+            "1.*".parse::<VersionReq>().unwrap().to_string(),
+            "1.*".to_string()
+        );
+        assert_eq!(
+            "< 1.0.0".parse::<VersionReq>().unwrap().to_string(),
+            "< 1.0.0".to_string()
+        );
     }
 
     // #[test]

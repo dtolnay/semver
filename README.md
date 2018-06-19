@@ -7,7 +7,7 @@ Semantic version parsing and comparison.
 
 [Documentation](https://steveklabnik.github.io/semver)
 
-Semantic versioning (see http://semver.org/) is a set of rules for
+Semantic versioning (see https://semver.org/) is a set of rules for
 assigning version numbers.
 
 ## SemVer and the Rust ecosystem
@@ -23,7 +23,7 @@ packages you need installed.
 To use `semver`, add this to your `[dependencies]` section:
 
 ```toml
-semver = "0.7.0"
+semver = "0.9.0"
 ```
 
 And this to your crate root:

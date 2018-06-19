@@ -17,6 +17,9 @@ fn test_regressions() {
         let parsed = VersionReq::parse(version);
         let error = parsed.err().unwrap();
 
-        assert_eq!(ReqParseError::DeprecatedVersionRequirement(requirement), error);
+        assert_eq!(
+            ReqParseError::DeprecatedVersionRequirement(requirement),
+            error
+        );
     }
 }
