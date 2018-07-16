@@ -12,18 +12,18 @@ use std::error::Error;
 use std::fmt;
 use std::str;
 
-use Version;
-use version::Identifier;
 use semver_parser;
+use version::Identifier;
+use Version;
 
-#[cfg(feature = "serde")]
-use serde::ser::{Serialize, Serializer};
 #[cfg(feature = "serde")]
 use serde::de::{self, Deserialize, Deserializer, Visitor};
+#[cfg(feature = "serde")]
+use serde::ser::{Serialize, Serializer};
 
-use self::Op::{Ex, Gt, GtEq, Lt, LtEq, Tilde, Compatible, Wildcard};
-use self::WildcardVersion::{Major, Minor, Patch};
+use self::Op::{Compatible, Ex, Gt, GtEq, Lt, LtEq, Tilde, Wildcard};
 use self::ReqParseError::*;
+use self::WildcardVersion::{Major, Minor, Patch};
 
 /// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
 /// numbers. Matching operations can then be done with the `VersionReq` against a particular
@@ -37,7 +37,9 @@ pub struct VersionReq {
 
 impl From<semver_parser::range::VersionReq> for VersionReq {
     fn from(other: semver_parser::range::VersionReq) -> VersionReq {
-        VersionReq { predicates: other.predicates.into_iter().map(From::from).collect() }
+        VersionReq {
+            predicates: other.predicates.into_iter().map(From::from).collect(),
+        }
     }
 }
 
@@ -89,13 +91,13 @@ enum WildcardVersion {
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum Op {
-    Ex, // Exact
-    Gt, // Greater than
-    GtEq, // Greater than or equal to
-    Lt, // Less than
-    LtEq, // Less than or equal to
-    Tilde, // e.g. ~1.0.0
-    Compatible, // compatible by definition of semver, indicated by ^
+    Ex,                        // Exact
+    Gt,                        // Greater than
+    GtEq,                      // Greater than or equal to
+    Lt,                        // Less than
+    LtEq,                      // Less than or equal to
+    Tilde,                     // e.g. ~1.0.0
+    Compatible,                // compatible by definition of semver, indicated by ^
     Wildcard(WildcardVersion), // x.y.*, x.*, *
 }
 
@@ -110,13 +112,11 @@ impl From<semver_parser::range::Op> for Op {
             range::Op::LtEq => Op::LtEq,
             range::Op::Tilde => Op::Tilde,
             range::Op::Compatible => Op::Compatible,
-            range::Op::Wildcard(version) => {
-                match version {
-                    range::WildcardVersion::Major => Op::Wildcard(WildcardVersion::Major),
-                    range::WildcardVersion::Minor => Op::Wildcard(WildcardVersion::Minor),
-                    range::WildcardVersion::Patch => Op::Wildcard(WildcardVersion::Patch),
-                }
-            }
+            range::Op::Wildcard(version) => match version {
+                range::WildcardVersion::Major => Op::Wildcard(WildcardVersion::Major),
+                range::WildcardVersion::Minor => Op::Wildcard(WildcardVersion::Minor),
+                range::WildcardVersion::Patch => Op::Wildcard(WildcardVersion::Patch),
+            },
         }
     }
 }
@@ -300,7 +300,9 @@ impl VersionReq {
     /// let exact = VersionReq::exact(&version);
     /// ```
     pub fn exact(version: &Version) -> VersionReq {
-        VersionReq { predicates: vec![Predicate::exact(version)] }
+        VersionReq {
+            predicates: vec![Predicate::exact(version)],
+        }
     }
 
     /// `matches()` matches a given [`Version`] against this `VersionReq`.
@@ -323,10 +325,10 @@ impl VersionReq {
             return true;
         }
 
-        self.predicates.iter().all(|p| p.matches(version)) &&
-            self.predicates.iter().any(
-                |p| p.pre_tag_is_compatible(version),
-            )
+        self.predicates.iter().all(|p| p.matches(version))
+            && self.predicates
+                .iter()
+                .any(|p| p.pre_tag_is_compatible(version))
     }
 }
 
@@ -400,9 +402,11 @@ impl Predicate {
         // allowed to satisfy comparator sets if at least one comparator with the same
         // [major,
         // minor, patch] tuple also has a prerelease tag.
-        !ver.is_prerelease() ||
-            (self.major == ver.major && self.minor == Some(ver.minor) &&
-                 self.patch == Some(ver.patch) && !self.pre.is_empty())
+        !ver.is_prerelease()
+            || (self.major == ver.major
+                && self.minor == Some(ver.minor)
+                && self.patch == Some(ver.patch)
+                && !self.pre.is_empty())
     }
 
     fn is_greater(&self, ver: &Version) -> bool {
@@ -444,8 +448,9 @@ impl Predicate {
 
         match self.patch {
             Some(patch) => {
-                self.major == ver.major && minor == ver.minor &&
-                    (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver)))
+                self.major == ver.major
+                    && minor == ver.minor
+                    && (ver.patch > patch || (ver.patch == patch && self.pre_is_compatible(ver)))
             }
             None => self.major == ver.major && minor == ver.minor,
         }
@@ -468,15 +473,15 @@ impl Predicate {
                     if minor == 0 {
                         ver.minor == minor && ver.patch == patch && self.pre_is_compatible(ver)
                     } else {
-                        ver.minor == minor &&
-                            (ver.patch > patch ||
-                                 (ver.patch == patch && self.pre_is_compatible(ver)))
+                        ver.minor == minor
+                            && (ver.patch > patch
+                                || (ver.patch == patch && self.pre_is_compatible(ver)))
                     }
                 } else {
-                    ver.minor > minor ||
-                        (ver.minor == minor &&
-                             (ver.patch > patch ||
-                                  (ver.patch == patch && self.pre_is_compatible(ver))))
+                    ver.minor > minor
+                        || (ver.minor == minor
+                            && (ver.patch > patch
+                                || (ver.patch == patch && self.pre_is_compatible(ver))))
                 }
             }
             None => {
@@ -507,7 +512,7 @@ impl Predicate {
                     }
                 }
             }
-            _ => false,  // unreachable
+            _ => false, // unreachable
         }
     }
 }
@@ -590,8 +595,8 @@ impl fmt::Display for Op {
 
 #[cfg(test)]
 mod test {
-    use super::{VersionReq, Op};
     use super::super::version::Version;
+    use super::{Op, VersionReq};
     use std::hash::{Hash, Hasher};
 
     fn req(s: &str) -> VersionReq {
@@ -670,8 +675,7 @@ mod test {
             Op::Lt,
             Op::LtEq,
             Op::Tilde,
-        ]
-        {
+        ] {
             req(&format!("{} 1.2.3+meta", op));
         }
     }

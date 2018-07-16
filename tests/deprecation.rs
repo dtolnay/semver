@@ -2,8 +2,8 @@ extern crate semver;
 
 #[test]
 fn test_regressions() {
-    use semver::VersionReq;
     use semver::ReqParseError;
+    use semver::VersionReq;
 
     let versions = vec![
         (".*", VersionReq::any()),

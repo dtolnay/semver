@@ -12,9 +12,9 @@
 //! versions.
 
 use std::cmp::{self, Ordering};
+use std::error::Error;
 use std::fmt;
 use std::hash;
-use std::error::Error;
 
 use std::result;
 use std::str;
@@ -22,9 +22,9 @@ use std::str;
 use semver_parser;
 
 #[cfg(feature = "serde")]
-use serde::ser::{Serialize, Serializer};
-#[cfg(feature = "serde")]
 use serde::de::{self, Deserialize, Deserializer, Visitor};
+#[cfg(feature = "serde")]
+use serde::ser::{Serialize, Serializer};
 
 /// An identifier in the pre-release or build metadata.
 ///
@@ -329,8 +329,10 @@ impl cmp::PartialEq for Version {
         // We should ignore build metadata here, otherwise versions v1 and v2
         // can exist such that !(v1 < v2) && !(v1 > v2) && v1 != v2, which
         // violate strict total ordering rules.
-        self.major == other.major && self.minor == other.minor && self.patch == other.patch &&
-            self.pre == other.pre
+        self.major == other.major
+            && self.minor == other.minor
+            && self.patch == other.patch
+            && self.pre == other.pre
     }
 }
 
@@ -387,10 +389,10 @@ impl From<(u64, u64, u64)> for Version {
 
 #[cfg(test)]
 mod tests {
-    use std::result;
-    use super::Version;
     use super::Identifier;
     use super::SemVerError;
+    use super::Version;
+    use std::result;
 
     #[test]
     fn test_parse() {
@@ -535,7 +537,6 @@ mod tests {
                 build: vec![Identifier::AlphaNumeric(String::from("0851523"))],
             })
         );
-
     }
 
     #[test]
@@ -574,7 +575,6 @@ mod tests {
 
         assert_eq!(release, Version::parse("2.0.0").unwrap());
     }
-
 
     #[test]
     fn test_increment_clear_metadata() {
@@ -852,7 +852,6 @@ mod tests {
                 build: vec![Identifier::AlphaNumeric(String::from("0851523"))],
             })
         );
-
     }
 
     #[test]

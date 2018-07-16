@@ -1,21 +1,20 @@
 language: rust
-rust:
-  - nightly
-  - beta
-  - stable
-sudo: false
 cache: cargo
-before_script: (cargo install rustfmt --force || true)
-script:
-  - cargo fmt -- --write-mode=diff --force
-  - cargo build --verbose
-  - cargo test --verbose --features ci
-addons:
-  apt:
-    sources:
-      - kalakris-cmake
-    packages:
-      - cmake
-notifications:
-  email:
-    on_success: never
+
+matrix:
+  include:
+
+  - rust: stable
+    script:
+    - cargo test
+    - rustup component add rustfmt-preview
+    - cargo fmt --all -- --write-mode=check
+  - rust: beta
+    script:
+    - cargo test
+  - rust: nightly
+    script:
+    - cargo test
+
+allow_failures:
+  - rust: nightly

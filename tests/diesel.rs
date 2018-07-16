@@ -4,9 +4,9 @@
 extern crate diesel;
 extern crate semver;
 
-use diesel::*;
 use diesel::connection::SimpleConnection;
 use diesel::sql_types::Text;
+use diesel::*;
 use semver::{Version, VersionReq};
 
 table! {
@@ -62,9 +62,7 @@ fn version_inserts_and_loads() {
     let semver_versions = VERSIONS_TO_TEST
         .iter()
         .enumerate()
-        .map(|(i, v)| {
-            (format!("Version {}", i), v.parse::<Version>().unwrap())
-        })
+        .map(|(i, v)| (format!("Version {}", i), v.parse::<Version>().unwrap()))
         .collect::<Vec<_>>();
 
     let new_versions = semver_versions
@@ -91,11 +89,9 @@ fn version_inserts_and_loads_on_struct() {
     let semver_versions = VERSIONS_TO_TEST
         .iter()
         .enumerate()
-        .map(|(i, v)| {
-            Versioned {
-                name: format!("Version {}", i),
-                vers: v.parse::<Version>().unwrap(),
-            }
+        .map(|(i, v)| Versioned {
+            name: format!("Version {}", i),
+            vers: v.parse::<Version>().unwrap(),
         })
         .collect::<Vec<_>>();
 
@@ -196,11 +192,9 @@ fn version_req_inserts_and_loads_on_struct() {
     let semver_version_reqs = VERSION_REQS_TO_TEST
         .iter()
         .enumerate()
-        .map(|(i, v)| {
-            VersionReqed {
-                name: format!("VersionReq {}", i),
-                req: v.parse::<VersionReq>().unwrap(),
-            }
+        .map(|(i, v)| VersionReqed {
+            name: format!("VersionReq {}", i),
+            req: v.parse::<VersionReq>().unwrap(),
         })
         .collect::<Vec<_>>();
 

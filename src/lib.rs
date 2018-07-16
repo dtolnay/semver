@@ -184,9 +184,11 @@
 //! 1.2.* := >=1.2.0 <1.3.0
 //! ```
 
-#![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
-       html_favicon_url = "https://www.rust-lang.org/favicon.ico",
-       html_root_url = "https://docs.rs/semver")]
+#![doc(
+    html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
+    html_favicon_url = "https://www.rust-lang.org/favicon.ico",
+    html_root_url = "https://docs.rs/semver"
+)]
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
 
@@ -204,8 +206,8 @@ extern crate diesel;
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.
 
-pub use version::{Identifier, SemVerError, Version};
 pub use version::Identifier::{AlphaNumeric, Numeric};
+pub use version::{Identifier, SemVerError, Version};
 pub use version_req::{ReqParseError, VersionReq};
 
 // SemVer-compliant versions.
