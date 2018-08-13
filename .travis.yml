@@ -8,7 +8,7 @@ matrix:
     script:
     - cargo test
     - rustup component add rustfmt-preview
-    - cargo fmt --all -- --write-mode=check
+    - cargo fmt --all -- --check
   - rust: beta
     script:
     - cargo test

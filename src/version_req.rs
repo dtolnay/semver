@@ -326,7 +326,8 @@ impl VersionReq {
         }
 
         self.predicates.iter().all(|p| p.matches(version))
-            && self.predicates
+            && self
+                .predicates
                 .iter()
                 .any(|p| p.pre_tag_is_compatible(version))
     }
