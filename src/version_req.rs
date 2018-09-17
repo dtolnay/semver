@@ -325,11 +325,10 @@ impl VersionReq {
             return true;
         }
 
-        self.predicates.iter().all(|p| p.matches(version))
-            && self
-                .predicates
-                .iter()
-                .any(|p| p.pre_tag_is_compatible(version))
+        self.predicates.iter().all(|p| p.matches(version)) && self
+            .predicates
+            .iter()
+            .any(|p| p.pre_tag_is_compatible(version))
     }
 }
 
