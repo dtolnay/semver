@@ -1,8 +1,8 @@
 extern crate semver;
 
-use semver::{Version,VersionReq};
+use semver::{Version, VersionReq};
 
-fn main() -> Result<(),Box<::std::error::Error>> {
+fn main() -> Result<(), Box<::std::error::Error>> {
     let mut a = std::env::args();
     if a.len() != 2 && a.len() != 3 {
         eprintln!("Usage: semver_check [-q] <requirement> <version>");
@@ -22,7 +22,7 @@ fn main() -> Result<(),Box<::std::error::Error>> {
         if !quiet {
             println!("Yes");
         }
-        return Ok(())
+        return Ok(());
     } else {
         if !quiet {
             println!("No");
