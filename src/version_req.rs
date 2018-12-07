@@ -23,7 +23,7 @@ use serde::ser::{Serialize, Serializer};
 
 use self::Op::{Compatible, Ex, Gt, GtEq, Lt, LtEq, Tilde, Wildcard};
 use self::ReqParseError::*;
-use self::WildcardVersion::{Major, Minor, Patch};
+use self::WildcardVersion::{Minor, Patch};
 
 /// A `VersionReq` is a struct containing a list of predicates that can apply to ranges of version
 /// numbers. Matching operations can then be done with the `VersionReq` against a particular
@@ -84,7 +84,6 @@ impl<'de> Deserialize<'de> for VersionReq {
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum WildcardVersion {
-    Major,
     Minor,
     Patch,
 }
@@ -113,7 +112,6 @@ impl From<semver_parser::range::Op> for Op {
             range::Op::Tilde => Op::Tilde,
             range::Op::Compatible => Op::Compatible,
             range::Op::Wildcard(version) => match version {
-                range::WildcardVersion::Major => Op::Wildcard(WildcardVersion::Major),
                 range::WildcardVersion::Minor => Op::Wildcard(WildcardVersion::Minor),
                 range::WildcardVersion::Patch => Op::Wildcard(WildcardVersion::Patch),
             },
@@ -267,14 +265,13 @@ impl VersionReq {
     pub fn parse(input: &str) -> Result<VersionReq, ReqParseError> {
         let res = semver_parser::range::parse(input);
 
-        if let Ok(v) = res {
-            return Ok(From::from(v));
+        match res {
+            Ok(v) => Ok(From::from(v)),
+            Err(e) => match VersionReq::parse_deprecated(input) {
+                Some(v) => Err(ReqParseError::DeprecatedVersionRequirement(v)),
+                None => Err(From::from(e.to_string())),
+            }
         }
-
-        return match VersionReq::parse_deprecated(input) {
-            Some(v) => Err(ReqParseError::DeprecatedVersionRequirement(v)),
-            None => Err(From::from(res.err().unwrap())),
-        };
     }
 
     fn parse_deprecated(version: &str) -> Option<VersionReq> {
@@ -500,8 +497,7 @@ impl Predicate {
 
     // see https://www.npmjs.org/doc/misc/semver.html for behavior
     fn matches_wildcard(&self, ver: &Version) -> bool {
-        match self.op {
-            Wildcard(Major) => true,
+        match &self.op {
             Wildcard(Minor) => self.major == ver.major,
             Wildcard(Patch) => {
                 match self.minor {
@@ -538,7 +534,6 @@ impl fmt::Display for VersionReq {
 impl fmt::Display for Predicate {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self.op {
-            Wildcard(Major) => try!(write!(fmt, "*")),
             Wildcard(Minor) => try!(write!(fmt, "{}.*", self.major)),
             Wildcard(Patch) => {
                 if let Some(minor) = self.minor {

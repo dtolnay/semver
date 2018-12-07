@@ -240,10 +240,9 @@ impl Version {
     /// [semver]: https://semver.org
     pub fn parse(version: &str) -> Result<Version> {
         let res = semver_parser::version::parse(version);
-
         match res {
             // Convert plain String error into proper ParseError
-            Err(e) => Err(SemVerError::ParseError(e)),
+            Err(e) => Err(SemVerError::ParseError(e.to_string())),
             Ok(v) => Ok(From::from(v)),
         }
     }
