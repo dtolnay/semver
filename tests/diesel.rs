@@ -30,7 +30,8 @@ fn connection() -> SqliteConnection {
         CREATE TABLE versions (name TEXT PRIMARY KEY NOT NULL, vers TEXT NOT NULL);
         CREATE TABLE version_reqs (name TEXT PRIMARY KEY NOT NULL, req TEXT NOT NULL);
     ",
-    ).unwrap();
+    )
+    .unwrap();
     conn
 }
 
@@ -92,7 +93,8 @@ fn version_inserts_and_loads_on_struct() {
         .map(|(i, v)| Versioned {
             name: format!("Version {}", i),
             vers: v.parse::<Version>().unwrap(),
-        }).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
     let inserted_rows = insert_into(versions::table)
         .values(&semver_versions)
@@ -162,7 +164,8 @@ fn version_req_inserts_and_loads() {
                 format!("VersionReq {}", i),
                 v.parse::<VersionReq>().unwrap(),
             )
-        }).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
     let new_version_reqs = semver_version_reqs
         .iter()
@@ -193,7 +196,8 @@ fn version_req_inserts_and_loads_on_struct() {
         .map(|(i, v)| VersionReqed {
             name: format!("VersionReq {}", i),
             req: v.parse::<VersionReq>().unwrap(),
-        }).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
     let inserted_rows = insert_into(version_reqs::table)
         .values(&semver_version_reqs)
