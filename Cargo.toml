@@ -12,7 +12,7 @@ Semantic version parsing and comparison.
 """
 readme = "README.md"
 keywords = ["version", "semantic", "compare"]
-categories = ["development-tools", "parsing"]
+categories = ["development-tools", "parser-implementations"]
 
 [badges]
 travis-ci = { repository = "steveklabnik/semver" }
