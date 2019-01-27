@@ -580,7 +580,7 @@ impl fmt::Display for Predicate {
 impl fmt::Display for Op {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Ex => try!(write!(fmt, "= ")),
+            Ex => try!(write!(fmt, "=")),
             Gt => try!(write!(fmt, "> ")),
             GtEq => try!(write!(fmt, ">= ")),
             Lt => try!(write!(fmt, "< ")),
@@ -645,22 +645,22 @@ mod test {
     fn test_parsing_exact() {
         let r = req("=1.0.0");
 
-        assert!(r.to_string() == "= 1.0.0".to_string());
-        assert_eq!(r.to_string(), "= 1.0.0".to_string());
+        assert!(r.to_string() == "=1.0.0".to_string());
+        assert_eq!(r.to_string(), "=1.0.0".to_string());
 
         assert_match(&r, &["1.0.0"]);
         assert_not_match(&r, &["1.0.1", "0.9.9", "0.10.0", "0.1.0", "1.0.0-pre"]);
 
         let r = req("=0.9.0");
 
-        assert_eq!(r.to_string(), "= 0.9.0".to_string());
+        assert_eq!(r.to_string(), "=0.9.0".to_string());
 
         assert_match(&r, &["0.9.0"]);
         assert_not_match(&r, &["0.9.1", "1.9.0", "0.0.9"]);
 
         let r = req("=0.1.0-beta2.a");
 
-        assert_eq!(r.to_string(), "= 0.1.0-beta2.a".to_string());
+        assert_eq!(r.to_string(), "=0.1.0-beta2.a".to_string());
 
         assert_match(&r, &["0.1.0-beta2.a"]);
         assert_not_match(&r, &["0.9.1", "0.1.0", "0.1.1-beta2.a", "0.1.0-beta2"]);
@@ -917,7 +917,7 @@ mod test {
         );
         assert_eq!(
             "=1.0.0".parse::<VersionReq>().unwrap().to_string(),
-            "= 1.0.0".to_string()
+            "=1.0.0".to_string()
         );
         assert_eq!(
             "~1".parse::<VersionReq>().unwrap().to_string(),
