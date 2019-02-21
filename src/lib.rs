@@ -137,7 +137,7 @@
 //! use semver::VersionReq;
 //!
 //! # fn try_compare() -> Result<(), Box<::std::error::Error>> {
-//! let r = VersionReq::parse(">= 1.0.0")?;
+//! let r = VersionReq::parse(">=1.0.0")?;
 //! let v = Version::parse("1.0.0")?;
 //!
 //! assert!(r.to_string() == ">=1.0.0".to_string());

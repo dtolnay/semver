@@ -15,7 +15,9 @@ keywords = ["version", "semantic", "compare"]
 categories = ["development-tools", "parser-implementations"]
 
 [dependencies]
-semver-parser = "0.7.0"
+#semver-parser = "0.7.0"
+semver-parser = { git = "https://github.com/mikrostew/semver-parser", branch = "rewrite" }
+
 serde = { version = "1.0", optional = true }
 diesel = { version = "1.1", optional = true }
 
