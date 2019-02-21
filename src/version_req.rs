@@ -120,8 +120,8 @@ impl From<semver_parser::Range> for Range {
 struct Predicate {
     op: Op,
     major: u64,
-    minor: Option<u64>,
-    patch: Option<u64>,
+    minor: u64,
+    patch: u64,
     pre: Vec<Identifier>,
 }
 
@@ -130,9 +130,8 @@ impl From<semver_parser::Comparator> for Predicate {
         Predicate {
             op: From::from(comparator.op),
             major: comparator.major,
-            // TODO: don't need the Option for these...
-            minor: Some(comparator.minor),
-            patch: Some(comparator.patch),
+            minor: comparator.minor,
+            patch: comparator.patch,
             pre: comparator.pre.into_iter().map(From::from).collect(),
         }
     }
@@ -389,8 +388,8 @@ impl Predicate {
         Predicate {
             op: Ex,
             major: version.major,
-            minor: Some(version.minor),
-            patch: Some(version.patch),
+            minor: version.minor,
+            patch: version.patch,
             pre: version.pre.clone(),
         }
     }
@@ -407,33 +406,10 @@ impl Predicate {
     }
 
     fn matches_exact(&self, ver: &Version) -> bool {
-        if self.major != ver.major {
-            return false;
-        }
-
-        match self.minor {
-            Some(minor) => {
-                if minor != ver.minor {
-                    return false;
-                }
-            }
-            None => return true,
-        }
-
-        match self.patch {
-            Some(patch) => {
-                if patch != ver.patch {
-                    return false;
-                }
-            }
-            None => return true,
-        }
-
-        if self.pre != ver.pre {
-            return false;
-        }
-
-        true
+        self.major == ver.major
+            && self.minor == ver.minor
+            && self.patch == ver.patch
+            && self.pre == ver.pre
     }
 
     // https://docs.npmjs.com/misc/semver#prerelease-tags
@@ -445,8 +421,8 @@ impl Predicate {
         // minor, patch] tuple also has a prerelease tag.
         !ver.is_prerelease()
             || (self.major == ver.major
-                && self.minor == Some(ver.minor)
-                && self.patch == Some(ver.patch)
+                && self.minor == ver.minor
+                && self.patch == ver.patch
                 && !self.pre.is_empty())
     }
 
@@ -455,22 +431,12 @@ impl Predicate {
             return ver.major > self.major;
         }
 
-        match self.minor {
-            Some(minor) => {
-                if minor != ver.minor {
-                    return ver.minor > minor;
-                }
-            }
-            None => return false,
+        if self.minor != ver.minor {
+            return ver.minor > self.minor;
         }
 
-        match self.patch {
-            Some(patch) => {
-                if patch != ver.patch {
-                    return ver.patch > patch;
-                }
-            }
-            None => return false,
+        if self.patch != ver.patch {
+            return ver.patch > self.patch;
         }
 
         if !self.pre.is_empty() {
@@ -481,22 +447,20 @@ impl Predicate {
     }
 
     fn has_exactly_one_match(&self) -> bool {
-        self.op == Ex && self.minor.is_some() && self.patch.is_some()
+        self.op == Ex
     }
 }
 
 impl fmt::Display for VersionReq {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        // TODO: is this right?
         if self.ranges.is_empty() {
             write!(fmt, "*")?;
         } else {
-            // TODO: is this right?
             for (i, ref pred) in self.ranges.iter().enumerate() {
                 if i == 0 {
                     write!(fmt, "{}", pred)?;
                 } else {
-                    write!(fmt, ", {}", pred)?;
+                    write!(fmt, " || {}", pred)?;
                 }
             }
         }
@@ -507,7 +471,6 @@ impl fmt::Display for VersionReq {
 
 impl fmt::Display for Range {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        // TODO: is this right?
         for (i, ref pred) in self.predicates.iter().enumerate() {
             if i == 0 {
                 write!(fmt, "{}", pred)?;
@@ -521,28 +484,19 @@ impl fmt::Display for Range {
 
 impl fmt::Display for Predicate {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        // TODO: don't need the match here
-        match self.op {
-            _ => {
-                write!(fmt, "{}{}", self.op, self.major)?;
+        write!(
+            fmt,
+            "{} {}.{}.{}",
+            self.op, self.major, self.minor, self.patch
+        )?;
 
-                if let Some(v) = self.minor {
-                    write!(fmt, ".{}", v)?;
+        if !self.pre.is_empty() {
+            write!(fmt, "-")?;
+            for (i, x) in self.pre.iter().enumerate() {
+                if i != 0 {
+                    write!(fmt, ".")?
                 }
-
-                if let Some(v) = self.patch {
-                    write!(fmt, ".{}", v)?;
-                }
-
-                if !self.pre.is_empty() {
-                    write!(fmt, "-")?;
-                    for (i, x) in self.pre.iter().enumerate() {
-                        if i != 0 {
-                            write!(fmt, ".")?
-                        }
-                        write!(fmt, "{}", x)?;
-                    }
-                }
+                write!(fmt, "{}", x)?;
             }
         }
 
@@ -853,6 +807,30 @@ mod test {
         let r = req("1.2.X");
         assert_match(&r, &["1.2.0", "1.2.2", "1.2.4"]);
         assert_not_match(&r, &["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
+    }
+
+    #[test]
+    pub fn test_parsing_logical_or() {
+        let r = req("=1.2.3 || =2.3.4");
+        assert_eq!(r.to_string(), "= 1.2.3 || = 2.3.4".to_string());
+        assert_match(&r, &["1.2.3", "2.3.4"]);
+        assert_not_match(&r, &["1.0.0", "2.9.0", "0.1.4"]);
+        assert_not_match(&r, &["1.2.3-beta1", "2.3.4-alpha", "1.2.3-pre"]);
+
+        let r = req("1.1 || =1.2.3");
+        assert_eq!(r.to_string(), ">= 1.1.0, < 1.2.0 || = 1.2.3".to_string());
+        assert_match(&r, &["1.1.0", "1.1.12", "1.2.3"]);
+        assert_not_match(&r, &["1.0.0", "1.2.2", "1.3.0"]);
+
+        let r = req("6.* || 8.* || >= 10.*");
+        assert_eq!(
+            r.to_string(),
+            ">= 6.0.0, < 7.0.0 || >= 8.0.0, < 9.0.0 || >= 10.0.0".to_string()
+        );
+        assert_match(&r, &["6.0.0", "6.1.2"]);
+        assert_match(&r, &["8.0.0", "8.2.4"]);
+        assert_match(&r, &["10.1.2", "11.3.4"]);
+        assert_not_match(&r, &["5.0.0", "7.0.0", "9.0.0"]);
     }
 
     #[test]
