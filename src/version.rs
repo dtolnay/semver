@@ -531,6 +531,19 @@ mod tests {
                 build: vec![Identifier::AlphaNumeric(String::from("0851523"))],
             })
         );
+        // for https://nodejs.org/dist/index.json, where some older npm versions are "1.1.0-beta-10"
+        assert_eq!(
+            Version::parse("1.1.0-beta-10"),
+            Ok(Version {
+                major: 1,
+                minor: 1,
+                patch: 0,
+                pre: vec![
+                    Identifier::AlphaNumeric(String::from("beta-10")),
+                ],
+                build: Vec::new(),
+            })
+        );
     }
 
     #[test]
