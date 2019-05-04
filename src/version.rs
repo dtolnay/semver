@@ -248,6 +248,26 @@ impl Version {
         }
     }
 
+    /// Constructs a new Version from this one with patch number incremented.
+    pub fn with_patch_increment(&self) -> Version {
+        Version::new(self.major, self.minor, self.patch + 1)
+    }
+
+    /// Constructs a new Version from this one with minor number incremented.
+    ///
+    /// As instructed by section 7 of the spec, the patch number is set to 0.
+    pub fn with_minor_increment(&self) -> Version {
+        Version::new(self.major, self.minor + 1, 0)
+    }
+
+    /// Constructs a new Version from this one with major number incremented.
+    ///
+    /// As instructed by section 8 of the spec, the minor and patch numbers are
+    /// set to 0
+    pub fn with_major_increment(&self) -> Version {
+        Version::new(self.major + 1, 0, 0)
+    }
+
     /// Clears the build metadata
     fn clear_metadata(&mut self) {
         self.build = Vec::new();
@@ -537,6 +557,27 @@ mod tests {
                 build: vec![Identifier::AlphaNumeric(String::from("0851523"))],
             })
         );
+    }
+
+    #[test]
+    fn test_with_patch_increment() {
+        let buggy_release = Version::parse("0.1.0").unwrap();
+        let new_release = buggy_release.with_patch_increment();
+        assert_eq!(new_release, Version::parse("0.1.1").unwrap());
+    }
+
+    #[test]
+    fn test_with_minor_increment() {
+        let feature_release = Version::parse("1.4.6").unwrap();
+        let new_release = feature_release.with_minor_increment();
+        assert_eq!(new_release, Version::parse("1.5.0").unwrap());
+    }
+
+    #[test]
+    fn test_with_major_increment() {
+        let chrome_release = Version::parse("46.1.246773").unwrap();
+        let new_release = chrome_release.with_major_increment();
+        assert_eq!(new_release, Version::parse("47.0.0").unwrap());
     }
 
     #[test]
