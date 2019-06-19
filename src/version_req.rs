@@ -13,6 +13,7 @@ use std::fmt;
 use std::str;
 
 use semver_parser;
+pub use semver_parser::Compat; // re-export this
 use semver_parser::RangeSet;
 use version::Identifier;
 use Version;
@@ -33,12 +34,14 @@ use self::ReqParseError::*;
 #[cfg_attr(feature = "diesel", sql_type = "diesel::sql_types::Text")]
 pub struct VersionReq {
     ranges: Vec<Range>,
+    compat: Compat, // defaults to Cargo
 }
 
 impl From<semver_parser::RangeSet> for VersionReq {
     fn from(range_set: semver_parser::RangeSet) -> VersionReq {
         VersionReq {
             ranges: range_set.ranges.into_iter().map(From::from).collect(),
+            compat: range_set.compat,
         }
     }
 }
@@ -54,6 +57,7 @@ impl Serialize for VersionReq {
     }
 }
 
+// TODO: how to implement deserialize with compatibility?
 #[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for VersionReq {
     fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
@@ -106,12 +110,14 @@ impl From<semver_parser::Op> for Op {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 struct Range {
     predicates: Vec<Predicate>,
+    compat: Compat,
 }
 
 impl From<semver_parser::Range> for Range {
     fn from(range: semver_parser::Range) -> Range {
         Range {
             predicates: range.comparator_set.into_iter().map(From::from).collect(),
+            compat: range.compat,
         }
     }
 }
@@ -213,7 +219,10 @@ impl VersionReq {
     /// let anything = VersionReq::any();
     /// ```
     pub fn any() -> VersionReq {
-        VersionReq { ranges: vec![] }
+        VersionReq {
+            ranges: vec![],
+            compat: Compat::Cargo,
+        }
     }
 
     /// `parse()` is the main constructor of a `VersionReq`. It takes a string like `"^1.2.3"`
@@ -278,6 +287,32 @@ impl VersionReq {
         }
     }
 
+    // TODO: better docs for this
+    /// `parse_compat()` is like `parse()`, but it takes an extra argument for compatibility with
+    /// other semver implementations, and turns that into a `VersionReq` that matches the
+    /// particular constraint and compatibility.
+    ///
+    /// A `Result` is returned which contains a [`ReqParseError`] if there was a problem parsing the
+    /// `VersionReq`.
+    /// [`ReqParseError`]: enum.ReqParseError.html
+    ///
+    /// # Examples
+    /// ```
+    /// // TODO
+    /// ```
+    pub fn parse_compat(input: &str, compat: Compat) -> Result<VersionReq, ReqParseError> {
+        let range_set = RangeSet::parse(input, compat);
+
+        if let Ok(v) = range_set {
+            return Ok(From::from(v));
+        }
+
+        return match VersionReq::parse_deprecated(input) {
+            Some(v) => Err(ReqParseError::DeprecatedVersionRequirement(v)),
+            None => Err(From::from(range_set.err().unwrap())),
+        };
+    }
+
     fn parse_deprecated(version: &str) -> Option<VersionReq> {
         match version {
             ".*" => Some(VersionReq::any()),
@@ -304,7 +339,9 @@ impl VersionReq {
         VersionReq {
             ranges: vec![Range {
                 predicates: vec![Predicate::exact(version)],
+                compat: Compat::Cargo,
             }],
+            compat: Compat::Cargo,
         }
     }
 
@@ -475,7 +512,12 @@ impl fmt::Display for Range {
             if i == 0 {
                 write!(fmt, "{}", pred)?;
             } else {
-                write!(fmt, ", {}", pred)?;
+                if self.compat == Compat::Node {
+                    // Node does not expect commas between predicates
+                    write!(fmt, " {}", pred)?;
+                } else {
+                    write!(fmt, ", {}", pred)?;
+                }
             }
         }
         Ok(())
@@ -520,11 +562,15 @@ impl fmt::Display for Op {
 #[cfg(test)]
 mod test {
     use super::super::version::Version;
-    use super::{Op, VersionReq};
+    use super::{Compat, Op, VersionReq};
     use std::hash::{Hash, Hasher};
 
     fn req(s: &str) -> VersionReq {
         VersionReq::parse(s).unwrap()
+    }
+
+    fn req_node(s: &str) -> VersionReq {
+        VersionReq::parse_compat(s, Compat::Node).unwrap()
     }
 
     fn version(s: &str) -> Version {
@@ -562,6 +608,16 @@ mod test {
 
         assert_match(&r, &["1.0.0", "1.0.1"]);
         assert_not_match(&r, &["0.9.9", "0.10.0", "0.1.0"]);
+    }
+
+    #[test]
+    fn test_parsing_default_node() {
+        let r = req_node("1.0.0");
+
+        assert_eq!(r.to_string(), "= 1.0.0".to_string());
+
+        assert_match(&r, &["1.0.0"]);
+        assert_not_match(&r, &["0.9.9", "0.10.0", "0.1.0", "1.0.1"]);
     }
 
     #[test]
@@ -665,6 +721,47 @@ mod test {
 
         let r = req(">=0.5.1-alpha3, <0.6");
         assert_eq!(r.to_string(), ">=0.5.1-alpha3, <0.6.0".to_string());
+        assert_match(
+            &r,
+            &[
+                "0.5.1-alpha3",
+                "0.5.1-alpha4",
+                "0.5.1-beta",
+                "0.5.1",
+                "0.5.5",
+            ],
+        );
+        assert_not_match(
+            &r,
+            &["0.5.1-alpha1", "0.5.2-alpha3", "0.5.5-pre", "0.5.0-pre"],
+        );
+        assert_not_match(&r, &["0.6.0", "0.6.0-pre"]);
+    }
+
+    #[test]
+    pub fn test_multiple_node() {
+        let r = req_node("> 0.0.9, <= 2.5.3");
+        assert_eq!(r.to_string(), "> 0.0.9 <= 2.5.3".to_string());
+        assert_match(&r, &["0.0.10", "1.0.0", "2.5.3"]);
+        assert_not_match(&r, &["0.0.8", "2.5.4"]);
+
+        let r = req_node("0.3.0, 0.4.0");
+        assert_eq!(r.to_string(), "= 0.3.0 = 0.4.0".to_string());
+        assert_not_match(&r, &["0.0.8", "0.3.0", "0.4.0"]);
+
+        let r = req_node("<= 0.2.0, >= 0.5.0");
+        assert_eq!(r.to_string(), "<= 0.2.0 >= 0.5.0".to_string());
+        assert_not_match(&r, &["0.0.8", "0.3.0", "0.5.1"]);
+
+        let r = req_node("0.1.0, 0.1.4, 0.1.6");
+        assert_eq!(r.to_string(), "= 0.1.0 = 0.1.4 = 0.1.6".to_string());
+        assert_not_match(&r, &["0.1.0", "0.1.4", "0.1.6", "0.2.0"]);
+
+        assert!(VersionReq::parse("> 0.1.0,").is_err());
+        assert!(VersionReq::parse("> 0.3.0, ,").is_err());
+
+        let r = req_node(">=0.5.1-alpha3, <0.6");
+        assert_eq!(r.to_string(), ">= 0.5.1-alpha3 < 0.6.0".to_string());
         assert_match(
             &r,
             &[
@@ -826,6 +923,30 @@ mod test {
         assert_eq!(
             r.to_string(),
             ">= 6.0.0, < 7.0.0 || >= 8.0.0, < 9.0.0 || >= 10.0.0".to_string()
+        );
+        assert_match(&r, &["6.0.0", "6.1.2"]);
+        assert_match(&r, &["8.0.0", "8.2.4"]);
+        assert_match(&r, &["10.1.2", "11.3.4"]);
+        assert_not_match(&r, &["5.0.0", "7.0.0", "9.0.0"]);
+    }
+
+    #[test]
+    pub fn test_parsing_logical_or_node() {
+        let r = req_node("=1.2.3 || =2.3.4");
+        assert_eq!(r.to_string(), "= 1.2.3 || = 2.3.4".to_string());
+        assert_match(&r, &["1.2.3", "2.3.4"]);
+        assert_not_match(&r, &["1.0.0", "2.9.0", "0.1.4"]);
+        assert_not_match(&r, &["1.2.3-beta1", "2.3.4-alpha", "1.2.3-pre"]);
+
+        let r = req_node("1.1 || =1.2.3");
+        assert_eq!(r.to_string(), ">= 1.1.0 < 1.2.0 || = 1.2.3".to_string());
+        assert_match(&r, &["1.1.0", "1.1.12", "1.2.3"]);
+        assert_not_match(&r, &["1.0.0", "1.2.2", "1.3.0"]);
+
+        let r = req_node("6.* || 8.* || >= 10.*");
+        assert_eq!(
+            r.to_string(),
+            ">= 6.0.0 < 7.0.0 || >= 8.0.0 < 9.0.0 || >= 10.0.0".to_string()
         );
         assert_match(&r, &["6.0.0", "6.1.2"]);
         assert_match(&r, &["8.0.0", "8.2.4"]);
