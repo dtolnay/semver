@@ -13,8 +13,7 @@ use std::fmt;
 use std::str;
 
 use semver_parser;
-pub use semver_parser::Compat; // re-export this
-use semver_parser::RangeSet;
+use semver_parser::{Compat, RangeSet};
 use version::Identifier;
 use Version;
 

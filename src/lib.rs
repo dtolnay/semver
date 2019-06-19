@@ -207,6 +207,7 @@ extern crate diesel;
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.
 
+pub use semver_parser::Compat;
 pub use version::Identifier::{AlphaNumeric, Numeric};
 pub use version::{Identifier, SemVerError, Version};
 pub use version_req::{ReqParseError, VersionReq};
