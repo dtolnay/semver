@@ -874,4 +874,21 @@ mod tests {
             parse_error("Extra junk after valid version:  abc")
         );
     }
+    use proptest::prelude::*;
+
+    /// Regex adapted from example courtesy of DavidFichtmueller via https://github.com/semver/semver/issues/232
+    /// Note the use of {0,17} constraints on consecutive digits in order to avoid overflowing
+    /// what u64 can represent
+    const SEMVER_REGEX: &str = r"(0|[1-9][0-9]{0,17})\.(0|[1-9][0-9]{0,17})\.(0|[1-9][0-9]{0,17})(-(0|[1-9][0-9]{0,17}|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]{0,17}|[0-9]{0,17}[a-zA-Z-][0-9a-zA-Z-]*))*)?(\+[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)?";
+    proptest! {
+        #[test]
+        fn test_round_trip_parsing_and_display(input_str in SEMVER_REGEX) {
+                let v = Version::parse(&input_str)
+                            .expect("Should successfully parse a valid semver string");
+                let serialized = v.to_string();
+                assert_eq!(input_str, serialized.as_str());
+        }
+
+
+    }
 }

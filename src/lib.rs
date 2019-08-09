@@ -203,6 +203,10 @@ extern crate serde;
 #[macro_use]
 extern crate diesel;
 
+// Generative test framework
+#[cfg(test)]
+extern crate proptest;
+
 // We take the common approach of keeping our own module system private, and
 // just re-exporting the interface that we want.
 

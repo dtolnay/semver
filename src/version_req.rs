@@ -990,4 +990,33 @@ mod test {
         assert!(req("^1") < req("*"));
         assert!(req("*") == req("*"));
     }
+
+    #[test]
+    /// Document-via-tests the de-facto expectations of what wildcard patterns are acceptable
+    fn test_wildcard_permitted_parseable_patterns() {
+        assert!(VersionReq::parse("*").is_ok());
+        assert!(VersionReq::parse("1.*").is_ok());
+        assert!(VersionReq::parse("1.*.*").is_ok());
+        assert!(VersionReq::parse("1.1.*").is_ok());
+
+        assert!(VersionReq::parse("*.1").is_err());
+        assert!(VersionReq::parse("*.*").is_err());
+        assert!(VersionReq::parse("*.1.*").is_err());
+        assert!(VersionReq::parse("*.1.1").is_err());
+        assert!(VersionReq::parse("*.*.1").is_err());
+        assert!(VersionReq::parse("*.*.*").is_err());
+    }
+
+    use proptest::prelude::*;
+
+    // Note that wildcards are introduced only for minor and patch segments due to the fact
+    // that only certain combinations of wildcards are currently allowed, and the exact
+    // combinations are rather verbose to represent in regex.
+    const SEMVER_REQ_REGEX: &str = r"((~|\^|<|<=|>|>=) *)?(0|[1-9][0-9]{0,17})(\.(\*|0|[1-9][0-9]{0,17})(\.(\*|0|[1-9][0-9]{0,17})(-(0|[1-9][0-9]{0,17}|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]{0,17}|[0-9]{0,17}[a-zA-Z-][0-9a-zA-Z-]*))*)?(\+[0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*)?)?)?";
+    proptest! {
+        #[test]
+        fn test_generated_parsing(s in SEMVER_REQ_REGEX) {
+                VersionReq::parse(&s).expect("Should be able to parse valid req strings")
+        }
+    }
 }
