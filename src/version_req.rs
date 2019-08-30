@@ -521,13 +521,13 @@ impl Predicate {
 impl fmt::Display for VersionReq {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         if self.predicates.is_empty() {
-            try!(write!(fmt, "*"));
+            write!(fmt, "*")?;
         } else {
             for (i, ref pred) in self.predicates.iter().enumerate() {
                 if i == 0 {
-                    try!(write!(fmt, "{}", pred));
+                    write!(fmt, "{}", pred)?;
                 } else {
-                    try!(write!(fmt, ", {}", pred));
+                    write!(fmt, ", {}", pred)?;
                 }
             }
         }
@@ -539,35 +539,35 @@ impl fmt::Display for VersionReq {
 impl fmt::Display for Predicate {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match self.op {
-            Wildcard(Major) => try!(write!(fmt, "*")),
-            Wildcard(Minor) => try!(write!(fmt, "{}.*", self.major)),
+            Wildcard(Major) => write!(fmt, "*")?,
+            Wildcard(Minor) => write!(fmt, "{}.*", self.major)?,
             Wildcard(Patch) => {
                 if let Some(minor) = self.minor {
-                    try!(write!(fmt, "{}.{}.*", self.major, minor))
+                    write!(fmt, "{}.{}.*", self.major, minor)?
                 } else {
-                    try!(write!(fmt, "{}.*.*", self.major))
+                    write!(fmt, "{}.*.*", self.major)?
                 }
             }
             _ => {
-                try!(write!(fmt, "{}{}", self.op, self.major));
+                write!(fmt, "{}{}", self.op, self.major)?;
 
                 match self.minor {
-                    Some(v) => try!(write!(fmt, ".{}", v)),
+                    Some(v) => write!(fmt, ".{}", v)?,
                     None => (),
                 }
 
                 match self.patch {
-                    Some(v) => try!(write!(fmt, ".{}", v)),
+                    Some(v) => write!(fmt, ".{}", v)?,
                     None => (),
                 }
 
                 if !self.pre.is_empty() {
-                    try!(write!(fmt, "-"));
+                    write!(fmt, "-")?;
                     for (i, x) in self.pre.iter().enumerate() {
                         if i != 0 {
-                            try!(write!(fmt, "."))
+                            write!(fmt, ".")?
                         }
-                        try!(write!(fmt, "{}", x));
+                        write!(fmt, "{}", x)?;
                     }
                 }
             }
@@ -580,15 +580,15 @@ impl fmt::Display for Predicate {
 impl fmt::Display for Op {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Ex => try!(write!(fmt, "= ")),
-            Gt => try!(write!(fmt, "> ")),
-            GtEq => try!(write!(fmt, ">= ")),
-            Lt => try!(write!(fmt, "< ")),
-            LtEq => try!(write!(fmt, "<= ")),
-            Tilde => try!(write!(fmt, "~")),
-            Compatible => try!(write!(fmt, "^")),
+            Ex => write!(fmt, "= ")?,
+            Gt => write!(fmt, "> ")?,
+            GtEq => write!(fmt, ">= ")?,
+            Lt => write!(fmt, "< ")?,
+            LtEq => write!(fmt, "<= ")?,
+            Tilde => write!(fmt, "~")?,
+            Compatible => write!(fmt, "^")?,
             // gets handled specially in Predicate::fmt
-            Wildcard(_) => try!(write!(fmt, "")),
+            Wildcard(_) => write!(fmt, "")?,
         }
         Ok(())
     }
