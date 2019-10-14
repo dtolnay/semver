@@ -78,7 +78,7 @@ assert!(r.matches(&v))
 ```
 
 It also allows parsing of `~x.y.z` and `^x.y.z` requirements as defined at
-https://www.npmjs.org/doc/misc/semver.html
+https://docs.npmjs.com/misc/semver.html
 
 **Tilde requirements** specify a minimal version with some updates:
 
