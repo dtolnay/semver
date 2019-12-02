@@ -1096,6 +1096,38 @@ mod test {
         );
     }
 
+    #[test]
+    pub fn test_minimum_maximum() {
+        let v001 = Version::parse("0.0.1").unwrap();
+        let v122 = Version::parse("1.2.2").unwrap();
+        let v123 = Version::parse("1.2.3").unwrap();
+        let v124 = Version::parse("1.2.4").unwrap();
+        let ex = VersionReq::parse("=1.2.3").unwrap();
+        let gt = VersionReq::parse(">1.2.3").unwrap();
+        let gteq = VersionReq::parse(">=1.2.3").unwrap();
+        let lt = VersionReq::parse("<1.2.3").unwrap();
+        let lteq = VersionReq::parse("<=1.2.3").unwrap();
+        let tilde = VersionReq::parse("~1.2.3").unwrap();
+        let compatible = VersionReq::parse("^1.2.3").unwrap();
+        assert_eq!(v123, ex.minimum());
+        assert_eq!(v124, gt.minimum());
+        assert_eq!(v123, gteq.minimum());
+        assert_eq!(v001, lt.minimum());
+        assert_eq!(v001, lteq.minimum());
+        assert_eq!(v123, tilde.minimum());
+        assert_eq!(v123, compatible.minimum());
+        assert_eq!(v123, ex.maximum().unwrap());
+        assert!(gt.maximum().is_none());
+        assert!(gteq.maximum().is_none());
+        assert_eq!(v122, lt.maximum().unwrap());
+        assert_eq!(v123, lteq.maximum().unwrap());
+        assert!(tilde.maximum().is_none());
+        assert!(compatible.maximum().is_none());
+        // Special case
+        let lt_none = VersionReq::parse("<1.2.0").unwrap();
+        assert!(lt_none.maximum().is_none());
+    }
+
     // #[test]
     // pub fn test_from_str_errors() {
     //    assert_eq!(Err(InvalidVersionRequirement), "\0".parse::<VersionReq>());
