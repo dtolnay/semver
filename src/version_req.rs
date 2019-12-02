@@ -331,6 +331,153 @@ impl VersionReq {
                 .iter()
                 .any(|p| p.pre_tag_is_compatible(version))
     }
+
+    /// `minimum()` returns the minimum [`Version`] compatible with this `VersionReq`.
+    /// [`Version`]: struct.Version.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use semver::VersionReq;
+    /// use semver::Version;
+    ///
+    /// let version_req = VersionReq::parse("^1.2.3").unwrap();
+    /// let min = version_req.minimum();
+    /// let expected = Version { major: 1, minor: 2, patch: 3, pre: vec![], build: vec![] };
+    ///
+    /// assert_eq!(expected, min);
+    /// ```
+    pub fn minimum(&self) -> Version {
+        // 0.0.1 is the minimum valid version
+        let absolute_min = Version {
+            major: 0,
+            minor: 0,
+            patch: 1,
+            pre: vec![],
+            build: vec![],
+        };
+        if self.predicates.is_empty() {
+            return absolute_min;
+        }
+
+        // There's no way to find a minimum version from Lt and LtEq predicates
+        let meaningful_predicates: Vec<&Predicate> = self
+            .predicates
+            .iter()
+            .filter(|p| match p.op {
+                Ex => true,
+                Gt => true,
+                GtEq => true,
+                Lt => false,
+                LtEq => false,
+                Tilde => true,
+                Compatible => true,
+                Wildcard(_) => false,
+            })
+            .collect();
+        if meaningful_predicates.is_empty() {
+            return absolute_min;
+        }
+        let mut min = None;
+        for p in meaningful_predicates.into_iter() {
+            let major = p.major;
+            let minor = p.minor.unwrap_or(0);
+            let mut patch = p.patch.unwrap_or(0);
+
+            // Gt means the patch needs to be increased by one to match
+            if p.op == Op::Gt {
+                patch += 1;
+            }
+
+            let v = Version {
+                major,
+                minor,
+                patch,
+                pre: vec![],
+                build: vec![],
+            };
+            if let Some(m) = &min {
+                if &v < m {
+                    min = Some(v);
+                }
+            } else {
+                min = Some(v);
+            }
+        }
+        min.unwrap()
+    }
+
+    /// `maximum()` returns the maximum [`Version`] compatible with this `VersionReq`, if there is a way to find it.
+    /// [`Version`]: struct.Version.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use semver::VersionReq;
+    /// use semver::Version;
+    ///
+    /// let version_req = VersionReq::parse("<1.2.3").unwrap();
+    /// let max = version_req.maximum().unwrap();
+    /// let expected = Version { major: 1, minor: 2, patch: 2, pre: vec![], build: vec![] };
+    ///
+    /// assert_eq!(expected, max);
+    /// ```
+    pub fn maximum(&self) -> Option<Version> {
+        if self.predicates.is_empty() {
+            return None;
+        }
+
+        // There's no way to find a maximum version from Gt, GtEq, Tilde and Compatible predicates
+        let meaningful_predicates: Vec<&Predicate> = self
+            .predicates
+            .iter()
+            .filter(|p| match p.op {
+                Ex => true,
+                Gt => false,
+                GtEq => false,
+                Lt => true,
+                LtEq => true,
+                Tilde => false,
+                Compatible => false,
+                Wildcard(_) => false,
+            })
+            .collect();
+        if meaningful_predicates.is_empty() {
+            return None;
+        }
+        let mut max = None;
+        for p in meaningful_predicates {
+            let major = p.major;
+            let minor = p.minor.unwrap_or(0);
+            let mut patch = p.patch.unwrap_or(0);
+
+            // Lt means the patch needs to be decreased by one to match
+            if p.op == Op::Lt {
+                // If the patch is 0, it can't be decreased
+                if patch == 0 {
+                    continue;
+                }
+
+                patch -= 1;
+            }
+
+            let v = Version {
+                major,
+                minor,
+                patch,
+                pre: vec![],
+                build: vec![],
+            };
+            if let Some(m) = &max {
+                if &v > m {
+                    max = Some(v);
+                }
+            } else {
+                max = Some(v);
+            }
+        }
+        max
+    }
 }
 
 impl str::FromStr for VersionReq {
