@@ -580,11 +580,11 @@ impl fmt::Display for Predicate {
 impl fmt::Display for Op {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Ex => write!(fmt, "= ")?,
-            Gt => write!(fmt, "> ")?,
-            GtEq => write!(fmt, ">= ")?,
-            Lt => write!(fmt, "< ")?,
-            LtEq => write!(fmt, "<= ")?,
+            Ex => write!(fmt, "=")?,
+            Gt => write!(fmt, ">")?,
+            GtEq => write!(fmt, ">=")?,
+            Lt => write!(fmt, "<")?,
+            LtEq => write!(fmt, "<=")?,
             Tilde => write!(fmt, "~")?,
             Compatible => write!(fmt, "^")?,
             // gets handled specially in Predicate::fmt
