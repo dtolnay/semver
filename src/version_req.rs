@@ -645,22 +645,22 @@ mod test {
     fn test_parsing_exact() {
         let r = req("=1.0.0");
 
-        assert!(r.to_string() == "= 1.0.0".to_string());
-        assert_eq!(r.to_string(), "= 1.0.0".to_string());
+        assert!(r.to_string() == "=1.0.0".to_string());
+        assert_eq!(r.to_string(), "=1.0.0".to_string());
 
         assert_match(&r, &["1.0.0"]);
         assert_not_match(&r, &["1.0.1", "0.9.9", "0.10.0", "0.1.0", "1.0.0-pre"]);
 
         let r = req("=0.9.0");
 
-        assert_eq!(r.to_string(), "= 0.9.0".to_string());
+        assert_eq!(r.to_string(), "=0.9.0".to_string());
 
         assert_match(&r, &["0.9.0"]);
         assert_not_match(&r, &["0.9.1", "1.9.0", "0.0.9"]);
 
         let r = req("=0.1.0-beta2.a");
 
-        assert_eq!(r.to_string(), "= 0.1.0-beta2.a".to_string());
+        assert_eq!(r.to_string(), "=0.1.0-beta2.a".to_string());
 
         assert_match(&r, &["0.1.0-beta2.a"]);
         assert_not_match(&r, &["0.9.1", "0.1.0", "0.1.1-beta2.a", "0.1.0-beta2"]);
@@ -685,7 +685,7 @@ mod test {
     pub fn test_parsing_greater_than() {
         let r = req(">= 1.0.0");
 
-        assert_eq!(r.to_string(), ">= 1.0.0".to_string());
+        assert_eq!(r.to_string(), ">=1.0.0".to_string());
 
         assert_match(&r, &["1.0.0", "2.0.0"]);
         assert_not_match(&r, &["0.1.0", "0.0.1", "1.0.0-pre", "2.0.0-pre"]);
@@ -703,7 +703,7 @@ mod test {
     pub fn test_parsing_less_than() {
         let r = req("< 1.0.0");
 
-        assert_eq!(r.to_string(), "< 1.0.0".to_string());
+        assert_eq!(r.to_string(), "<1.0.0".to_string());
 
         assert_match(&r, &["0.1.0", "0.0.1"]);
         assert_not_match(&r, &["1.0.0", "1.0.0-beta", "1.0.1", "0.9.9-alpha"]);
@@ -720,7 +720,7 @@ mod test {
     #[test]
     pub fn test_multiple() {
         let r = req("> 0.0.9, <= 2.5.3");
-        assert_eq!(r.to_string(), "> 0.0.9, <= 2.5.3".to_string());
+        assert_eq!(r.to_string(), ">0.0.9, <=2.5.3".to_string());
         assert_match(&r, &["0.0.10", "1.0.0", "2.5.3"]);
         assert_not_match(&r, &["0.0.8", "2.5.4"]);
 
@@ -729,7 +729,7 @@ mod test {
         assert_not_match(&r, &["0.0.8", "0.3.0", "0.4.0"]);
 
         let r = req("<= 0.2.0, >= 0.5.0");
-        assert_eq!(r.to_string(), "<= 0.2.0, >= 0.5.0".to_string());
+        assert_eq!(r.to_string(), "<=0.2.0, >=0.5.0".to_string());
         assert_not_match(&r, &["0.0.8", "0.3.0", "0.5.1"]);
 
         let r = req("0.1.0, 0.1.4, 0.1.6");
@@ -741,7 +741,7 @@ mod test {
         assert!(VersionReq::parse("> 0.3.0, ,").is_err());
 
         let r = req(">=0.5.1-alpha3, <0.6");
-        assert_eq!(r.to_string(), ">= 0.5.1-alpha3, < 0.6".to_string());
+        assert_eq!(r.to_string(), ">=0.5.1-alpha3, <0.6".to_string());
         assert_match(
             &r,
             &[
@@ -917,7 +917,7 @@ mod test {
         );
         assert_eq!(
             "=1.0.0".parse::<VersionReq>().unwrap().to_string(),
-            "= 1.0.0".to_string()
+            "=1.0.0".to_string()
         );
         assert_eq!(
             "~1".parse::<VersionReq>().unwrap().to_string(),
@@ -945,7 +945,7 @@ mod test {
         );
         assert_eq!(
             "< 1.0.0".parse::<VersionReq>().unwrap().to_string(),
-            "< 1.0.0".to_string()
+            "<1.0.0".to_string()
         );
     }
 

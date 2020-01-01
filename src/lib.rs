@@ -139,7 +139,7 @@
 //! let r = VersionReq::parse(">= 1.0.0")?;
 //! let v = Version::parse("1.0.0")?;
 //!
-//! assert!(r.to_string() == ">= 1.0.0".to_string());
+//! assert!(r.to_string() == ">=1.0.0".to_string());
 //! assert!(r.matches(&v));
 //! #    Ok(())
 //! # }
