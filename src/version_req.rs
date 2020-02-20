@@ -211,8 +211,8 @@ impl VersionReq {
     ///
     /// let anything = VersionReq::any();
     /// ```
-    pub fn any() -> VersionReq {
-        VersionReq { predicates: vec![] }
+    pub const fn any() -> VersionReq {
+        VersionReq { predicates: Vec::new() }
     }
 
     /// `parse()` is the main constructor of a `VersionReq`. It takes a string like `"^1.2.3"`
