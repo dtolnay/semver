@@ -440,7 +440,7 @@ impl Predicate {
         false
     }
 
-    // see https://www.npmjs.org/doc/misc/semver.html for behavior
+    // see https://www.npmjs.com/package/semver for behavior
     fn matches_tilde(&self, ver: &Version) -> bool {
         let minor = match self.minor {
             Some(n) => n,
@@ -457,7 +457,7 @@ impl Predicate {
         }
     }
 
-    // see https://www.npmjs.org/doc/misc/semver.html for behavior
+    // see https://www.npmjs.com/package/semver for behavior
     fn is_compatible(&self, ver: &Version) -> bool {
         if self.major != ver.major {
             return false;
@@ -499,7 +499,7 @@ impl Predicate {
         ver.pre.is_empty() || ver.pre >= self.pre
     }
 
-    // see https://www.npmjs.org/doc/misc/semver.html for behavior
+    // see https://www.npmjs.com/package/semver for behavior
     fn matches_wildcard(&self, ver: &Version) -> bool {
         match self.op {
             Wildcard(Major) => true,
