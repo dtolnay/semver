@@ -167,13 +167,7 @@ pub enum ReqParseError {
 
 impl fmt::Display for ReqParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.description().fmt(f)
-    }
-}
-
-impl Error for ReqParseError {
-    fn description(&self) -> &str {
-        match self {
+        let msg = match self {
             &InvalidVersionRequirement => "the given version requirement is invalid",
             &OpAlreadySet => {
                 "you have already provided an operation, such as =, ~, or ^; only use one"
@@ -186,9 +180,12 @@ impl Error for ReqParseError {
                 "the given version requirement is not implemented, yet"
             }
             &DeprecatedVersionRequirement(_) => "This requirement is deprecated",
-        }
+        };
+        msg.fmt(f)
     }
 }
+
+impl Error for ReqParseError {}
 
 impl From<String> for ReqParseError {
     fn from(other: String) -> ReqParseError {

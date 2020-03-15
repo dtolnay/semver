@@ -193,13 +193,7 @@ impl fmt::Display for SemVerError {
     }
 }
 
-impl Error for SemVerError {
-    fn description(&self) -> &str {
-        match self {
-            &SemVerError::ParseError(ref m) => m,
-        }
-    }
-}
+impl Error for SemVerError {}
 
 /// A Result type for errors
 pub type Result<T> = result::Result<T, SemVerError>;
