@@ -328,6 +328,37 @@ impl VersionReq {
                 .iter()
                 .any(|p| p.pre_tag_is_compatible(version))
     }
+
+    /// `is_exact()` returns `true` if there is exactly one version which could match this
+    /// `VersionReq`. If `false` is returned, it is possible that there may still only be exactly
+    /// one version which could match this `VersionReq`. This function is intended do allow
+    /// short-circuiting more complex logic where being able to handle only the possibility of a
+    /// single exact version may be cheaper.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use semver::ReqParseError;
+    /// use semver::VersionReq;
+    ///
+    /// fn use_is_exact() -> Result<(), ReqParseError> {
+    ///   assert!(VersionReq::parse("=1.0.0")?.is_exact());
+    ///   assert!(!VersionReq::parse("=1.0")?.is_exact());
+    ///   assert!(!VersionReq::parse(">=1.0.0")?.is_exact());
+    ///   Ok(())
+    /// }
+    ///
+    /// fn main() {
+    ///   use_is_exact().unwrap();
+    /// }
+    /// ```
+    pub fn is_exact(&self) -> bool {
+        if let [predicate] = self.predicates.as_slice() {
+            predicate.has_exactly_one_match()
+        } else {
+            false
+        }
+    }
 }
 
 impl str::FromStr for VersionReq {
@@ -352,18 +383,18 @@ impl Predicate {
     /// `matches()` takes a `Version` and determines if it matches this particular `Predicate`.
     pub fn matches(&self, ver: &Version) -> bool {
         match self.op {
-            Ex => self.is_exact(ver),
-            Gt => self.is_greater(ver),
-            GtEq => self.is_exact(ver) || self.is_greater(ver),
-            Lt => !self.is_exact(ver) && !self.is_greater(ver),
-            LtEq => !self.is_greater(ver),
+            Ex => self.matches_exact(ver),
+            Gt => self.matches_greater(ver),
+            GtEq => self.matches_exact(ver) || self.matches_greater(ver),
+            Lt => !self.matches_exact(ver) && !self.matches_greater(ver),
+            LtEq => !self.matches_greater(ver),
             Tilde => self.matches_tilde(ver),
             Compatible => self.is_compatible(ver),
             Wildcard(_) => self.matches_wildcard(ver),
         }
     }
 
-    fn is_exact(&self, ver: &Version) -> bool {
+    fn matches_exact(&self, ver: &Version) -> bool {
         if self.major != ver.major {
             return false;
         }
@@ -407,7 +438,7 @@ impl Predicate {
                 && !self.pre.is_empty())
     }
 
-    fn is_greater(&self, ver: &Version) -> bool {
+    fn matches_greater(&self, ver: &Version) -> bool {
         if self.major != ver.major {
             return ver.major > self.major;
         }
@@ -512,6 +543,10 @@ impl Predicate {
             }
             _ => false, // unreachable
         }
+    }
+
+    fn has_exactly_one_match(&self) -> bool {
+        self.op == Ex && self.minor.is_some() && self.patch.is_some()
     }
 }
 
@@ -986,5 +1021,15 @@ mod test {
         assert!(req("~1") < req("*"));
         assert!(req("^1") < req("*"));
         assert!(req("*") == req("*"));
+    }
+
+    #[test]
+    fn is_exact() {
+        assert!(req("=1.0.0").is_exact());
+        assert!(req("=1.0.0-alpha").is_exact());
+
+        assert!(!req("=1").is_exact());
+        assert!(!req(">=1.0.0").is_exact());
+        assert!(!req(">=1.0.0, <2.0.0").is_exact());
     }
 }
