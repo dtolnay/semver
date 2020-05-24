@@ -42,6 +42,7 @@
 //!
 //! At its simplest, the `semver` crate allows you to construct [`Version`]
 //! objects using the [`parse`] method:
+//!
 //! [`parse`]: struct.Version.html#method.parse
 //!
 //! ```{rust}
