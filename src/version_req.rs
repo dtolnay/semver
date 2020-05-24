@@ -168,18 +168,18 @@ pub enum ReqParseError {
 impl fmt::Display for ReqParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let msg = match self {
-            &InvalidVersionRequirement => "the given version requirement is invalid",
-            &OpAlreadySet => {
+            InvalidVersionRequirement => "the given version requirement is invalid",
+            OpAlreadySet => {
                 "you have already provided an operation, such as =, ~, or ^; only use one"
             }
-            &InvalidSigil => "the sigil you have written is not correct",
-            &VersionComponentsMustBeNumeric => "version components must be numeric",
-            &InvalidIdentifier => "invalid identifier",
-            &MajorVersionRequired => "at least a major version number is required",
-            &UnimplementedVersionRequirement => {
+            InvalidSigil => "the sigil you have written is not correct",
+            VersionComponentsMustBeNumeric => "version components must be numeric",
+            InvalidIdentifier => "invalid identifier",
+            MajorVersionRequired => "at least a major version number is required",
+            UnimplementedVersionRequirement => {
                 "the given version requirement is not implemented, yet"
             }
-            &DeprecatedVersionRequirement(_) => "This requirement is deprecated",
+            DeprecatedVersionRequirement(_) => "This requirement is deprecated",
         };
         msg.fmt(f)
     }
@@ -268,21 +268,21 @@ impl VersionReq {
             return Ok(From::from(v));
         }
 
-        return match VersionReq::parse_deprecated(input) {
+        match VersionReq::parse_deprecated(input) {
             Some(v) => Err(ReqParseError::DeprecatedVersionRequirement(v)),
             None => Err(From::from(res.err().unwrap())),
-        };
+        }
     }
 
     fn parse_deprecated(version: &str) -> Option<VersionReq> {
-        return match version {
+        match version {
             ".*" => Some(VersionReq::any()),
             "0.1.0." => Some(VersionReq::parse("0.1.0").unwrap()),
             "0.3.1.3" => Some(VersionReq::parse("0.3.13").unwrap()),
             "0.2*" => Some(VersionReq::parse("0.2.*").unwrap()),
             "*.0" => Some(VersionReq::any()),
             _ => None,
-        };
+        }
     }
 
     /// `exact()` is a factory method which creates a `VersionReq` with one exact constraint.
@@ -548,14 +548,12 @@ impl fmt::Display for Predicate {
             _ => {
                 write!(fmt, "{}{}", self.op, self.major)?;
 
-                match self.minor {
-                    Some(v) => write!(fmt, ".{}", v)?,
-                    None => (),
+                if let Some(v) = self.minor {
+                    write!(fmt, ".{}", v)?;
                 }
 
-                match self.patch {
-                    Some(v) => write!(fmt, ".{}", v)?,
-                    None => (),
+                if let Some(v) = self.patch {
+                    write!(fmt, ".{}", v)?;
                 }
 
                 if !self.pre.is_empty() {

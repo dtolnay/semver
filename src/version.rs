@@ -188,7 +188,7 @@ pub enum SemVerError {
 impl fmt::Display for SemVerError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &SemVerError::ParseError(ref m) => write!(f, "{}", m),
+            SemVerError::ParseError(ref m) => write!(f, "{}", m),
         }
     }
 }
@@ -202,9 +202,9 @@ impl Version {
     /// Contructs the simple case without pre or build.
     pub fn new(major: u64, minor: u64, patch: u64) -> Version {
         Version {
-            major: major,
-            minor: minor,
-            patch: patch,
+            major,
+            minor,
+            patch,
             pre: Vec::new(),
             build: Vec::new(),
         }
