@@ -348,9 +348,7 @@ impl VersionReq {
     ///   Ok(())
     /// }
     ///
-    /// fn main() {
-    ///   use_is_exact().unwrap();
-    /// }
+    /// use_is_exact().unwrap();
     /// ```
     pub fn is_exact(&self) -> bool {
         if let [predicate] = self.predicates.as_slice() {
