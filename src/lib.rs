@@ -55,14 +55,14 @@ fn satisfies_tilde(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a minor version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a minor version, we need to make sure the major wasn't less than
             if version_major < range_major {
                 return None;
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -75,14 +75,14 @@ fn satisfies_tilde(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a patch version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a patch version, we need to make sure the minor wasn't greater than
             if version_minor > range_minor {
                 return None;
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -159,14 +159,14 @@ fn satisfies_caret(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a minor version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a minor version, we need to make sure the major wasn't less than
             if version_major < range_major {
                 return None;
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -179,14 +179,14 @@ fn satisfies_caret(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a patch version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a patch version, we need to make sure the minor wasn't less than
             if version_minor < range_minor {
                 return None;
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -263,11 +263,11 @@ fn satisfies_eq(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a minor version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             return Some(());
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -280,11 +280,11 @@ fn satisfies_eq(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a patch version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             return Some(());
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -367,7 +367,7 @@ fn satisfies_gt(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a minor version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a minor version, we need to make sure the major wasn't equal
             if version_major == range_major {
                 return None;
@@ -376,7 +376,7 @@ fn satisfies_gt(version: &str, range: &str) -> bool {
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -389,7 +389,7 @@ fn satisfies_gt(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a patch version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a patch version, we need to make sure the minor wasn't equal
             if version_minor == range_minor {
                 return None;
@@ -398,7 +398,7 @@ fn satisfies_gt(version: &str, range: &str) -> bool {
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -490,7 +490,7 @@ fn satisfies_gte(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a minor version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a minor version, we need to make sure the major wasn't equal
             if version_major == range_major {
                 return None;
@@ -499,7 +499,7 @@ fn satisfies_gte(version: &str, range: &str) -> bool {
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -512,7 +512,7 @@ fn satisfies_gte(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a patch version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a patch version, we need to make sure the minor wasn't equal
             if version_minor == range_minor {
                 return None;
@@ -521,7 +521,7 @@ fn satisfies_gte(version: &str, range: &str) -> bool {
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -600,7 +600,7 @@ fn satisfies_lt(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a minor version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a minor version, we need to make sure the major wasn't equal
             if version_major == range_major {
                 return None;
@@ -609,7 +609,7 @@ fn satisfies_lt(version: &str, range: &str) -> bool {
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -622,7 +622,7 @@ fn satisfies_lt(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a patch version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a patch version, we need to make sure the minor wasn't equal
             if version_minor == range_minor {
                 return None;
@@ -631,7 +631,7 @@ fn satisfies_lt(version: &str, range: &str) -> bool {
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -728,7 +728,7 @@ fn satisfies_lte(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a minor version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a minor version, we need to make sure the major wasn't equal
             if version_major == range_major {
                 return None;
@@ -737,7 +737,7 @@ fn satisfies_lte(version: &str, range: &str) -> bool {
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -750,7 +750,7 @@ fn satisfies_lte(version: &str, range: &str) -> bool {
         }
 
         // now we need to check if we have a patch version or not.
-        if let None = parse_dot(&mut range_iter) {
+        if parse_dot(&mut range_iter).is_none() {
             // if we don't have a patch version, we need to make sure the minor wasn't equal
             if version_minor == range_minor {
                 return None;
@@ -759,7 +759,7 @@ fn satisfies_lte(version: &str, range: &str) -> bool {
             }
         }
 
-        if let None = parse_dot(&mut version_iter) {
+        if parse_dot(&mut version_iter).is_none() {
             return Some(());
         }
 
@@ -856,7 +856,7 @@ pub fn minor(version: &str) -> Result<u64, ParseError> {
 
     parse_major(&mut iter)?;
 
-    parse_dot(&mut iter).map_or(Err(ParseError::Incorrect), |n| Ok(n))?;
+    parse_dot(&mut iter).map_or(Err(ParseError::Incorrect), Ok)?;
 
     parse_minor(&mut iter)
 }
@@ -867,11 +867,11 @@ pub fn patch(version: &str) -> Result<u64, ParseError> {
 
     parse_major(&mut iter)?;
 
-    parse_dot(&mut iter).map_or(Err(ParseError::Incorrect), |n| Ok(n))?;
+    parse_dot(&mut iter).map_or(Err(ParseError::Incorrect), Ok)?;
 
     parse_minor(&mut iter)?;
 
-    parse_dot(&mut iter).map_or(Err(ParseError::Incorrect), |n| Ok(n))?;
+    parse_dot(&mut iter).map_or(Err(ParseError::Incorrect), Ok)?;
 
     parse_patch(&mut iter)
 }
