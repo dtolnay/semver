@@ -925,7 +925,7 @@ pub fn pre(version: &str) -> Option<impl Iterator<Item = &str>> {
     parse_pre(rest)
 }
 
-pub fn build(version: &str) -> Option<impl Iterator<Item = Result<&str, ParseError>>> {
+pub fn build(version: &str) -> Option<impl Iterator<Item = &str>> {
     let mut iter = version.char_indices().peekable();
 
     parse_major(&mut iter).ok()?;
@@ -1001,7 +1001,7 @@ fn parse_pre(rest: &str) -> Option<impl Iterator<Item = &str>> {
     Some(rest.split('.'))
 }
 
-fn parse_build(rest: &str) -> Option<impl Iterator<Item = Result<&str, ParseError>>> {
+fn parse_build(rest: &str) -> Option<impl Iterator<Item = &str>> {
     let mut iter = rest.char_indices().peekable();
 
     match iter.next() {
@@ -1013,16 +1013,24 @@ fn parse_build(rest: &str) -> Option<impl Iterator<Item = Result<&str, ParseErro
 
     let mut rest = &rest[1..];
 
+    if rest.is_empty() {
+        return None;
+    }
+
     let o = iter.find(|&(_, c)| !matches!(c, '0'..='9' | 'A'..='Z' | 'a'..='z' | '-' | '.'));
 
     if let Some((idx, _)) = o {
         rest = &rest[..idx];
     }
 
-    Some(rest.split('.').map(|s| match s.len() {
-        0 => Err(ParseError::Incorrect),
-        _ => Ok(s),
-    }))
+    for s in rest.split('.') {
+        // check for leading zeros. Plain old 0 is fine, but starting with 0 is not
+        if s.starts_with('0') && (s.len() != 1) {
+            return None;
+        }
+    }
+
+    Some(rest.split('.'))
 }
 
 fn parse_dot(iter: &mut impl Iterator<Item = (usize, char)>) -> Option<()> {
@@ -1207,19 +1215,19 @@ mod tests {
         // of dot separated identifiers immediately following the patch or
         // pre-release version.
         let mut build = super::build("1.2.3+alpha.2").unwrap();
-        assert_eq!(Some(Ok("alpha")), build.next());
-        assert_eq!(Some(Ok("2")), build.next());
+        assert_eq!(Some("alpha"), build.next());
+        assert_eq!(Some("2"), build.next());
         assert!(build.next().is_none());
 
         // Identifiers MUST comprise only ASCII alphanumerics and hyphen
         // [0-9A-Za-z-].
         let mut build = super::build("1.2.3+alp-ha").unwrap();
-        assert_eq!(Some(Ok("alp-ha")), build.next());
+        assert_eq!(Some("alp-ha"), build.next());
         assert!(build.next().is_none());
 
         // Identifiers MUST NOT be empty.
-        let mut build = super::build("1.2.3+").unwrap();
-        assert!(build.next().unwrap().is_err());
+        let build = super::build("1.2.3+");
+        assert!(build.is_none());
     }
 
     mod satisfies {
