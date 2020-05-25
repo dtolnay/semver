@@ -236,13 +236,13 @@ impl VersionReq {
     ///
     /// This example demonstrates error handling, and will panic.
     ///
-    /// ```should-panic
+    /// ```should_panic
     /// use semver::VersionReq;
     ///
     /// let version = match VersionReq::parse("not a version") {
     ///     Ok(version) => version,
     ///     Err(e) => panic!("There was a problem parsing: {}", e),
-    /// }
+    /// };
     /// ```
     ///
     /// # Errors
