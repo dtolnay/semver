@@ -1,222 +1,1582 @@
-// Copyright 2012-2013 The Rust Project Developers. See the COPYRIGHT
-// file at the top-level directory of this distribution and at
-// http://rust-lang.org/COPYRIGHT.
+use thiserror::Error;
+
+#[derive(Error, Debug, PartialEq)]
+#[error("Could not parse properly.")]
+pub enum ParseError {
+    #[error("Numeric identifiers MUST NOT include leading zeroes.")]
+    LeadingZero,
+    #[error("Parsing error.")]
+    Incorrect,
+}
+
+pub fn satisfies(version: &str, range: &str) -> bool {
+    let mut range_iter = range.char_indices().peekable();
+
+    // empty string is equivalent to *
+    if range.is_empty() {
+        return true;
+    }
+
+    match range_iter.next() {
+        Some((_, '<')) => match range_iter.peek() {
+            Some((_, '=')) => satisfies_lte(version, range),
+            Some(_) => satisfies_lt(version, range),
+            None => false,
+        },
+        Some((_, '>')) => match range_iter.peek() {
+            Some((_, '=')) => satisfies_gte(version, range),
+            Some(_) => satisfies_gt(version, range),
+            None => false,
+        },
+        Some((_, '=')) => satisfies_eq(version, range),
+        Some((_, '^')) => satisfies_caret(version, &range[1..]),
+        Some((_, '~')) => satisfies_tilde(version, range),
+        Some((_, 'X')) => true,
+        Some((_, 'x')) => true,
+        Some((_, '*')) => true,
+        Some(_) => satisfies_caret(version, range),
+        _ => false,
+    }
+}
+
+fn satisfies_tilde(version: &str, range: &str) -> bool {
+    let mut version_iter = version.char_indices().peekable();
+    // we chop off the ~
+    let mut range_iter = range[1..].char_indices().peekable();
+
+    (|| {
+        // first we check the major version
+        let range_major = parse_major(&mut range_iter).ok()?;
+        let version_major = parse_major(&mut version_iter).ok()?;
+
+        // if it is greater than, fail
+        if version_major > range_major {
+            return None;
+        }
+
+        // now we need to check if we have a minor version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a minor version, we need to make sure the major wasn't less than
+            if version_major < range_major {
+                return None;
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_minor = parse_minor(&mut range_iter).ok().unwrap_or(0);
+        let version_minor = parse_minor(&mut version_iter).ok()?;
+
+        // if it is less than, fail
+        if version_minor < range_minor {
+            return None;
+        }
+
+        // now we need to check if we have a patch version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a patch version, we need to make sure the minor wasn't greater than
+            if version_minor > range_minor {
+                return None;
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_patch = parse_patch(&mut range_iter).ok().unwrap_or(0);
+        let version_patch = parse_patch(&mut version_iter).ok()?;
+
+        // if it is less than, fail
+        if version_patch < range_patch {
+            return None;
+        }
+
+        // now, for prerelease versions
+
+        let mut version_rest = version;
+
+        if let Some((idx, c)) = version_iter.peek() {
+            if matches!(c, '-' | '+') {
+                version_rest = &version[*idx..];
+            }
+        }
+
+        let mut range_rest = range;
+
+        if let Some((idx, c)) = range_iter.peek() {
+            if matches!(c, '-' | '+') {
+                // we need to add 1 because we removed the ~ before
+                range_rest = &range[(*idx + 1)..];
+            }
+        }
+
+        // now we need to check if we have a prerelease version or not.
+        match (parse_pre(range_rest), parse_pre(version_rest)) {
+            (Some(range_pre), Some(version_pre)) => {
+                if (version_major != range_major)
+                    || (version_minor != range_minor)
+                    || (version_patch != range_patch)
+                {
+                    return None;
+                }
+
+                if version_pre != range_pre {
+                    return None;
+                }
+            }
+
+            (None, Some(_)) => {
+                return None;
+            }
+            (Some(_), None) => {
+                return Some(());
+            }
+            (None, None) => {
+                return Some(());
+            }
+        }
+
+        Some(())
+    })()
+    .is_some()
+}
+
+fn satisfies_caret(version: &str, range: &str) -> bool {
+    let mut version_iter = version.char_indices().peekable();
+    let mut range_iter = range[..].char_indices().peekable();
+
+    (|| {
+        // first we check the major version
+        let range_major = parse_major(&mut range_iter).ok()?;
+        let version_major = parse_major(&mut version_iter).ok()?;
+
+        // if it is greater than, fail
+        if version_major > range_major {
+            return None;
+        }
+
+        // now we need to check if we have a minor version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a minor version, we need to make sure the major wasn't less than
+            if version_major < range_major {
+                return None;
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_minor = parse_minor(&mut range_iter).ok().unwrap_or(0);
+        let version_minor = parse_minor(&mut version_iter).ok()?;
+
+        // if it is less than, fail
+        if version_minor < range_minor {
+            return None;
+        }
+
+        // now we need to check if we have a patch version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a patch version, we need to make sure the minor wasn't less than
+            if version_minor < range_minor {
+                return None;
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_patch = parse_patch(&mut range_iter).ok().unwrap_or(0);
+        let version_patch = parse_patch(&mut version_iter).ok()?;
+
+        // if it is less than, fail
+        if version_patch < range_patch {
+            return None;
+        }
+
+        // now, for prerelease versions
+
+        let mut version_rest = version;
+
+        if let Some((idx, c)) = version_iter.peek() {
+            if matches!(c, '-' | '+') {
+                version_rest = &version[*idx..];
+            }
+        }
+
+        let mut range_rest = range;
+
+        if let Some((idx, c)) = range_iter.peek() {
+            if matches!(c, '-' | '+') {
+                range_rest = &range[*idx..];
+            }
+        }
+
+        // now we need to check if we have a prerelease version or not.
+        match (parse_pre(range_rest), parse_pre(version_rest)) {
+            (Some(range_pre), Some(version_pre)) => {
+                if (version_major != range_major)
+                    || (version_minor != range_minor)
+                    || (version_patch != range_patch)
+                {
+                    return None;
+                }
+
+                if version_pre != range_pre {
+                    return None;
+                }
+            }
+
+            (None, Some(_)) => {
+                return None;
+            }
+            (Some(_), None) => {
+                return Some(());
+            }
+            (None, None) => {
+                return Some(());
+            }
+        }
+
+        Some(())
+    })()
+    .is_some()
+}
+
+fn satisfies_eq(version: &str, range: &str) -> bool {
+    let mut version_iter = version.char_indices().peekable();
+    // we chop off the =
+    let mut range_iter = range[1..].char_indices().peekable();
+
+    (|| {
+        // first we check the major version
+        let range_major = parse_major(&mut range_iter).ok()?;
+        let version_major = parse_major(&mut version_iter).ok()?;
+
+        // if it is not equal, fail
+        if version_major != range_major {
+            return None;
+        }
+
+        // now we need to check if we have a minor version or not.
+        if let None = parse_dot(&mut range_iter) {
+            return Some(());
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_minor = parse_minor(&mut range_iter).ok()?;
+        let version_minor = parse_minor(&mut version_iter).ok()?;
+
+        // if it is not equal, fail
+        if version_minor != range_minor {
+            return None;
+        }
+
+        // now we need to check if we have a patch version or not.
+        if let None = parse_dot(&mut range_iter) {
+            return Some(());
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_patch = parse_patch(&mut range_iter).ok()?;
+        let version_patch = parse_patch(&mut version_iter).ok()?;
+
+        // if it is not equal, fail
+        if version_patch != range_patch {
+            return None;
+        }
+
+        // now, for prerelease versions
+
+        let mut version_rest = version;
+
+        if let Some((idx, c)) = version_iter.peek() {
+            if matches!(c, '-' | '+') {
+                version_rest = &version[*idx..];
+            }
+        }
+
+        let mut range_rest = range;
+
+        if let Some((idx, c)) = range_iter.peek() {
+            if matches!(c, '-' | '+') {
+                // we need to add 1 because we removed the = before
+                range_rest = &range[(*idx + 1)..];
+            }
+        }
+
+        // now we need to check if we have a prerelease version or not.
+        match (parse_pre(range_rest), parse_pre(version_rest)) {
+            (Some(range_pre), Some(version_pre)) => {
+                if (version_major != range_major)
+                    || (version_minor != range_minor)
+                    || (version_patch != range_patch)
+                {
+                    return None;
+                }
+
+                if version_pre != range_pre {
+                    return None;
+                }
+            }
+
+            (None, Some(_)) => {
+                return None;
+            }
+            (Some(_), None) => {
+                return None;
+            }
+            (None, None) => {
+                return Some(());
+            }
+        }
+
+        Some(())
+    })()
+    .is_some()
+}
+
+fn satisfies_gt(version: &str, range: &str) -> bool {
+    let mut version_iter = version.char_indices().peekable();
+    // we chop off the >
+    let mut range_iter = range[1..].char_indices().peekable();
+
+    (|| {
+        // first we check the major version
+        let range_major = parse_major(&mut range_iter).ok()?;
+        let version_major = parse_major(&mut version_iter).ok()?;
+
+        // if it is not greater than, fail
+        if version_major < range_major {
+            return None;
+        }
+
+        // if it is greater than, pass
+        if version_major > range_major {
+            return Some(());
+        }
+
+        // now we need to check if we have a minor version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a minor version, we need to make sure the major wasn't equal
+            if version_major == range_major {
+                return None;
+            } else {
+                return Some(());
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_minor = parse_minor(&mut range_iter).ok()?;
+        let version_minor = parse_minor(&mut version_iter).ok()?;
+
+        // if it is not greater than, fail
+        if version_minor < range_minor {
+            return None;
+        }
+
+        // now we need to check if we have a patch version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a patch version, we need to make sure the minor wasn't equal
+            if version_minor == range_minor {
+                return None;
+            } else {
+                return Some(());
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_patch = parse_patch(&mut range_iter).ok()?;
+        let version_patch = parse_patch(&mut version_iter).ok()?;
+
+        // if it is not greater than, fail
+        if version_patch < range_patch {
+            return None;
+        }
+
+        // now, for prerelease versions
+
+        let mut version_rest = version;
+
+        if let Some((idx, c)) = version_iter.peek() {
+            if matches!(c, '-' | '+') {
+                version_rest = &version[*idx..];
+            }
+        }
+
+        let mut range_rest = range;
+
+        if let Some((idx, c)) = range_iter.peek() {
+            if matches!(c, '-' | '+') {
+                // we need to add 1 because we removed the > before
+                range_rest = &range[(*idx + 1)..];
+            }
+        }
+
+        // now we need to check if we have a prerelease version or not.
+        match (parse_pre(range_rest), parse_pre(version_rest)) {
+            (Some(range_pre), Some(version_pre)) => {
+                if (version_major != range_major)
+                    || (version_minor != range_minor)
+                    || (version_patch != range_patch)
+                {
+                    return None;
+                }
+
+                if version_pre < range_pre {
+                    return None;
+                }
+
+                if version_pre == range_pre {
+                    return None;
+                }
+            }
+
+            (None, Some(_)) => {
+                return None;
+            }
+            (Some(_), None) => {
+                return Some(());
+            }
+            (None, None) => {
+                // if we don't have a pre-release version, we need to make sure the patch wasn't equal
+                if version_patch == range_patch {
+                    return None;
+                } else {
+                    return Some(());
+                }
+            }
+        }
+
+        Some(())
+    })()
+    .is_some()
+}
+
+fn satisfies_gte(version: &str, range: &str) -> bool {
+    let mut version_iter = version.char_indices().peekable();
+    // we chop off the >=
+    let mut range_iter = range[2..].char_indices().peekable();
+
+    (|| {
+        // first we check the major version
+        let range_major = parse_major(&mut range_iter).ok()?;
+        let version_major = parse_major(&mut version_iter).ok()?;
+
+        // if it is not greater than, fail
+        if version_major < range_major {
+            return None;
+        }
+
+        // if it is greater than, pass
+        if version_major > range_major {
+            return Some(());
+        }
+
+        // now we need to check if we have a minor version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a minor version, we need to make sure the major wasn't equal
+            if version_major == range_major {
+                return None;
+            } else {
+                return Some(());
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_minor = parse_minor(&mut range_iter).ok()?;
+        let version_minor = parse_minor(&mut version_iter).ok()?;
+
+        // if it is not greater than, fail
+        if version_minor < range_minor {
+            return None;
+        }
+
+        // now we need to check if we have a patch version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a patch version, we need to make sure the minor wasn't equal
+            if version_minor == range_minor {
+                return None;
+            } else {
+                return Some(());
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_patch = parse_patch(&mut range_iter).ok()?;
+        let version_patch = parse_patch(&mut version_iter).ok()?;
+
+        // if it is not greater than, fail
+        if version_patch < range_patch {
+            return None;
+        }
+
+        // now, for prerelease versions
+
+        let mut version_rest = version;
+
+        if let Some((idx, c)) = version_iter.peek() {
+            if matches!(c, '-' | '+') {
+                version_rest = &version[*idx..];
+            }
+        }
+
+        let mut range_rest = range;
+
+        if let Some((idx, c)) = range_iter.peek() {
+            if matches!(c, '-' | '+') {
+                // we need to add 2 because we removed the >= before
+                range_rest = &range[(*idx + 2)..];
+            }
+        }
+
+        // now we need to check if we have a prerelease version or not.
+        match (parse_pre(range_rest), parse_pre(version_rest)) {
+            (Some(range_pre), Some(version_pre)) => {
+                if (version_major != range_major)
+                    || (version_minor != range_minor)
+                    || (version_patch != range_patch)
+                {
+                    return None;
+                }
+
+                if version_pre < range_pre {
+                    return None;
+                }
+            }
+            (None, Some(_)) => {
+                return None;
+            }
+            _ => {
+                return Some(());
+            }
+        }
+
+        Some(())
+    })()
+    .is_some()
+}
+
+fn satisfies_lt(version: &str, range: &str) -> bool {
+    let mut version_iter = version.char_indices().peekable();
+    // we chop off the <
+    let mut range_iter = range[1..].char_indices().peekable();
+
+    (|| {
+        // first we check the major version
+        let range_major = parse_major(&mut range_iter).ok()?;
+        let version_major = parse_major(&mut version_iter).ok()?;
+
+        // if it is not less than, fail
+        if version_major > range_major {
+            return None;
+        }
+
+        // if it is less than, pass
+        if version_major < range_major {
+            return Some(());
+        }
+
+        // now we need to check if we have a minor version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a minor version, we need to make sure the major wasn't equal
+            if version_major == range_major {
+                return None;
+            } else {
+                return Some(());
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_minor = parse_minor(&mut range_iter).ok()?;
+        let version_minor = parse_minor(&mut version_iter).ok()?;
+
+        // if it is not less than, fail
+        if version_minor > range_minor {
+            return None;
+        }
+
+        // now we need to check if we have a patch version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a patch version, we need to make sure the minor wasn't equal
+            if version_minor == range_minor {
+                return None;
+            } else {
+                return Some(());
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_patch = parse_patch(&mut range_iter).ok()?;
+        let version_patch = parse_patch(&mut version_iter).ok()?;
+
+        // if it is not less than, fail
+        if version_patch > range_patch {
+            return None;
+        }
+
+        // now, for prerelease versions
+
+        let mut version_rest = version;
+
+        if let Some((idx, c)) = version_iter.peek() {
+            if matches!(c, '-' | '+') {
+                version_rest = &version[*idx..];
+            }
+        }
+
+        let mut range_rest = range;
+
+        if let Some((idx, c)) = range_iter.peek() {
+            if matches!(c, '-' | '+') {
+                // we need to add 1 because we removed the < before
+                range_rest = &range[(*idx + 1)..];
+            }
+        }
+
+        // now we need to check if we have a prerelease version or not.
+        match (parse_pre(range_rest), parse_pre(version_rest)) {
+            (Some(range_pre), Some(version_pre)) => {
+                if (version_major != range_major)
+                    || (version_minor != range_minor)
+                    || (version_patch != range_patch)
+                {
+                    return None;
+                }
+
+                if version_pre > range_pre {
+                    return None;
+                }
+
+                if version_pre == range_pre {
+                    return None;
+                }
+            }
+
+            (None, Some(_)) => {
+                return None;
+            }
+            (Some(_), None) => {
+                // if we don't have a pre-release version, we need to make sure the patch wasn't equal
+                if version_patch == range_patch {
+                    return None;
+                } else {
+                    return Some(());
+                }
+            }
+            (None, None) => {
+                // if we don't have a pre-release version, we need to make sure the patch wasn't equal
+                if version_patch == range_patch {
+                    return None;
+                } else {
+                    return Some(());
+                }
+            }
+        }
+
+        Some(())
+    })()
+    .is_some()
+}
+
+fn satisfies_lte(version: &str, range: &str) -> bool {
+    let mut version_iter = version.char_indices().peekable();
+    // we chop off the <=
+    let mut range_iter = range[2..].char_indices().peekable();
+
+    (|| {
+        // first we check the major version
+        let range_major = parse_major(&mut range_iter).ok()?;
+        let version_major = parse_major(&mut version_iter).ok()?;
+
+        // if it is not less than, fail
+        if version_major > range_major {
+            return None;
+        }
+
+        // if it is less than, pass
+        if version_major < range_major {
+            return Some(());
+        }
+
+        // now we need to check if we have a minor version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a minor version, we need to make sure the major wasn't equal
+            if version_major == range_major {
+                return None;
+            } else {
+                return Some(());
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_minor = parse_minor(&mut range_iter).ok()?;
+        let version_minor = parse_minor(&mut version_iter).ok()?;
+
+        // if it is not less than, fail
+        if version_minor > range_minor {
+            return None;
+        }
+
+        // now we need to check if we have a patch version or not.
+        if let None = parse_dot(&mut range_iter) {
+            // if we don't have a patch version, we need to make sure the minor wasn't equal
+            if version_minor == range_minor {
+                return None;
+            } else {
+                return Some(());
+            }
+        }
+
+        if let None = parse_dot(&mut version_iter) {
+            return Some(());
+        }
+
+        let range_patch = parse_patch(&mut range_iter).ok()?;
+        let version_patch = parse_patch(&mut version_iter).ok()?;
+
+        // if it is not less than, fail
+        if version_patch > range_patch {
+            return None;
+        }
+
+        // now, for prerelease versions
+
+        let mut version_rest = version;
+
+        if let Some((idx, c)) = version_iter.peek() {
+            if matches!(c, '-' | '+') {
+                version_rest = &version[*idx..];
+            }
+        }
+
+        let mut range_rest = range;
+
+        if let Some((idx, c)) = range_iter.peek() {
+            if matches!(c, '-' | '+') {
+                // we need to add 2 because we removed the <= before
+                range_rest = &range[(*idx + 2)..];
+            }
+        }
+
+        // now we need to check if we have a prerelease version or not.
+        match (parse_pre(range_rest), parse_pre(version_rest)) {
+            (Some(range_pre), Some(version_pre)) => {
+                if (version_major != range_major)
+                    || (version_minor != range_minor)
+                    || (version_patch != range_patch)
+                {
+                    return None;
+                }
+
+                if version_pre > range_pre {
+                    return None;
+                }
+            }
+
+            (None, Some(_)) => {
+                return None;
+            }
+            _ => {
+                return Some(());
+            }
+        }
+
+        Some(())
+    })()
+    .is_some()
+}
+
+pub fn valid(version: &str) -> bool {
+    let mut iter = version.char_indices().peekable();
+
+    (|| {
+        parse_major(&mut iter).ok()?;
+        parse_dot(&mut iter)?;
+        parse_minor(&mut iter).ok()?;
+        parse_dot(&mut iter)?;
+        parse_patch(&mut iter).ok()?;
+
+        let mut rest = version;
+
+        if let Some((idx, c)) = iter.peek() {
+            if matches!(c, '=' | '+') {
+                rest = &version[*idx..];
+            }
+        }
+
+        parse_pre(rest);
+
+        parse_build(rest);
+
+        Some(())
+    })()
+    .is_some()
+}
+
+// not const yet see https://github.com/rust-lang/rust/issues/49146
+pub fn major(version: &str) -> Result<u64, ParseError> {
+    parse_major(&mut version.char_indices().peekable())
+}
+
+// not const yet see https://github.com/rust-lang/rust/issues/49146
+pub fn minor(version: &str) -> Result<u64, ParseError> {
+    let mut iter = version.char_indices().peekable();
+
+    parse_major(&mut iter)?;
+
+    parse_dot(&mut iter).map_or(Err(ParseError::Incorrect), |n| Ok(n))?;
+
+    parse_minor(&mut iter)
+}
+
+// not const yet see https://github.com/rust-lang/rust/issues/49146
+pub fn patch(version: &str) -> Result<u64, ParseError> {
+    let mut iter = version.char_indices().peekable();
+
+    parse_major(&mut iter)?;
+
+    parse_dot(&mut iter).map_or(Err(ParseError::Incorrect), |n| Ok(n))?;
+
+    parse_minor(&mut iter)?;
+
+    parse_dot(&mut iter).map_or(Err(ParseError::Incorrect), |n| Ok(n))?;
+
+    parse_patch(&mut iter)
+}
+
+// not const yet see https://github.com/rust-lang/rust/issues/49146
+pub fn pre(version: &str) -> Option<&str> {
+    let mut iter = version.char_indices().peekable();
+
+    parse_major(&mut iter).ok()?;
+
+    parse_dot(&mut iter)?;
+
+    parse_minor(&mut iter).ok()?;
+
+    parse_dot(&mut iter)?;
+
+    parse_patch(&mut iter).ok()?;
+
+    let mut rest = version;
+
+    if let Some((idx, _)) = iter.next() {
+        rest = &version[idx..];
+    }
+
+    parse_pre(rest)
+}
+
+pub fn build(version: &str) -> Option<impl Iterator<Item = Result<&str, ParseError>>> {
+    let mut iter = version.char_indices().peekable();
+
+    parse_major(&mut iter).ok()?;
+
+    parse_dot(&mut iter)?;
+
+    parse_minor(&mut iter).ok()?;
+
+    parse_dot(&mut iter)?;
+
+    parse_patch(&mut iter).ok()?;
+
+    let mut rest = version;
+
+    if let Some((idx, c)) = iter.peek() {
+        if matches!(c, '=' | '+') {
+            rest = &version[*idx..];
+        }
+    }
+
+    parse_pre(rest);
+
+    parse_build(rest)
+}
+
+fn parse_major(
+    iter: &mut std::iter::Peekable<impl Iterator<Item = (usize, char)>>,
+) -> Result<u64, ParseError> {
+    parse_number(iter)
+}
+
+fn parse_minor(
+    iter: &mut std::iter::Peekable<impl Iterator<Item = (usize, char)>>,
+) -> Result<u64, ParseError> {
+    parse_number(iter)
+}
+
+fn parse_patch(
+    iter: &mut std::iter::Peekable<impl Iterator<Item = (usize, char)>>,
+) -> Result<u64, ParseError> {
+    parse_number(iter)
+}
+
+fn parse_pre(rest: &str) -> Option<&str> {
+    let mut iter = rest.char_indices().peekable();
+
+    match iter.next() {
+        Some((_, '-')) => {}
+        _ => {
+            return None;
+        }
+    }
+
+    let mut rest = &rest[1..];
+
+    let o = iter.find(|&(_, c)| !matches!(c, '0'..='9' | 'A'..='Z' | 'a'..='z' | '-' | '.'));
+
+    if let Some((idx, _)) = o {
+        rest = &rest[..idx];
+    }
+
+    Some(rest)
+}
+
+fn parse_build(rest: &str) -> Option<impl Iterator<Item = Result<&str, ParseError>>> {
+    let mut iter = rest.char_indices().peekable();
+
+    match iter.next() {
+        Some((_, '+')) => {}
+        _ => {
+            return None;
+        }
+    }
+
+    let mut rest = &rest[1..];
+
+    let o = iter.find(|&(_, c)| !matches!(c, '0'..='9' | 'A'..='Z' | 'a'..='z' | '-' | '.'));
+
+    if let Some((idx, _)) = o {
+        rest = &rest[..idx];
+    }
+
+    Some(rest.split('.').map(|s| match s.len() {
+        0 => Err(ParseError::Incorrect),
+        _ => Ok(s),
+    }))
+}
+
+fn parse_dot(iter: &mut impl Iterator<Item = (usize, char)>) -> Option<()> {
+    // sigh https://github.com/rust-lang/rfcs/issues/2616
+    match iter.next() {
+        Some((_, '.')) => {}
+        _ => {
+            return None;
+        }
+    }
+
+    Some(())
+}
+
+// thanks <3 https://adriann.github.io/rust_parser.html
 //
-// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
-// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
-// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
-// option. This file may not be copied, modified, or distributed
-// except according to those terms.
+// I don't like the body of this function, but I can always clean it up later.
+fn parse_number(
+    iter: &mut std::iter::Peekable<impl Iterator<Item = (usize, char)>>,
+) -> Result<u64, ParseError> {
+    // we gotta have something left to return a number
+    let peek = iter.peek();
 
-//! Semantic version parsing and comparison.
-//!
-//! Semantic versioning (see http://semver.org/) is a set of rules for
-//! assigning version numbers.
-//!
-//! ## SemVer overview
-//!
-//! Given a version number MAJOR.MINOR.PATCH, increment the:
-//!
-//! 1. MAJOR version when you make incompatible API changes,
-//! 2. MINOR version when you add functionality in a backwards-compatible
-//!    manner, and
-//! 3. PATCH version when you make backwards-compatible bug fixes.
-//!
-//! Additional labels for pre-release and build metadata are available as
-//! extensions to the MAJOR.MINOR.PATCH format.
-//!
-//! Any references to 'the spec' in this documentation refer to [version 2.0 of
-//! the SemVer spec](http://semver.org/spec/v2.0.0.html).
-//!
-//! ## SemVer and the Rust ecosystem
-//!
-//! Rust itself follows the SemVer specification, as does its standard
-//! libraries. The two are not tied together.
-//!
-//! [Cargo](http://crates.io), Rust's package manager, uses SemVer to determine
-//! which versions of packages you need installed.
-//!
-//! ## Versions
-//!
-//! [`Version`]: struct.Version.html
-//!
-//! At its simplest, the `semver` crate allows you to construct [`Version`]
-//! objects using the [`parse`] method:
-//!
-//! [`parse`]: struct.Version.html#method.parse
-//!
-//! ```{rust}
-//! use semver::Version;
-//!
-//! assert!(Version::parse("1.2.3") == Ok(Version {
-//!    major: 1,
-//!    minor: 2,
-//!    patch: 3,
-//!    pre: vec!(),
-//!    build: vec!(),
-//! }));
-//! ```
-//!
-//! If you have multiple [`Version`]s, you can use the usual comparison operators
-//! to compare them:
-//!
-//! ```{rust}
-//! use semver::Version;
-//!
-//! assert!(Version::parse("1.2.3-alpha") != Version::parse("1.2.3-beta"));
-//! assert!(Version::parse("1.2.3-alpha2") >  Version::parse("1.2.0"));
-//! ```
-//!
-//! If you explicitly need to modify a [`Version`], SemVer also allows you to
-//! increment the major, minor, and patch numbers in accordance with the spec.
-//!
-//! Please note that in order to do this, you must use a mutable Version:
-//!
-//! ```{rust}
-//! use semver::Version;
-//!
-//! # fn try_increment_patch() -> Result<(), Box<::std::error::Error>> {
-//! let mut bugfix_release = Version::parse("1.0.0")?;
-//! bugfix_release.increment_patch();
-//!
-//! assert_eq!(Ok(bugfix_release), Version::parse("1.0.1"));
-//! #    Ok(())
-//! # }
-//! # fn main() {
-//! #    try_increment_patch().unwrap();
-//! # }
-//! ```
-//!
-//! When incrementing the minor version number, the patch number resets to zero
-//! (in accordance with section 7 of the spec)
-//!
-//! ```{rust}
-//! use semver::Version;
-//!
-//! # fn try_increment_minor() -> Result<(), Box<::std::error::Error>> {
-//! let mut feature_release = Version::parse("1.4.6")?;
-//! feature_release.increment_minor();
-//!
-//! assert_eq!(Ok(feature_release), Version::parse("1.5.0"));
-//! #   Ok(())
-//! # }
-//! # fn main() {
-//! #    try_increment_minor().unwrap();
-//! # }
-//! ```
-//!
-//! Similarly, when incrementing the major version number, the patch and minor
-//! numbers reset to zero (in accordance with section 8 of the spec)
-//!
-//! ```{rust}
-//! use semver::Version;
-//!
-//! # fn try_increment_major() -> Result<(), Box<::std::error::Error>> {
-//! let mut chrome_release = Version::parse("41.5.5377")?;
-//! chrome_release.increment_major();
-//!
-//! assert_eq!(Ok(chrome_release), Version::parse("42.0.0"));
-//! #    Ok(())
-//! # }
-//! # fn main() {
-//! #    try_increment_major().unwrap();
-//! # }
-//! ```
-//!
-//! ## Requirements
-//!
-//! The `semver` crate also provides the ability to compare requirements, which
-//! are more complex comparisons.
-//!
-//! For example, creating a requirement that only matches versions greater than
-//! or equal to 1.0.0:
-//!
-//! ```{rust}
-//! # #![allow(unstable)]
-//! use semver::Version;
-//! use semver::VersionReq;
-//!
-//! # fn try_compare() -> Result<(), Box<::std::error::Error>> {
-//! let r = VersionReq::parse(">= 1.0.0")?;
-//! let v = Version::parse("1.0.0")?;
-//!
-//! assert!(r.to_string() == ">=1.0.0".to_string());
-//! assert!(r.matches(&v));
-//! #    Ok(())
-//! # }
-//! # fn main() {
-//! #    try_compare().unwrap();
-//! # }
-//! ```
-//!
-//! It also allows parsing of `~x.y.z` and `^x.y.z` requirements as defined at
-//! https://www.npmjs.com/package/semver
-//!
-//! **Tilde requirements** specify a minimal version with some updates:
-//!
-//! ```notrust
-//! ~1.2.3 := >=1.2.3 <1.3.0
-//! ~1.2   := >=1.2.0 <1.3.0
-//! ~1     := >=1.0.0 <2.0.0
-//! ```
-//!
-//! **Caret requirements** allow SemVer compatible updates to a specified
-//! verion, `0.x` and `0.x+1` are not considered compatible, but `1.x` and
-//! `1.x+1` are.
-//!
-//! `0.0.x` is not considered compatible with any other version.
-//! Missing minor and patch versions are desugared to `0` but allow flexibility
-//! for that value.
-//!
-//! ```notrust
-//! ^1.2.3 := >=1.2.3 <2.0.0
-//! ^0.2.3 := >=0.2.3 <0.3.0
-//! ^0.0.3 := >=0.0.3 <0.0.4
-//! ^0.0   := >=0.0.0 <0.1.0
-//! ^0     := >=0.0.0 <1.0.0
-//! ```
-//!
-//! **Wildcard requirements** allows parsing of version requirements of the
-//! formats `*`, `x.*` and `x.y.*`.
-//!
-//! ```notrust
-//! *     := >=0.0.0
-//! 1.*   := >=1.0.0 <2.0.0
-//! 1.2.* := >=1.2.0 <1.3.0
-//! ```
+    if peek.is_none() {
+        return Err(ParseError::Incorrect);
+    }
 
-#![doc(
-    html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
-    html_favicon_url = "https://www.rust-lang.org/favicon.ico",
-    html_root_url = "https://docs.rs/semver"
-)]
-#![deny(missing_docs)]
-#![cfg_attr(test, deny(warnings))]
+    if let Some(&(_, c)) = peek {
+        if c == 'x' || c == 'X' || c == '*' {
+            return Ok(0);
+        }
 
-extern crate semver_parser;
+        if !c.is_numeric() {
+            return Err(ParseError::Incorrect);
+        }
+    }
 
-// Serialization and deserialization support for version numbers
-#[cfg(feature = "serde")]
-extern crate serde;
+    let mut number = 0;
+    let mut possible_leading_zero = false;
 
-// Database support for version numbers
-#[cfg(feature = "diesel")]
-#[macro_use]
-extern crate diesel;
+    // we have to check if the first digit is a zero, because that's not allowed.
+    if let Some(Some(digit)) = iter.peek().map(|&(_, c)| c.to_digit(10)) {
+        if digit == 0 {
+            possible_leading_zero = true;
+        } else {
+            number = number * 10 + digit as u64;
+            iter.next();
+        }
+    }
 
-// We take the common approach of keeping our own module system private, and
-// just re-exporting the interface that we want.
+    while let Some(Some(digit)) = iter.peek().map(|&(_, c)| c.to_digit(10)) {
+        number = number * 10 + digit as u64;
+        iter.next();
+    }
 
-pub use version::Identifier::{AlphaNumeric, Numeric};
-pub use version::{Identifier, SemVerError, Version};
-pub use version_req::{ReqParseError, VersionReq};
+    if number != 0 && possible_leading_zero {
+        return Err(ParseError::LeadingZero);
+    }
 
-// SemVer-compliant versions.
-mod version;
+    Ok(number)
+}
 
-// advanced version comparisons
-mod version_req;
+#[cfg(test)]
+mod tests {
+    use super::ParseError;
 
-#[cfg(feature = "diesel")]
-// Diesel support
-mod diesel_impls;
+    #[test]
+    fn parse_number() {
+        // testing weird cases
+
+        for c in b'A'..=b'z' {
+            let s = (c as char).to_string();
+            let mut iter = s.char_indices().peekable();
+
+            if c == b'x' {
+                assert_eq!(0, crate::parse_number(&mut iter).unwrap());
+            } else if c == b'X' {
+                assert_eq!(0, crate::parse_number(&mut iter).unwrap());
+            } else if c == b'*' {
+                assert_eq!(0, crate::parse_number(&mut iter).unwrap());
+            } else {
+                assert!(crate::parse_number(&mut iter).is_err());
+            }
+        }
+    }
+
+    #[test]
+    fn valid() {
+        // examples of valid numbers
+        assert!(super::valid("1.2.3"));
+        assert!(super::valid("10.20.30"));
+        assert!(super::valid("100.200.300"));
+        assert!(super::valid("100.200.300-alpha"));
+        assert!(super::valid("100.200.300-alpha.2"));
+        assert!(super::valid(
+            "100.200.300+b4039641946cc7ea87357204c7b14c6090703857"
+        ));
+        assert!(super::valid("100.200.300-pre.and+build"));
+
+        // examples of invalid numbers
+        assert!(!super::valid("1"));
+        assert!(!super::valid("1."));
+        assert!(!super::valid("1.2."));
+    }
+
+    #[test]
+    fn major() {
+        // "A normal version number MUST take the form X.Y.Z where X, Y, and Z
+        // are non-negative integers... X is the major version."
+        assert_eq!(Ok(1), super::major("1.2.3"));
+        assert_eq!(Ok(10), super::major("10.20.30"));
+        assert_eq!(Ok(100), super::major("100.200.300"));
+
+        // ... and MUST NOT contain leading zeroes.
+        assert_eq!(Err(ParseError::LeadingZero), super::major("01.2.3"));
+        // 0 is not a leading zero
+        assert_eq!(Ok(0), super::major("0.2.3"));
+    }
+
+    #[test]
+    fn minor() {
+        // "A normal version number MUST take the form X.Y.Z where X, Y, and Z
+        // are non-negative integers... Y is the minor version."
+        assert_eq!(Ok(2), super::minor("1.2.3"));
+        assert_eq!(Ok(20), super::minor("10.20.30"));
+        assert_eq!(Ok(200), super::minor("100.200.300"));
+
+        // ... and MUST NOT contain leading zeroes.
+        assert_eq!(Err(ParseError::LeadingZero), super::minor("1.02.3"));
+        // 0 is not a leading zero
+        assert_eq!(Ok(0), super::minor("1.0.3"));
+    }
+
+    #[test]
+    fn patch() {
+        // "A normal version number MUST take the form X.Y.Z where X, Y, and Z
+        // are non-negative integers... Z is the patch version."
+        assert_eq!(Ok(3), super::patch("1.2.3"));
+        assert_eq!(Ok(30), super::patch("10.20.30"));
+        assert_eq!(Ok(300), super::patch("100.200.300"));
+
+        // ... and MUST NOT contain leading zeroes.
+        assert_eq!(Err(ParseError::LeadingZero), super::patch("1.2.03"));
+        // 0 is not a leading zero
+        assert_eq!(Ok(0), super::patch("1.2.0"));
+    }
+
+    #[test]
+    fn pre() {
+        // pre-release version MAY be denoted by appending a hyphen and a series
+        // of dot separated identifiers immediately following the patch version.
+        let _pre = super::pre("1.2.3-alpha.2").unwrap();
+        // assert_eq!(Some(Ok("alpha")), pre.next());
+        // assert_eq!(Some(Ok("2")), pre.next());
+        // assert!(pre.next().is_none());
+
+        // Identifiers MUST comprise only ASCII alphanumerics and hyphen
+        // [0-9A-Za-z-].
+        let _pre = super::pre("1.2.3-alp-ha").unwrap();
+        // assert_eq!(Some(Ok("alp-ha")), pre.next());
+        // assert!(pre.next().is_none());
+
+        // Identifiers MUST NOT be empty.
+        let _pre = super::pre("1.2.3-").unwrap();
+        //assert!(pre.next().unwrap().is_err());
+
+        // Numeric identifiers MUST NOT include leading zeroes.
+        let _pre = super::pre("1.2.3-02").unwrap();
+        //assert!(pre.next().unwrap().is_err());
+
+        // 0 on its own is not a leading zero!
+        let _pre = super::pre("1.2.3-0").unwrap();
+        //assert_eq!(Some(Ok("0")), pre.next());
+        //assert!(pre.next().is_none());
+    }
+
+    #[test]
+    fn build() {
+        // Build metadata MAY be denoted by appending a plus sign and a series
+        // of dot separated identifiers immediately following the patch or
+        // pre-release version.
+        let mut build = super::build("1.2.3+alpha.2").unwrap();
+        assert_eq!(Some(Ok("alpha")), build.next());
+        assert_eq!(Some(Ok("2")), build.next());
+        assert!(build.next().is_none());
+
+        // Identifiers MUST comprise only ASCII alphanumerics and hyphen
+        // [0-9A-Za-z-].
+        let mut build = super::build("1.2.3+alp-ha").unwrap();
+        assert_eq!(Some(Ok("alp-ha")), build.next());
+        assert!(build.next().is_none());
+
+        // Identifiers MUST NOT be empty.
+        let mut build = super::build("1.2.3+").unwrap();
+        assert!(build.next().unwrap().is_err());
+    }
+
+    mod satisfies {
+        mod primitive {
+            #[test]
+            fn less_than() {
+                // major only
+                assert!(crate::satisfies("1.2.3", "<2"));
+                assert!(!crate::satisfies("1.2.3", "<1"));
+                assert!(!crate::satisfies("1.2.3", "<0"));
+
+                // major and minor
+                assert!(crate::satisfies("1.2.3", "<1.3"));
+                assert!(!crate::satisfies("1.2.3", "<1.2"));
+                assert!(!crate::satisfies("1.2.3", "<1.1"));
+
+                // major, minor, and patch
+                assert!(crate::satisfies("1.2.3", "<1.2.4"));
+                assert!(!crate::satisfies("1.2.3", "<1.2.3"));
+                assert!(!crate::satisfies("1.2.3", "<1.2.2"));
+
+                // prerelease
+                assert!(crate::satisfies("1.2.3-pre.1", "<1.2.3-pre.2"));
+                assert!(!crate::satisfies("1.2.3-pre.1", "<1.2.3-pre.1"));
+                assert!(!crate::satisfies("1.2.3-pre.1", "<1.2.3-pre.0"));
+
+                // prerelease in range, but not in version
+                assert!(crate::satisfies("0.1.0", "<1.0.0-pre.1"));
+                assert!(!crate::satisfies("1.0.0", "<1.0.0-pre.1"));
+
+                // prerelease in version, but not in range
+                assert!(!crate::satisfies("1.0.0-beta.1", "<1.0.0"));
+
+                // build metadata
+                assert!(!crate::satisfies(
+                    "1.2.3+20130313144700",
+                    "<1.2.3+20130313144700"
+                ));
+                assert!(crate::satisfies(
+                    "1.2.3+20130313144700",
+                    "<2.3.4+20130313144700"
+                ));
+                assert!(!crate::satisfies(
+                    "1.2.3+20130313144700",
+                    "<1.2.2+20130313144700"
+                ));
+
+                // metadata in range, but not in version
+                assert!(!crate::satisfies("0.1.0", "<0.1.0+lol"));
+                assert!(!crate::satisfies("1.0.0", "<1.0.0+hunter2"));
+
+                // metadata in version, but not in range
+                assert!(!crate::satisfies("1.0.0+20200509", "<1.0.0"));
+            }
+
+            #[test]
+            fn less_than_or_equal_to() {
+                // major only
+                assert!(crate::satisfies("1.2.3", "<=2"));
+                assert!(!crate::satisfies("1.2.3", "<=1"));
+                assert!(!crate::satisfies("1.2.3", "<=0"));
+
+                // major and minor
+                assert!(crate::satisfies("1.2.3", "<=1.3"));
+                assert!(!crate::satisfies("1.2.3", "<=1.2"));
+                assert!(!crate::satisfies("1.2.3", "<=1.1"));
+
+                // major, minor, and patch
+                assert!(crate::satisfies("1.2.3", "<=1.2.4"));
+                assert!(crate::satisfies("1.2.3", "<=1.2.3"));
+                assert!(!crate::satisfies("1.2.3", "<=1.2.2"));
+
+                // prerelease
+                assert!(crate::satisfies("1.2.3-pre.1", "<=1.2.3-pre.2"));
+                assert!(crate::satisfies("1.2.3-pre.1", "<=1.2.3-pre.1"));
+                assert!(!crate::satisfies("1.2.3-pre.1", "<=1.2.3-pre.0"));
+
+                // prerelease in range, but not in version
+                assert!(crate::satisfies("0.1.0", "<=1.0.0-pre.1"));
+                assert!(crate::satisfies("1.0.0", "<=1.0.0-pre.1"));
+
+                // prerelease in version, but not in range
+                assert!(!crate::satisfies("1.0.0-beta.1", "<=1.0.0"));
+
+                // build metadata
+                assert!(crate::satisfies(
+                    "1.2.3+20130313144700",
+                    "<=1.2.3+20130313144700"
+                ));
+                assert!(crate::satisfies(
+                    "1.2.3+20130313144700",
+                    "<=2.3.4+20130313144700"
+                ));
+                assert!(!crate::satisfies(
+                    "1.2.3+20130313144700",
+                    "<=1.2.2+20130313144700"
+                ));
+
+                // metadata in range, but not in version
+                assert!(crate::satisfies("0.1.0", "<=0.1.0+lol"));
+                assert!(crate::satisfies("1.0.0", "<=1.0.0+hunter2"));
+
+                // metadata in version, but not in range
+                assert!(crate::satisfies("1.0.0+20200509", "<=1.0.0"));
+            }
+
+            #[test]
+            fn greater_than() {
+                // major only
+                assert!(!crate::satisfies("1.2.3", ">2"));
+                assert!(!crate::satisfies("1.2.3", ">1"));
+                assert!(crate::satisfies("1.2.3", ">0"));
+
+                // major and minor
+                assert!(!crate::satisfies("1.2.3", ">1.3"));
+                assert!(!crate::satisfies("1.2.3", ">1.2"));
+                assert!(crate::satisfies("1.2.3", ">1.1"));
+
+                // major, minor, and patch
+                assert!(!crate::satisfies("1.2.3", ">1.2.4"));
+                assert!(!crate::satisfies("1.2.3", ">1.2.3"));
+                assert!(crate::satisfies("1.2.3", ">1.2.2"));
+
+                // prerelease
+                assert!(!crate::satisfies("1.2.3-pre.1", ">1.2.3-pre.2"));
+                assert!(!crate::satisfies("1.2.3-pre.1", ">1.2.3-pre.1"));
+                assert!(crate::satisfies("1.2.3-pre.1", ">1.2.3-pre.0"));
+
+                // prerelease in range, but not in version
+                assert!(!crate::satisfies("0.1.0", ">1.0.0-pre.1"));
+                assert!(crate::satisfies("1.0.0", ">1.0.0-pre.1"));
+
+                // prerelease in version, but not in range
+                assert!(!crate::satisfies("1.0.0-beta.1", ">1.0.0"));
+
+                // build metadata
+                assert!(!crate::satisfies(
+                    "1.2.3+20130313144700",
+                    ">1.2.3+20130313144700"
+                ));
+                assert!(!crate::satisfies(
+                    "1.2.3+20130313144700",
+                    ">2.3.4+20130313144700"
+                ));
+                assert!(crate::satisfies(
+                    "1.2.3+20130313144700",
+                    ">1.2.2+20130313144700"
+                ));
+
+                // metadata in range, but not in version
+                assert!(!crate::satisfies("0.1.0", ">0.1.0+lol"));
+                assert!(!crate::satisfies("1.0.0", ">1.0.0+hunter2"));
+
+                // metadata in version, but not in range
+                assert!(!crate::satisfies("1.0.0+20200509", ">1.0.0"));
+            }
+
+            #[test]
+            fn greater_than_or_equal_to() {
+                // major only
+                assert!(!crate::satisfies("1.2.3", ">=2"));
+                assert!(!crate::satisfies("1.2.3", ">=1"));
+                assert!(crate::satisfies("1.2.3", ">=0"));
+
+                // major and minor
+                assert!(!crate::satisfies("1.2.3", ">=1.3"));
+                assert!(!crate::satisfies("1.2.3", ">=1.2"));
+                assert!(crate::satisfies("1.2.3", ">=1.1"));
+
+                // major, minor, and patch
+                assert!(!crate::satisfies("1.2.3", ">=1.2.4"));
+                assert!(crate::satisfies("1.2.3", ">=1.2.3"));
+                assert!(crate::satisfies("1.2.3", ">=1.2.2"));
+
+                // prerelease
+                assert!(!crate::satisfies("1.2.3-pre.1", ">=1.2.3-pre.2"));
+                assert!(crate::satisfies("1.2.3-pre.1", ">=1.2.3-pre.1"));
+                assert!(crate::satisfies("1.2.3-pre.1", ">=1.2.3-pre.0"));
+
+                // prerelease in range, but not in version
+                assert!(!crate::satisfies("0.1.0", ">=1.0.0-pre.1"));
+                assert!(crate::satisfies("1.0.0", ">=1.0.0-pre.1"));
+
+                // prerelease in version, but not in range
+                assert!(!crate::satisfies("1.0.0-beta.1", ">=1.0.0"));
+
+                // build metadata
+                assert!(crate::satisfies(
+                    "1.2.3+20130313144700",
+                    ">=1.2.3+20130313144700"
+                ));
+                assert!(!crate::satisfies(
+                    "1.2.3+20130313144700",
+                    ">=2.3.4+20130313144700"
+                ));
+                assert!(crate::satisfies(
+                    "1.2.3+20130313144700",
+                    ">=1.2.2+20130313144700"
+                ));
+
+                // metadata in range, but not in version
+                assert!(crate::satisfies("0.1.0", ">=0.1.0+lol"));
+                assert!(crate::satisfies("1.0.0", ">=1.0.0+hunter2"));
+
+                // metadata in version, but not in range
+                assert!(crate::satisfies("1.0.0+20200509", ">=1.0.0"));
+            }
+
+            #[test]
+            fn equal() {
+                // major only
+                assert!(!crate::satisfies("1.2.3", "=2"));
+                assert!(crate::satisfies("1.2.3", "=1"));
+                assert!(!crate::satisfies("1.2.3", "=0"));
+
+                // major and minor
+                assert!(!crate::satisfies("1.2.3", "=1.3"));
+                assert!(crate::satisfies("1.2.3", "=1.2"));
+                assert!(!crate::satisfies("1.2.3", "=1.1"));
+
+                // major, minor, and patch
+                assert!(!crate::satisfies("1.2.3", "=1.2.4"));
+                assert!(crate::satisfies("1.2.3", "=1.2.3"));
+                assert!(!crate::satisfies("1.2.3", "=1.2.2"));
+
+                // prerelease
+                assert!(!crate::satisfies("1.2.3-pre.1", "=1.2.3-pre.2"));
+                assert!(crate::satisfies("1.2.3-pre.1", "=1.2.3-pre.1"));
+                assert!(!crate::satisfies("1.2.3-pre.1", "=1.2.3-pre.0"));
+
+                // prerelease in range, but not in version
+                assert!(!crate::satisfies("0.1.0", "=1.0.0-pre.1"));
+                assert!(!crate::satisfies("1.0.0", "=1.0.0-pre.1"));
+
+                // prerelease in version, but not in range
+                assert!(!crate::satisfies("1.0.0-beta.1", "=1.0.0"));
+
+                // build metadata
+                assert!(crate::satisfies(
+                    "1.2.3+20130313144700",
+                    "=1.2.3+20130313144700"
+                ));
+                assert!(!crate::satisfies(
+                    "1.2.3+20130313144700",
+                    "=2.3.4+20130313144700"
+                ));
+                assert!(!crate::satisfies(
+                    "1.2.3+20130313144700",
+                    "=1.2.2+20130313144700"
+                ));
+
+                // metadata in range, but not in version
+                assert!(crate::satisfies("0.1.0", "=0.1.0+lol"));
+                assert!(crate::satisfies("1.0.0", "=1.0.0+hunter2"));
+
+                // metadata in version, but not in range
+                assert!(crate::satisfies("1.0.0+20200509", "=1.0.0"));
+            }
+
+            #[test]
+            fn tweet() {
+                // https://twitter.com/izs/status/1259489276523196417
+
+                // 2.0.1-pre.1 is not in >2.0.0
+                assert!(!crate::satisfies("2.0.1-pre.1", ">2.0.0"));
+
+                // 2.0.1-pre.1 is not in >=2.0.0-pre.0
+                assert!(!crate::satisfies("2.0.1-pre.1", ">=2.0.0-pre.0"));
+
+                // 2.0.1-pre.1 is in >=2.0.1-pre.0
+                assert!(crate::satisfies("2.0.1-pre.1", ">=2.0.1-pre.0"));
+            }
+        }
+    }
+
+    mod advanced_ranges {
+        #[test]
+        fn x() {
+            // major
+            assert!(crate::satisfies("1.2.3", "X"));
+            assert!(crate::satisfies("1.2.3", "x"));
+            assert!(crate::satisfies("1.2.3", "*"));
+
+            // empty string is special case for *
+            assert!(crate::satisfies("1.2.3", ""));
+
+            // minor
+            assert!(crate::satisfies("1.2.3", "1"));
+            assert!(crate::satisfies("1.2.3", "1.X"));
+            assert!(crate::satisfies("1.2.3", "1.x"));
+            assert!(crate::satisfies("1.2.3", "1.*"));
+
+            // patch
+            assert!(crate::satisfies("1.2.3", "1.2"));
+            assert!(crate::satisfies("1.2.3", "1.2.X"));
+            assert!(crate::satisfies("1.2.3", "1.2.x"));
+            assert!(crate::satisfies("1.2.3", "1.2.*"));
+        }
+
+        #[test]
+        fn tilde() {
+            // major only
+            assert!(crate::satisfies("1.0.0", "~1"));
+
+            assert!(!crate::satisfies("0.1.0", "~1"));
+            assert!(!crate::satisfies("2.0.0", "~1"));
+
+            // major and minor
+            assert!(crate::satisfies("1.2.0", "~1.2"));
+            assert!(crate::satisfies("1.2.1", "~1.2"));
+
+            assert!(!crate::satisfies("1.3.0", "~1.2"));
+
+            // major, minor, and patch
+            assert!(crate::satisfies("1.2.3", "~1.2.3"));
+
+            assert!(!crate::satisfies("1.2.2", "~1.2.3"));
+            assert!(!crate::satisfies("1.3.0", "~1.2.3"));
+
+            // prerelease
+            assert!(crate::satisfies("1.2.3-pre.1", "~1.2.3-pre.1"));
+
+            assert!(!crate::satisfies("1.2.3-pre.1", "~1.2.3-pre.2"));
+
+            // prerelease in range, but not in version
+            assert!(crate::satisfies("1.2.3", "~1.2.3-pre.1"));
+
+            // prerelease in version, but not in range
+            assert!(!crate::satisfies("1.2.3-pre.1", "~1.2.3"));
+
+            // build metadata
+            assert!(crate::satisfies(
+                "1.2.3+20130313144700",
+                "~1.2.3+20130313144700"
+            ));
+
+            // metadata in range, but not in version
+            assert!(crate::satisfies("0.1.0", "~0.1.0+lol"));
+
+            // metadata in version, but not in range
+            assert!(crate::satisfies("1.0.0+20200509", "~1.0.0"));
+        }
+
+        #[test]
+        fn caret() {
+            // bare versions are karet versions
+            assert!(crate::satisfies("1.2.3", "1.0.0"));
+
+            // major only
+            assert!(crate::satisfies("1.0.0", "^1"));
+            assert!(crate::satisfies("1.2.0", "^1"));
+            assert!(crate::satisfies("1.2.3", "^1"));
+
+            assert!(!crate::satisfies("1.2.3-rc.0", "^1"));
+
+            assert!(!crate::satisfies("0.1.2", "^1"));
+            assert!(!crate::satisfies("2.0.0", "^1"));
+
+            // major and minor
+            assert!(crate::satisfies("1.2.0", "^1.2"));
+            assert!(crate::satisfies("1.2.3", "^1.2"));
+
+            assert!(!crate::satisfies("1.2.3-rc.0", "^1.2"));
+
+            assert!(!crate::satisfies("1.1.0", "^1.2"));
+            assert!(!crate::satisfies("2.0.0", "^1.2"));
+
+            // major, minor, and patch
+            assert!(crate::satisfies("1.2.3", "^1.2.3"));
+
+            assert!(!crate::satisfies("1.2.3-rc.0", "^1.2.3"));
+
+            assert!(!crate::satisfies("1.2.2", "^1.2.3"));
+            assert!(!crate::satisfies("2.0.0", "^1.2.3"));
+
+            // prerelease
+            assert!(crate::satisfies("1.2.3-pre.1", "^1.2.3-pre.1"));
+            assert!(!crate::satisfies("1.2.3-pre.0", "^1.2.3-pre.1"));
+
+            // prerelease in range, but not in version
+            assert!(crate::satisfies("1.2.3", "^1.2.3-pre.1"));
+
+            // prerelease in version, but not in range
+            assert!(!crate::satisfies("1.2.3-pre.1", "^1.2.3"));
+
+            // build metadata
+            assert!(crate::satisfies(
+                "1.2.3+20130313144700",
+                "^1.2.3+20130313144700"
+            ));
+
+            // metadata in range, but not in version
+            assert!(crate::satisfies("0.1.0", "^0.1.0+lol"));
+
+            // metadata in version, but not in range
+            assert!(crate::satisfies("1.0.0+20200509", "^1.0.0"));
+        }
+    }
+}
