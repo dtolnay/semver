@@ -1174,30 +1174,31 @@ mod tests {
     fn pre() {
         // pre-release version MAY be denoted by appending a hyphen and a series
         // of dot separated identifiers immediately following the patch version.
-        let _pre = super::pre("1.2.3-alpha.2").unwrap();
-        // assert_eq!(Some(Ok("alpha")), pre.next());
-        // assert_eq!(Some(Ok("2")), pre.next());
-        // assert!(pre.next().is_none());
+        let mut pre = super::pre("1.2.3-alpha.2").unwrap();
+        assert_eq!(Some("alpha"), pre.next());
+        assert_eq!(Some("2"), pre.next());
+        assert!(pre.next().is_none());
 
         // Identifiers MUST comprise only ASCII alphanumerics and hyphen
         // [0-9A-Za-z-].
-        let _pre = super::pre("1.2.3-alp-ha").unwrap();
-        // assert_eq!(Some(Ok("alp-ha")), pre.next());
-        // assert!(pre.next().is_none());
+        let mut pre = super::pre("1.2.3-alp-ha").unwrap();
+        assert_eq!(Some("alp-ha"), pre.next());
+        assert!(pre.next().is_none());
 
         // Identifiers MUST NOT be empty.
         assert!(super::pre("1.2.3-").is_none());
-        //assert!(pre.next().unwrap().is_err());
 
         // Numeric identifiers MUST NOT include leading zeroes.
         let pre = super::pre("1.2.3-02");
         assert!(pre.is_none());
-        //assert!(pre.next().unwrap().is_err());
 
         // 0 on its own is not a leading zero!
-        let _pre = super::pre("1.2.3-0").unwrap();
-        //assert_eq!(Some(Ok("0")), pre.next());
-        //assert!(pre.next().is_none());
+        let mut pre = super::pre("1.2.3-0").unwrap();
+        assert_eq!(Some("0"), pre.next());
+        assert!(pre.next().is_none());
+
+        // none means no pre-release
+        assert!(super::pre("1.2.3").is_none());
     }
 
     #[test]
