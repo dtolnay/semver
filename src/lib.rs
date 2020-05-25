@@ -115,7 +115,7 @@ fn satisfies_tilde(version: &str, range: &str) -> bool {
 
         // now we need to check if we have a prerelease version or not.
         match (parse_pre(range_rest), parse_pre(version_rest)) {
-            (Some(range_pre), Some(version_pre)) => {
+            (Some(mut range_pre), Some(mut version_pre)) => {
                 if (version_major != range_major)
                     || (version_minor != range_minor)
                     || (version_patch != range_patch)
@@ -123,8 +123,10 @@ fn satisfies_tilde(version: &str, range: &str) -> bool {
                     return None;
                 }
 
-                if version_pre != range_pre {
-                    return None;
+                while let (Some(range), Some(version)) = (range_pre.next(), version_pre.next()) {
+                    if version != range {
+                        return None;
+                    }
                 }
             }
 
@@ -218,7 +220,7 @@ fn satisfies_caret(version: &str, range: &str) -> bool {
 
         // now we need to check if we have a prerelease version or not.
         match (parse_pre(range_rest), parse_pre(version_rest)) {
-            (Some(range_pre), Some(version_pre)) => {
+            (Some(mut range_pre), Some(mut version_pre)) => {
                 if (version_major != range_major)
                     || (version_minor != range_minor)
                     || (version_patch != range_patch)
@@ -226,8 +228,10 @@ fn satisfies_caret(version: &str, range: &str) -> bool {
                     return None;
                 }
 
-                if version_pre != range_pre {
-                    return None;
+                while let (Some(range), Some(version)) = (range_pre.next(), version_pre.next()) {
+                    if version != range {
+                        return None;
+                    }
                 }
             }
 
@@ -317,7 +321,7 @@ fn satisfies_eq(version: &str, range: &str) -> bool {
 
         // now we need to check if we have a prerelease version or not.
         match (parse_pre(range_rest), parse_pre(version_rest)) {
-            (Some(range_pre), Some(version_pre)) => {
+            (Some(mut range_pre), Some(mut version_pre)) => {
                 if (version_major != range_major)
                     || (version_minor != range_minor)
                     || (version_patch != range_patch)
@@ -325,8 +329,10 @@ fn satisfies_eq(version: &str, range: &str) -> bool {
                     return None;
                 }
 
-                if version_pre != range_pre {
-                    return None;
+                while let (Some(range), Some(version)) = (range_pre.next(), version_pre.next()) {
+                    if version != range {
+                        return None;
+                    }
                 }
             }
 
@@ -431,7 +437,7 @@ fn satisfies_gt(version: &str, range: &str) -> bool {
 
         // now we need to check if we have a prerelease version or not.
         match (parse_pre(range_rest), parse_pre(version_rest)) {
-            (Some(range_pre), Some(version_pre)) => {
+            (Some(mut range_pre), Some(mut version_pre)) => {
                 if (version_major != range_major)
                     || (version_minor != range_minor)
                     || (version_patch != range_patch)
@@ -439,11 +445,19 @@ fn satisfies_gt(version: &str, range: &str) -> bool {
                     return None;
                 }
 
-                if version_pre < range_pre {
-                    return None;
+                let mut all_eq = true;
+
+                while let (Some(range), Some(version)) = (range_pre.next(), version_pre.next()) {
+                    if version < range {
+                        return None;
+                    }
+
+                    if version != range {
+                        all_eq = false;
+                    }
                 }
 
-                if version_pre == range_pre {
+                if all_eq {
                     return None;
                 }
             }
@@ -554,7 +568,7 @@ fn satisfies_gte(version: &str, range: &str) -> bool {
 
         // now we need to check if we have a prerelease version or not.
         match (parse_pre(range_rest), parse_pre(version_rest)) {
-            (Some(range_pre), Some(version_pre)) => {
+            (Some(mut range_pre), Some(mut version_pre)) => {
                 if (version_major != range_major)
                     || (version_minor != range_minor)
                     || (version_patch != range_patch)
@@ -562,8 +576,10 @@ fn satisfies_gte(version: &str, range: &str) -> bool {
                     return None;
                 }
 
-                if version_pre < range_pre {
-                    return None;
+                while let (Some(range), Some(version)) = (range_pre.next(), version_pre.next()) {
+                    if version < range {
+                        return None;
+                    }
                 }
             }
             (None, Some(_)) => {
@@ -664,7 +680,7 @@ fn satisfies_lt(version: &str, range: &str) -> bool {
 
         // now we need to check if we have a prerelease version or not.
         match (parse_pre(range_rest), parse_pre(version_rest)) {
-            (Some(range_pre), Some(version_pre)) => {
+            (Some(mut range_pre), Some(mut version_pre)) => {
                 if (version_major != range_major)
                     || (version_minor != range_minor)
                     || (version_patch != range_patch)
@@ -672,11 +688,19 @@ fn satisfies_lt(version: &str, range: &str) -> bool {
                     return None;
                 }
 
-                if version_pre > range_pre {
-                    return None;
+                let mut all_eq = true;
+
+                while let (Some(range), Some(version)) = (range_pre.next(), version_pre.next()) {
+                    if version > range {
+                        return None;
+                    }
+
+                    if version != range {
+                        all_eq = false;
+                    }
                 }
 
-                if version_pre == range_pre {
+                if all_eq {
                     return None;
                 }
             }
@@ -792,7 +816,7 @@ fn satisfies_lte(version: &str, range: &str) -> bool {
 
         // now we need to check if we have a prerelease version or not.
         match (parse_pre(range_rest), parse_pre(version_rest)) {
-            (Some(range_pre), Some(version_pre)) => {
+            (Some(mut range_pre), Some(mut version_pre)) => {
                 if (version_major != range_major)
                     || (version_minor != range_minor)
                     || (version_patch != range_patch)
@@ -800,8 +824,10 @@ fn satisfies_lte(version: &str, range: &str) -> bool {
                     return None;
                 }
 
-                if version_pre > range_pre {
-                    return None;
+                while let (Some(range), Some(version)) = (range_pre.next(), version_pre.next()) {
+                    if version > range {
+                        return None;
+                    }
                 }
             }
 
@@ -877,7 +903,7 @@ pub fn patch(version: &str) -> Result<u64, ParseError> {
 }
 
 // not const yet see https://github.com/rust-lang/rust/issues/49146
-pub fn pre(version: &str) -> Option<&str> {
+pub fn pre(version: &str) -> Option<impl Iterator<Item = &str>> {
     let mut iter = version.char_indices().peekable();
 
     parse_major(&mut iter).ok()?;
@@ -943,7 +969,7 @@ fn parse_patch(
     parse_number(iter)
 }
 
-fn parse_pre(rest: &str) -> Option<&str> {
+fn parse_pre(rest: &str) -> Option<impl Iterator<Item = &str>> {
     let mut iter = rest.char_indices().peekable();
 
     match iter.next() {
@@ -955,13 +981,24 @@ fn parse_pre(rest: &str) -> Option<&str> {
 
     let mut rest = &rest[1..];
 
+    if rest.is_empty() {
+        return None;
+    }
+
     let o = iter.find(|&(_, c)| !matches!(c, '0'..='9' | 'A'..='Z' | 'a'..='z' | '-' | '.'));
 
     if let Some((idx, _)) = o {
         rest = &rest[..idx];
     }
 
-    Some(rest)
+    for s in rest.split('.') {
+        // check for leading zeros. Plain old 0 is fine, but starting with 0 is not
+        if s.starts_with('0') && (s.len() != 1) {
+            return None;
+        }
+    }
+
+    Some(rest.split('.'))
 }
 
 fn parse_build(rest: &str) -> Option<impl Iterator<Item = Result<&str, ParseError>>> {
@@ -1149,11 +1186,12 @@ mod tests {
         // assert!(pre.next().is_none());
 
         // Identifiers MUST NOT be empty.
-        let _pre = super::pre("1.2.3-").unwrap();
+        assert!(super::pre("1.2.3-").is_none());
         //assert!(pre.next().unwrap().is_err());
 
         // Numeric identifiers MUST NOT include leading zeroes.
-        let _pre = super::pre("1.2.3-02").unwrap();
+        let pre = super::pre("1.2.3-02");
+        assert!(pre.is_none());
         //assert!(pre.next().unwrap().is_err());
 
         // 0 on its own is not a leading zero!
