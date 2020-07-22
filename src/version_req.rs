@@ -306,10 +306,10 @@ impl VersionReq {
             return Ok(From::from(v));
         }
 
-        return match VersionReq::parse_deprecated(input) {
+        match VersionReq::parse_deprecated(input) {
             Some(v) => Err(ReqParseError::DeprecatedVersionRequirement(v)),
             None => Err(From::from(range_set.err().unwrap())),
-        };
+        }
     }
 
     fn parse_deprecated(version: &str) -> Option<VersionReq> {
@@ -510,13 +510,11 @@ impl fmt::Display for Range {
         for (i, ref pred) in self.predicates.iter().enumerate() {
             if i == 0 {
                 write!(fmt, "{}", pred)?;
+            } else if self.compat == Compat::Node {
+                // Node does not expect commas between predicates
+                write!(fmt, " {}", pred)?;
             } else {
-                if self.compat == Compat::Node {
-                    // Node does not expect commas between predicates
-                    write!(fmt, " {}", pred)?;
-                } else {
-                    write!(fmt, ", {}", pred)?;
-                }
+                write!(fmt, ", {}", pred)?;
             }
         }
         Ok(())
