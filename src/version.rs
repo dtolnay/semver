@@ -394,20 +394,11 @@ mod tests {
             return Err(SemVerError::ParseError(e.to_string()));
         }
 
-        assert_eq!(
-            Version::parse(""),
-            parse_error("expected more input")
-        );
-        assert_eq!(
-            Version::parse("  "),
-            parse_error("expected more input")
-        );
+        assert_eq!(Version::parse(""), parse_error("expected more input"));
+        assert_eq!(Version::parse("  "), parse_error("expected more input"));
         assert_eq!(Version::parse("1"), parse_error("expected more input"));
         assert_eq!(Version::parse("1.2"), parse_error("expected more input"));
-        assert_eq!(
-            Version::parse("1.2.3-"),
-            parse_error("expected more input")
-        );
+        assert_eq!(Version::parse("1.2.3-"), parse_error("expected more input"));
         assert_eq!(
             Version::parse("a.b.c"),
             parse_error("encountered unexpected token: AlphaNumeric(\"a\")")
@@ -538,9 +529,7 @@ mod tests {
                 major: 1,
                 minor: 1,
                 patch: 0,
-                pre: vec![
-                    Identifier::AlphaNumeric(String::from("beta-10")),
-                ],
+                pre: vec![Identifier::AlphaNumeric(String::from("beta-10")),],
                 build: Vec::new(),
             })
         );
