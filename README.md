@@ -5,7 +5,7 @@ Semantic version parsing and comparison.
 
 ![Build Status](https://github.com/steveklabnik/semver/workflows/CI/badge.svg)
 
-[Documentation](https://steveklabnik.github.io/semver)
+[Documentation](https://docs.rs/semver/)
 
 Semantic versioning (see https://semver.org/) is a set of rules for
 assigning version numbers.
