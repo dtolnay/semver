@@ -82,23 +82,36 @@ impl<'de> Deserialize<'de> for VersionReq {
     }
 }
 
+/// A `WildcardVersion` identifies where the wildcard operator is used
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-enum WildcardVersion {
+pub enum WildcardVersion {
+    /// Wildcard operator in the major version component, e.g. `*`
     Major,
+    /// Wildcard operator in the minor version component, e.g. `1.*`
     Minor,
+    /// Wildcard operator in the patch version component, e.g. `1.0.*`
     Patch,
 }
 
+/// An `Op` is an operator that can be used in semver requirements
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-enum Op {
-    Ex,                        // Exact
-    Gt,                        // Greater than
-    GtEq,                      // Greater than or equal to
-    Lt,                        // Less than
-    LtEq,                      // Less than or equal to
-    Tilde,                     // e.g. ~1.0.0
-    Compatible,                // compatible by definition of semver, indicated by ^
-    Wildcard(WildcardVersion), // x.y.*, x.*, *
+pub enum Op {
+    /// Exact, indicated by `=`
+    Ex,
+    /// Greater than, indicated by `>`
+    Gt,
+    /// Greater than or equal to, indicated by `>=`
+    GtEq,
+    /// Less than, indicated by `<`
+    Lt,
+    /// Less than or equal to, indicated by `<=`
+    LtEq,
+    /// Tilde requirements, indicated by `~`
+    Tilde, // e.g. ~1.0.0
+    /// Compatible by definition of semver, indicated by `^`
+    Compatible,
+    /// Wildcard requirement, e.g. `x.y.*, x.*, *`
+    Wildcard(WildcardVersion),
 }
 
 impl From<semver_parser::range::Op> for Op {
@@ -327,6 +340,21 @@ impl VersionReq {
                 .predicates
                 .iter()
                 .any(|p| p.pre_tag_is_compatible(version))
+    }
+
+    /// `contains_op(semver::Op)` checks if this `VersionReq` contains the specified operator
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use semver::Op;
+    /// use semver::VersionReq;
+    ///
+    /// assert!(VersionReq::parse(">1.0.0, <=2.0").unwrap().contains_op(Op::Gt));
+    /// assert!(VersionReq::parse(">1.0.0, <=2.0").unwrap().contains_op(Op::LtEq));
+    /// ```
+    pub fn contains_op(&self, op: Op) -> bool {
+        self.predicates.iter().any(|p| p.op == op)
     }
 
     /// `is_exact()` returns `true` if there is exactly one version which could match this
@@ -924,6 +952,22 @@ mod test {
     pub fn test_pre() {
         let r = req("=2.1.1-really.0");
         assert_match(&r, &["2.1.1-really.0"]);
+    }
+
+    #[test]
+    pub fn test_contains_op() {
+        let r = req("=1.0.0");
+        assert!(r.contains_op(Op::Ex));
+        assert!(!r.contains_op(Op::Compatible));
+        let r = req("1.0.0");
+        assert!(r.contains_op(Op::Compatible));
+        let r = req("^1.0.0");
+        assert!(r.contains_op(Op::Compatible));
+        let r = req(">0.0.9, <=2.5.3");
+        assert!(r.contains_op(Op::Gt));
+        assert!(r.contains_op(Op::LtEq));
+        assert!(!r.contains_op(Op::GtEq));
+        assert!(!r.contains_op(Op::Lt));
     }
 
     // #[test]

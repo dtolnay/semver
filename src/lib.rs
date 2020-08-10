@@ -209,7 +209,7 @@ extern crate diesel;
 
 pub use version::Identifier::{AlphaNumeric, Numeric};
 pub use version::{Identifier, SemVerError, Version};
-pub use version_req::{ReqParseError, VersionReq};
+pub use version_req::{Op, ReqParseError, VersionReq, WildcardVersion};
 
 // SemVer-compliant versions.
 mod version;
