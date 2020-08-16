@@ -82,6 +82,20 @@ impl<'de> Deserialize<'de> for VersionReq {
     }
 }
 
+impl From<Version> for VersionReq {
+    fn from(version: Version) -> Self {
+        Self {
+            predicates: vec![Predicate {
+                op: Op::Ex,
+                major: version.major,
+                minor: Some(version.minor),
+                patch: Some(version.patch),
+                pre: version.pre,
+            }],
+        }
+    }
+}
+
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 enum WildcardVersion {
     Major,
@@ -1027,5 +1041,13 @@ mod test {
         assert!(!req("=1").is_exact());
         assert!(!req(">=1.0.0").is_exact());
         assert!(!req(">=1.0.0, <2.0.0").is_exact());
+    }
+
+    #[test]
+    fn version_req_from_version() {
+        let v = "1.2.3-alpha.4000+someref".parse::<Version>().unwrap();
+
+        let r = VersionReq::from(v);
+        assert_match(&r, &["1.2.3-alpha.4000"])
     }
 }
