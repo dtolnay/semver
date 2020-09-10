@@ -642,11 +642,10 @@ mod test {
         assert_not_match(&r, &["0.9.1", "0.1.0", "0.1.1-beta2.a", "0.1.0-beta2"]);
     }
 
-    // TODO: this doesn't work yet, but can be added to semver-parser
     #[test]
-    #[ignore]
     fn test_parse_metadata_see_issue_88_see_issue_88() {
         for op in &[Op::Ex, Op::Gt, Op::GtEq, Op::Lt, Op::LtEq] {
+            println!("{} 1.2.3+meta", op);
             req(&format!("{} 1.2.3+meta", op));
         }
     }
