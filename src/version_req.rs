@@ -659,6 +659,7 @@ mod test {
         assert_match(&r, &["1.0.0", "2.0.0"]);
         assert_not_match(&r, &["0.1.0", "0.0.1", "1.0.0-pre", "2.0.0-pre"]);
 
+        // https://github.com/steveklabnik/semver/issues/53
         let r = req(">= 2.1.0-alpha2");
 
         assert_match(&r, &["2.1.0-alpha2", "2.1.0-alpha3", "2.1.0", "3.0.0"]);
@@ -732,6 +733,21 @@ mod test {
             &["0.5.1-alpha1", "0.5.2-alpha3", "0.5.5-pre", "0.5.0-pre"],
         );
         assert_not_match(&r, &["0.6.0", "0.6.0-pre"]);
+
+        // https://github.com/steveklabnik/semver/issues/56
+        let r = req("1.2.3 - 2.3.4");
+        assert_eq!(r.to_string(), ">=1.2.3, <=2.3.4");
+        assert_match(&r, &["1.2.3", "1.2.10", "2.0.0", "2.3.4"]);
+        assert_not_match(&r, &["1.0.0", "1.2.2", "1.2.3-alpha1", "2.3.5"]);
+    }
+
+    // https://github.com/steveklabnik/semver/issues/55
+    #[test]
+    pub fn test_whitespace_delimited_comparator_sets() {
+        let r = req("> 0.0.9 <= 2.5.3");
+        assert_eq!(r.to_string(), ">0.0.9, <=2.5.3".to_string());
+        assert_match(&r, &["0.0.10", "1.0.0", "2.5.3"]);
+        assert_not_match(&r, &["0.0.8", "2.5.4"]);
     }
 
     #[test]
@@ -902,6 +918,7 @@ mod test {
         assert_not_match(&r, &["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
     }
 
+    // https://github.com/steveklabnik/semver/issues/57
     #[test]
     pub fn test_parsing_logical_or() {
         let r = req("=1.2.3 || =2.3.4");
