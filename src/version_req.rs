@@ -296,8 +296,16 @@ impl VersionReq {
     /// [`ReqParseError`]: enum.ReqParseError.html
     ///
     /// # Examples
+    ///
     /// ```
-    /// // TODO
+    /// extern crate semver_parser;
+    /// use semver::VersionReq;
+    /// use semver_parser::Compat;
+    ///
+    /// # fn main() {
+    ///     let cargo_version = VersionReq::parse_compat("1.2.3", Compat::Cargo);
+    ///     let node_version = VersionReq::parse_compat("1.2.3", Compat::Node);
+    /// # }
     /// ```
     pub fn parse_compat(input: &str, compat: Compat) -> Result<VersionReq, ReqParseError> {
         let range_set = RangeSet::parse(input, compat);
