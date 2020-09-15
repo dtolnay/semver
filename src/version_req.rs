@@ -304,7 +304,7 @@ impl VersionReq {
     ///
     /// # fn main() {
     ///     let cargo_version = VersionReq::parse_compat("1.2.3", Compat::Cargo);
-    ///     let node_version = VersionReq::parse_compat("1.2.3", Compat::Node);
+    ///     let npm_version = VersionReq::parse_compat("1.2.3", Compat::Npm);
     /// # }
     /// ```
     pub fn parse_compat(input: &str, compat: Compat) -> Result<VersionReq, ReqParseError> {
@@ -518,7 +518,7 @@ impl fmt::Display for Range {
         for (i, ref pred) in self.predicates.iter().enumerate() {
             if i == 0 {
                 write!(fmt, "{}", pred)?;
-            } else if self.compat == Compat::Node {
+            } else if self.compat == Compat::Npm {
                 // Node does not expect commas between predicates
                 write!(fmt, " {}", pred)?;
             } else {
@@ -574,8 +574,8 @@ mod test {
         VersionReq::parse(s).unwrap()
     }
 
-    fn req_node(s: &str) -> VersionReq {
-        VersionReq::parse_compat(s, Compat::Node).unwrap()
+    fn req_npm(s: &str) -> VersionReq {
+        VersionReq::parse_compat(s, Compat::Npm).unwrap()
     }
 
     fn version(s: &str) -> Version {
@@ -616,8 +616,8 @@ mod test {
     }
 
     #[test]
-    fn test_parsing_default_node() {
-        let r = req_node("1.0.0");
+    fn test_parsing_default_npm() {
+        let r = req_npm("1.0.0");
 
         assert_eq!(r.to_string(), "=1.0.0".to_string());
 
@@ -759,28 +759,28 @@ mod test {
     }
 
     #[test]
-    pub fn test_multiple_node() {
-        let r = req_node("> 0.0.9, <= 2.5.3");
+    pub fn test_multiple_npm() {
+        let r = req_npm("> 0.0.9, <= 2.5.3");
         assert_eq!(r.to_string(), ">0.0.9 <=2.5.3".to_string());
         assert_match(&r, &["0.0.10", "1.0.0", "2.5.3"]);
         assert_not_match(&r, &["0.0.8", "2.5.4"]);
 
-        let r = req_node("0.3.0, 0.4.0");
+        let r = req_npm("0.3.0, 0.4.0");
         assert_eq!(r.to_string(), "=0.3.0 =0.4.0".to_string());
         assert_not_match(&r, &["0.0.8", "0.3.0", "0.4.0"]);
 
-        let r = req_node("<= 0.2.0, >= 0.5.0");
+        let r = req_npm("<= 0.2.0, >= 0.5.0");
         assert_eq!(r.to_string(), "<=0.2.0 >=0.5.0".to_string());
         assert_not_match(&r, &["0.0.8", "0.3.0", "0.5.1"]);
 
-        let r = req_node("0.1.0, 0.1.4, 0.1.6");
+        let r = req_npm("0.1.0, 0.1.4, 0.1.6");
         assert_eq!(r.to_string(), "=0.1.0 =0.1.4 =0.1.6".to_string());
         assert_not_match(&r, &["0.1.0", "0.1.4", "0.1.6", "0.2.0"]);
 
         assert!(VersionReq::parse("> 0.1.0,").is_err());
         assert!(VersionReq::parse("> 0.3.0, ,").is_err());
 
-        let r = req_node(">=0.5.1-alpha3, <0.6");
+        let r = req_npm(">=0.5.1-alpha3, <0.6");
         assert_eq!(r.to_string(), ">=0.5.1-alpha3 <0.6.0".to_string());
         assert_match(
             &r,
@@ -952,19 +952,19 @@ mod test {
     }
 
     #[test]
-    pub fn test_parsing_logical_or_node() {
-        let r = req_node("=1.2.3 || =2.3.4");
+    pub fn test_parsing_logical_or_npm() {
+        let r = req_npm("=1.2.3 || =2.3.4");
         assert_eq!(r.to_string(), "=1.2.3 || =2.3.4".to_string());
         assert_match(&r, &["1.2.3", "2.3.4"]);
         assert_not_match(&r, &["1.0.0", "2.9.0", "0.1.4"]);
         assert_not_match(&r, &["1.2.3-beta1", "2.3.4-alpha", "1.2.3-pre"]);
 
-        let r = req_node("1.1 || =1.2.3");
+        let r = req_npm("1.1 || =1.2.3");
         assert_eq!(r.to_string(), ">=1.1.0 <1.2.0 || =1.2.3".to_string());
         assert_match(&r, &["1.1.0", "1.1.12", "1.2.3"]);
         assert_not_match(&r, &["1.0.0", "1.2.2", "1.3.0"]);
 
-        let r = req_node("6.* || 8.* || >= 10.*");
+        let r = req_npm("6.* || 8.* || >= 10.*");
         assert_eq!(
             r.to_string(),
             ">=6.0.0 <7.0.0 || >=8.0.0 <9.0.0 || >=10.0.0".to_string()
