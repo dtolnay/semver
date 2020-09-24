@@ -237,7 +237,7 @@ impl Version {
 
         match res {
             // Convert plain String error into proper ParseError
-            Err(e) => Err(SemVerError::ParseError(e)),
+            Err(e) => Err(SemVerError::ParseError(e.to_string())),
             Ok(v) => Ok(From::from(v)),
         }
     }
@@ -394,27 +394,18 @@ mod tests {
             return Err(SemVerError::ParseError(e.to_string()));
         }
 
-        assert_eq!(
-            Version::parse(""),
-            parse_error("Error parsing major identifier")
-        );
-        assert_eq!(
-            Version::parse("  "),
-            parse_error("Error parsing major identifier")
-        );
-        assert_eq!(Version::parse("1"), parse_error("Expected dot"));
-        assert_eq!(Version::parse("1.2"), parse_error("Expected dot"));
-        assert_eq!(
-            Version::parse("1.2.3-"),
-            parse_error("Error parsing prerelease")
-        );
+        assert_eq!(Version::parse(""), parse_error("expected more input"));
+        assert_eq!(Version::parse("  "), parse_error("expected more input"));
+        assert_eq!(Version::parse("1"), parse_error("expected more input"));
+        assert_eq!(Version::parse("1.2"), parse_error("expected more input"));
+        assert_eq!(Version::parse("1.2.3-"), parse_error("expected more input"));
         assert_eq!(
             Version::parse("a.b.c"),
-            parse_error("Error parsing major identifier")
+            parse_error("encountered unexpected token: AlphaNumeric(\"a\")")
         );
         assert_eq!(
             Version::parse("1.2.3 abc"),
-            parse_error("Extra junk after valid version:  abc")
+            parse_error("expected end of input, but got: [AlphaNumeric(\"abc\")]")
         );
 
         assert_eq!(
@@ -529,6 +520,17 @@ mod tests {
                     Identifier::Numeric(1),
                 ],
                 build: vec![Identifier::AlphaNumeric(String::from("0851523"))],
+            })
+        );
+        // for https://nodejs.org/dist/index.json, where some older npm versions are "1.1.0-beta-10"
+        assert_eq!(
+            Version::parse("1.1.0-beta-10"),
+            Ok(Version {
+                major: 1,
+                minor: 1,
+                patch: 0,
+                pre: vec![Identifier::AlphaNumeric(String::from("beta-10")),],
+                build: Vec::new(),
             })
         );
     }
@@ -854,18 +856,18 @@ mod tests {
             return Err(SemVerError::ParseError(e.to_string()));
         }
 
-        assert_eq!("".parse(), parse_error("Error parsing major identifier"));
-        assert_eq!("  ".parse(), parse_error("Error parsing major identifier"));
-        assert_eq!("1".parse(), parse_error("Expected dot"));
-        assert_eq!("1.2".parse(), parse_error("Expected dot"));
-        assert_eq!("1.2.3-".parse(), parse_error("Error parsing prerelease"));
+        assert_eq!("".parse(), parse_error("expected more input"));
+        assert_eq!("  ".parse(), parse_error("expected more input"));
+        assert_eq!("1".parse(), parse_error("expected more input"));
+        assert_eq!("1.2".parse(), parse_error("expected more input"));
+        assert_eq!("1.2.3-".parse(), parse_error("expected more input"));
         assert_eq!(
             "a.b.c".parse(),
-            parse_error("Error parsing major identifier")
+            parse_error("encountered unexpected token: AlphaNumeric(\"a\")")
         );
         assert_eq!(
             "1.2.3 abc".parse(),
-            parse_error("Extra junk after valid version:  abc")
+            parse_error("expected end of input, but got: [AlphaNumeric(\"abc\")]")
         );
     }
 }
