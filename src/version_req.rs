@@ -217,7 +217,7 @@ impl VersionReq {
     ///
     /// let anything = VersionReq::any();
     /// ```
-    pub fn any() -> VersionReq {
+    pub const fn any() -> VersionReq {
         VersionReq {
             ranges: vec![],
             compat: Compat::Cargo,

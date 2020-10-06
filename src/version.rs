@@ -200,7 +200,7 @@ pub type Result<T> = result::Result<T, SemVerError>;
 
 impl Version {
     /// Contructs the simple case without pre or build.
-    pub fn new(major: u64, minor: u64, patch: u64) -> Version {
+    pub const fn new(major: u64, minor: u64, patch: u64) -> Version {
         Version {
             major,
             minor,
