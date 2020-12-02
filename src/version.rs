@@ -299,19 +299,19 @@ impl fmt::Display for Version {
         let mut result = format!("{}.{}.{}", self.major, self.minor, self.patch);
 
         if !self.pre.is_empty() {
-            result.push_str("-");
+            result.push('-');
             for (i, x) in self.pre.iter().enumerate() {
                 if i != 0 {
-                    result.push_str(".");
+                    result.push('.');
                 }
                 result.push_str(format!("{}", x).as_ref());
             }
         }
         if !self.build.is_empty() {
-            result.push_str("+");
+            result.push('+');
             for (i, x) in self.build.iter().enumerate() {
                 if i != 0 {
-                    result.push_str(".");
+                    result.push('.');
                 }
                 result.push_str(format!("{}", x).as_ref());
             }
