@@ -200,6 +200,11 @@ pub type Result<T> = result::Result<T, SemVerError>;
 
 impl Version {
     /// Contructs the simple case without pre or build.
+    ///
+    /// ```
+    /// # use semver::Version;
+    /// const FOO_VERSION: Version = Version::new(1, 2, 3);
+    /// ```
     pub const fn new(major: u64, minor: u64, patch: u64) -> Version {
         Version {
             major,
