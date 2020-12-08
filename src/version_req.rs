@@ -10,6 +10,7 @@
 
 use std::error::Error;
 use std::fmt;
+use std::mem;
 use std::str;
 
 use semver_parser;
@@ -407,6 +408,273 @@ impl VersionReq {
 
         false
     }
+
+    pub fn union(&mut self, other: &VersionReq) {
+        assert_eq!(self.compat, other.compat);
+        self.ranges.extend(other.ranges.iter().cloned());
+        self.simplify();
+    }
+
+    pub fn intersection(&mut self, other: &VersionReq) {
+        assert_eq!(self.compat, other.compat);
+
+        let intersection = Vec::with_capacity(self.ranges.len() * other.ranges.len());
+
+        // We allow any range that matches a predicate from self and a predicate from other.
+        // It's not important _which_ predicate from each it matters.
+        for p1 in mem::replace(&mut self.ranges, intersection) {
+            assert_eq!(self.compat, p1.compat);
+            for p2 in other.ranges.iter() {
+                assert_eq!(self.compat, p2.compat);
+
+                // Allow anything that matches p1 & p2
+                self.ranges.push(Range {
+                    compat: self.compat,
+                    predicates: p1
+                        .predicates
+                        .iter()
+                        .chain(p2.predicates.iter())
+                        .cloned()
+                        .collect(),
+                });
+            }
+        }
+        self.simplify();
+    }
+
+    fn simplify(&mut self) {
+        let n = self.ranges.len();
+        let mut has_empty = false;
+        'or: for i in 1..=self.ranges.len() {
+            // We need to walk backwards since we might delete some.
+            let i = n - i;
+            let range = &mut self.ranges[i];
+
+            if range.predicates.is_empty() {
+                // We need to preserve an empty range in case it is the only predicate, since in
+                // that case the overall VersionReq will never match. Basically, a version
+                // requirement of [] and one of [[]] are _not_ the same. The former matches any
+                // version, the second matches none.
+                has_empty = true;
+                continue;
+            }
+
+            // Simplifying each &&-ed predicates is fairly simple, since we know that it must
+            // produce a single consecutive range. To produce disjoint ranges, || is needed, but
+            // within each predicate there is only &&.
+            //
+            // NOTE: This will no longer hold true if Op::NotEx is added.
+            let mut start = Predicate {
+                op: Op::GtEq,
+                major: 0,
+                minor: 0,
+                patch: 0,
+                pre: Vec::new(),
+            };
+            let mut end = Predicate {
+                op: Op::LtEq,
+                major: std::u64::MAX,
+                minor: std::u64::MAX,
+                patch: std::u64::MAX,
+                pre: Vec::new(),
+            };
+
+            let mut predicates = range.predicates.drain(..);
+            while let Some(predicate) = predicates.next() {
+                let pv = predicate_at(&predicate);
+                match predicate.op {
+                    Op::Ex => {
+                        if ((start.matches_exact_inner(pv) && start.op != Op::Gt)
+                            || (start.matches_greater_inner(pv) && start.op != Op::Ex))
+                            && !end.matches_greater_inner(pv)
+                        {
+                            start = predicate.clone();
+                            end = predicate;
+                        } else {
+                            // Nothing will ever match this combination.
+                            drop(predicates);
+                            drop(range);
+                            self.ranges.swap_remove(i);
+                            has_empty = true;
+                            continue 'or;
+                        }
+                    }
+                    Op::Gt | Op::GtEq => {
+                        // Choose the stricter requirement:
+                        if start.matches_greater_inner(pv) {
+                            // We have a higher starting version, so we're stricter.
+                            start = predicate;
+                        } else {
+                            // The existing starting version is stricter.
+                            // But, if we can "upgrade" it from GtEq to Gt, do so:
+                            if start.op == Op::GtEq
+                                && predicate.op == Op::Gt
+                                && start.matches_exact_inner(pv)
+                            {
+                                start.op = Op::Gt;
+                            }
+                        }
+                    }
+                    Op::Lt | Op::LtEq => {
+                        // Choose the stricter requirement:
+                        if predicate.matches_greater_inner(predicate_at(&end)) {
+                            // The current end includes us, so we're stricter.
+                            end = predicate;
+                        } else {
+                            // The existing end point is probably stricter.
+                            // Except if it is a <= and we're a <
+                            if end.op == Op::LtEq
+                                && predicate.op == Op::Lt
+                                && end.matches_exact_inner(pv)
+                            {
+                                end.op = Op::Lt;
+                            }
+                        }
+                    }
+                }
+
+                if end.matches_greater_inner(predicate_at(&start)) {
+                    // This predicate will never match.
+                    drop(predicates);
+                    drop(range);
+                    self.ranges.swap_remove(i);
+                    has_empty = true;
+                    continue 'or;
+                }
+            }
+            drop(predicates);
+
+            // If we get here, we have found the smallest range that this predicate covers, and it
+            // is non-empty.
+            range.predicates.push(start);
+            range.predicates.push(end);
+        }
+
+        if has_empty && self.ranges.is_empty() {
+            // This requirement will never match.
+            self.ranges.push(Range {
+                predicates: Vec::new(),
+                compat: self.compat,
+            });
+            return;
+        }
+
+        // Now we have an OR of single predicates, and we want to make sure we only have one range
+        // for each disjoint part of the version space. For example, if we have:
+        //
+        //   [ [>=1,<2], [>=1.5,<2] ]
+        //
+        // that can be simplified to just
+        //
+        //   [ [>=1.5,<2] ]
+        //
+        // Essentially we want to merge overlapping ranges.
+        // We do this by sorting the predicates by their start version, and then merging adjacent
+        // ranges.
+        self.ranges
+            .sort_by(|a, b| predicate_at(&a.predicates[0]).cmp(&predicate_at(&b.predicates[0])));
+
+        // NOTE: we start from 2, since we're going to be looking at (n-i) and (n-i+1)
+        for i in 2..=self.ranges.len() {
+            // We need to walk backwards since we might merge some.
+            let i = n - i;
+            let ranges = &mut self.ranges[i..=(i + 1)];
+
+            // The two ranges ([0] and [1]) overlap (and thus can be merged) if the start of [1]
+            // falls before the end of [0].
+            //
+            // Recall that we push(start) and *then* push(end) in the simplification above, so
+            // [i].predicates[0] is the start of each range.
+            let i_end = &ranges[0].predicates[1];
+            let j_start = &ranges[1].predicates[0];
+            if j_start.matches_greater_inner(predicate_at(&i_end)) {
+                // [0]'s end is strictly greater than [1]'s start, so the ranges overlap.
+                drop(i_end);
+                drop(j_start);
+                drop(ranges);
+                let mut j = self.ranges.swap_remove(i + 1);
+                // Recall that .predicates[1] is the range end.
+                let i_end = &mut self.ranges[i].predicates[1];
+                let j_end = j.predicates.swap_remove(1);
+                // We now use whichever end is greater of the two ranges.
+                // Remember that while j starts after i, i might still have a later end!
+                if j_end.matches_greater_inner(predicate_at(&i_end)) {
+                    // i's end is strictly greater than j's end, so we prefer i's current end
+                    drop(j_end);
+                } else if j_end.matches_exact_inner(predicate_at(&i_end)) {
+                    // i and j both end at the same version.
+                    // Prefer the one with a stricter op
+                    if j_end.op == Op::Ex || (j_end.op == Op::Lt && i_end.op != Op::Ex) {
+                        // j's end is stricter.
+                        *i_end = j_end;
+                    } else {
+                        // i's end is stricter, or they are equal so we can keep i
+                        drop(j_end);
+                    }
+                } else {
+                    // j's end is strictly greater than i's end, so we prefer j's end
+                    // and thus expand the range.
+                    *i_end = j_end;
+                }
+            } else if (i_end.op == Op::LtEq || i_end.op == Op::Ex)
+                && (j_start.op == Op::GtEq || j_start.op == Op::Ex)
+                && j_start.matches_exact_inner(predicate_at(&i_end))
+            {
+                // The two ranges are perfectly adjacent, so we can merge them
+                drop(i_end);
+                drop(j_start);
+                drop(ranges);
+                let mut j = self.ranges.swap_remove(i + 1);
+                // Recall that .predicates[1] is the range end.
+                let i_end = &mut self.ranges[i].predicates[1];
+                let j_end = j.predicates.swap_remove(1);
+                *i_end = j_end;
+            } else {
+                // The two ranges are disjoint and cannot be merged.
+            }
+        }
+
+        // And finally, we do a pass to eliminate unnecessary start/end bounds that we injected to
+        // make our lives easier above.
+        //
+        // NOTE: It _could_ be that [0] == bottom and [1] == top for a given range.
+        // If that happens, we have a `*` requirement, which is expressed as >=0.0.0.
+        // Should that be the case, we can really eliminate all the other ORs.
+        let mut has_match_all = false;
+        let unbounded_start = Predicate {
+            op: Op::GtEq,
+            major: 0,
+            minor: 0,
+            patch: 0,
+            pre: Vec::new(),
+        };
+        for range in &mut self.ranges {
+            if range.predicates[0] == range.predicates[1] {
+                range.predicates.truncate(1);
+                continue;
+            }
+
+            if range.predicates.last().unwrap().major == std::u64::MAX {
+                let _ = range.predicates.pop();
+
+                if range.predicates[0] == unbounded_start {
+                    has_match_all = true;
+                }
+            } else if range.predicates[0] == unbounded_start {
+                range.predicates.swap_remove(0);
+            }
+        }
+
+        if has_match_all {
+            self.ranges.truncate(1);
+            self.ranges[0].predicates.clear();
+            self.ranges[0].predicates.push(unbounded_start);
+        }
+    }
+}
+
+fn predicate_at<'a>(x: &'a Predicate) -> (u64, u64, u64, &'a [Identifier]) {
+    (x.major, x.minor, x.patch, &x.pre)
 }
 
 impl str::FromStr for VersionReq {
@@ -449,11 +717,15 @@ impl Predicate {
         }
     }
 
+    fn matches_exact_inner(
+        &self,
+        (major, minor, patch, pre): (u64, u64, u64, &[Identifier]),
+    ) -> bool {
+        self.major == major && self.minor == minor && self.patch == patch && &*self.pre == pre
+    }
+
     fn matches_exact(&self, ver: &Version) -> bool {
-        self.major == ver.major
-            && self.minor == ver.minor
-            && self.patch == ver.patch
-            && self.pre == ver.pre
+        self.matches_exact_inner((ver.major, ver.minor, ver.patch, &ver.pre))
     }
 
     // https://docs.npmjs.com/misc/semver#prerelease-tags
@@ -470,24 +742,32 @@ impl Predicate {
                 && !self.pre.is_empty())
     }
 
-    fn matches_greater(&self, ver: &Version) -> bool {
-        if self.major != ver.major {
-            return ver.major > self.major;
+    // Returns true if the passed-in version is strictly greater than self.
+    fn matches_greater_inner(
+        &self,
+        (major, minor, patch, pre): (u64, u64, u64, &[Identifier]),
+    ) -> bool {
+        if self.major != major {
+            return major > self.major;
         }
 
-        if self.minor != ver.minor {
-            return ver.minor > self.minor;
+        if self.minor != minor {
+            return minor > self.minor;
         }
 
-        if self.patch != ver.patch {
-            return ver.patch > self.patch;
+        if self.patch != patch {
+            return patch > self.patch;
         }
 
         if !self.pre.is_empty() {
-            return ver.pre.is_empty() || ver.pre > self.pre;
+            return pre.is_empty() || pre > &self.pre;
         }
 
         false
+    }
+
+    fn matches_greater(&self, ver: &Version) -> bool {
+        self.matches_greater_inner((ver.major, ver.minor, ver.patch, &ver.pre))
     }
 
     fn has_exactly_one_match(&self) -> bool {
@@ -1088,5 +1368,62 @@ mod test {
         assert!(!req("=1").is_exact());
         assert!(!req(">=1.0.0").is_exact());
         assert!(!req(">=1.0.0, <2.0.0").is_exact());
+    }
+
+    fn simplify(mut v: VersionReq) -> VersionReq {
+        v.simplify();
+        v
+    }
+
+    #[test]
+    fn simplify_preserve() {
+        assert_eq!(simplify(req("=1.0.0")), req("=1.0.0"));
+        assert_eq!(simplify(req(">1")), req(">1"));
+        assert_eq!(simplify(req(">=1")), req(">=1"));
+        assert_eq!(simplify(req("<1")), req("<1"));
+        assert_eq!(simplify(req("<=1")), req("<=1"));
+        assert_eq!(simplify(req("~1")), req("~1"));
+        assert_eq!(simplify(req("^1")), req("^1"));
+        assert_eq!(simplify(req("*")), req("*"));
+
+        assert_eq!(simplify(req(">=1.0.0, <2.0.0")), req(">=1.0.0, <2.0.0"));
+        assert_eq!(simplify(req("<1.0.0 || >3.0.0")), req("<1.0.0 || >3.0.0"));
+        assert_eq!(simplify(req("<1.0.0 || =3.0.0")), req("<1.0.0 || =3.0.0"));
+    }
+
+    #[test]
+    fn simplify_overlaps() {
+        // Simplify away the <2.0.0 that 1 generates.
+        assert_eq!(simplify(req("1, <1.5.0")), req(">=1.0.0, <1.5.0"));
+        // Simplify down to = if exists
+        assert_eq!(simplify(req("=1.0.0, <1.5.0")), req("=1.0.0"));
+        // Simplify overlapping ORed ranges by start
+        assert_eq!(simplify(req(">1.0.0 || >1.5.0")), req(">1.0.0"));
+        // Simplify overlapping ORed ranges by end
+        assert_eq!(simplify(req("<1.0.0 || <1.5.0")), req("<1.5.0"));
+        // Simplify overlapping ORed ranges
+        assert_eq!(
+            simplify(req(">=1.0.0, <1.2.0 || >=1.1.0, <1.5.0")),
+            req(">=1.0.0, <1.5.0")
+        );
+        // Simplify barely overlapping ORed ranges
+        assert_eq!(
+            simplify(req(">=1.0.0, <=1.2.0 || >=1.2.0, <1.5.0")),
+            req(">=1.0.0, <1.5.0")
+        );
+        // Simplify down to something that matches nothing if intersection is empty
+        let r = simplify(req("=1.0.0, =1.5.0"));
+        assert_not_match(&r, &["1.0.0", "1.5.1"]);
+    }
+
+    #[test]
+    fn dont_oversimplify() {
+        // Don't simplfy a single-element range to equality (remember pre- versions).
+        assert_ne!(simplify(req(">=1.2.0, <=1.2.0")), req("=1.2.0"));
+        // Don't simplify not-quite overlapping ORed ranges
+        assert_eq!(
+            simplify(req(">=1.0.0, <=1.2.0 || >1.2.0, <1.5.0")),
+            req(">=1.0.0, <=1.2.0 || >1.2.0, <1.5.0"),
+        );
     }
 }
