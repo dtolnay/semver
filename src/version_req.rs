@@ -624,6 +624,7 @@ impl VersionReq {
             .sort_by(|a, b| predicate_at(&a.predicates[0]).cmp(&predicate_at(&b.predicates[0])));
 
         // NOTE: we start from 2, since we're going to be looking at (n-i) and (n-i+1)
+        let n = self.ranges.len();
         for i in 2..=self.ranges.len() {
             // We need to walk backwards since we might merge some.
             let i = n - i;
