@@ -542,7 +542,6 @@ impl VersionReq {
                         } else {
                             // Nothing will ever match this combination.
                             drop(predicates);
-                            drop(range);
                             self.ranges.swap_remove(i);
                             has_empty = true;
                             continue 'or;
@@ -585,7 +584,6 @@ impl VersionReq {
                 if end.matches_greater_inner(predicate_at(&start)) {
                     // This predicate will never match.
                     drop(predicates);
-                    drop(range);
                     self.ranges.swap_remove(i);
                     has_empty = true;
                     continue 'or;
@@ -639,9 +637,6 @@ impl VersionReq {
             let j_start = &ranges[1].predicates[0];
             if j_start.matches_greater_inner(predicate_at(&i_end)) {
                 // [0]'s end is strictly greater than [1]'s start, so the ranges overlap.
-                drop(i_end);
-                drop(j_start);
-                drop(ranges);
                 let mut j = self.ranges.swap_remove(i + 1);
                 // Recall that .predicates[1] is the range end.
                 let i_end = &mut self.ranges[i].predicates[1];
@@ -671,9 +666,6 @@ impl VersionReq {
                 && j_start.matches_exact_inner(predicate_at(&i_end))
             {
                 // The two ranges are perfectly adjacent, so we can merge them
-                drop(i_end);
-                drop(j_start);
-                drop(ranges);
                 let mut j = self.ranges.swap_remove(i + 1);
                 // Recall that .predicates[1] is the range end.
                 let i_end = &mut self.ranges[i].predicates[1];
@@ -723,7 +715,7 @@ impl VersionReq {
     }
 }
 
-fn predicate_at<'a>(x: &'a Predicate) -> (u64, u64, u64, &'a [Identifier]) {
+fn predicate_at(x: &Predicate) -> (u64, u64, u64, &[Identifier]) {
     (x.major, x.minor, x.patch, &x.pre)
 }
 
