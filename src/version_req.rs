@@ -409,13 +409,60 @@ impl VersionReq {
         false
     }
 
-    pub fn union(&mut self, other: &VersionReq) {
+    /// Return a `VersionReq` that matches any version that matches _either_ the current
+    /// requirements or those expressed in `other`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `self` and `other` have different compatibilities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use semver::VersionReq;
+    /// use semver::Version;
+    ///
+    /// let version_110 = Version { major: 1, minor: 1, patch: 0, pre: vec![], build: vec![] };
+    /// let version_111 = Version { major: 1, minor: 1, patch: 1, pre: vec![], build: vec![] };
+    /// let match_110 = VersionReq::parse("=1.1.0").unwrap();
+    /// let match_111 = VersionReq::parse(">1.1.0").unwrap();
+    /// let either = match_110.union(&match_111);
+    ///
+    /// assert!(either.matches(&version_110));
+    /// assert!(either.matches(&version_111));
+    /// ```
+    pub fn union(mut self, other: &VersionReq) -> VersionReq {
         assert_eq!(self.compat, other.compat);
         self.ranges.extend(other.ranges.iter().cloned());
         self.simplify();
+        self
     }
 
-    pub fn intersection(&mut self, other: &VersionReq) {
+    /// Return a `VersionReq` that matches any version that matches the current requirements _and_
+    /// those expressed in `other`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `self` and `other` have different compatibilities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use semver::VersionReq;
+    /// use semver::Version;
+    ///
+    /// let version_110 = Version { major: 1, minor: 1, patch: 0, pre: vec![], build: vec![] };
+    /// let version_111 = Version { major: 1, minor: 1, patch: 1, pre: vec![], build: vec![] };
+    /// let version_120 = Version { major: 1, minor: 2, patch: 0, pre: vec![], build: vec![] };
+    /// let gt_110 = VersionReq::parse(">1.1.0").unwrap();
+    /// let lt_120 = VersionReq::parse("<1.2.0").unwrap();
+    /// let both = gt_110.intersection(&lt_120);
+    ///
+    /// assert!(both.matches(&version_111));
+    /// assert!(!both.matches(&version_110));
+    /// assert!(!both.matches(&version_120));
+    /// ```
+    pub fn intersection(mut self, other: &VersionReq) -> VersionReq {
         assert_eq!(self.compat, other.compat);
 
         let intersection = Vec::with_capacity(self.ranges.len() * other.ranges.len());
@@ -440,6 +487,8 @@ impl VersionReq {
             }
         }
         self.simplify();
+
+        self
     }
 
     fn simplify(&mut self) {
