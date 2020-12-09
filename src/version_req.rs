@@ -1420,6 +1420,32 @@ mod test {
         assert!(!req(">=1.0.0, <2.0.0").is_exact());
     }
 
+    #[test]
+    fn union() {
+        assert_eq!(req("=1.0.0").union(&req("=1.1.0")), req("=1.0.0 || =1.1.0"));
+        assert_eq!(req("<1.0.0").union(&req(">1.1.0")), req("<1.0.0 || >1.1.0"));
+        assert_eq!(req(">1.0.0").union(&req("<1.1.0")), req("*"));
+    }
+
+    #[test]
+    fn intersection() {
+        assert_eq!(
+            req(">1.0.0").intersection(&req("<1.1.0")),
+            req(">1.0.0, <1.1.0")
+        );
+
+        assert_eq!(
+            req(">1.0.0 || <0.5").intersection(&req(">1.2.0 || <0.4")),
+            req("<0.4 || >1.2.0")
+        );
+
+        let r = req("=1.0.0").intersection(&req("=1.1.0"));
+        assert_not_match(&r, &["1.0.0", "1.1.0"]);
+
+        let r = req("<1.0.0").intersection(&req(">1.1.0"));
+        assert_not_match(&r, &["0.9.0", "1.2.0"]);
+    }
+
     fn simplify(mut v: VersionReq) -> VersionReq {
         v.simplify();
         v
