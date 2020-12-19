@@ -407,6 +407,45 @@ impl VersionReq {
 
         false
     }
+
+    /// `is_a_subset_of` returns `true` if this `VersionReq` is a subset of the other `VersionReq`
+    /// (aka if this `VersionReq` is fulfilled, then the other `VersionReq` is fulfilled too).
+    pub fn is_a_subset_of(&self, other: &VersionReq) -> bool {
+        let our_lower_bound = self
+            .ranges
+            .iter()
+            .filter_map(|x| x.boundaries().0)
+            .min_by_key(|x| x.lower_bound_key());
+        let our_upper_bound = self
+            .ranges
+            .iter()
+            .filter_map(|x| x.boundaries().1)
+            .min_by_key(|x| x.upper_bound_key());
+        let their_lower_bound = other
+            .ranges
+            .iter()
+            .filter_map(|x| x.boundaries().0)
+            .min_by_key(|x| x.lower_bound_key());
+        let their_upper_bound = other
+            .ranges
+            .iter()
+            .filter_map(|x| x.boundaries().1)
+            .min_by_key(|x| x.upper_bound_key());
+
+        let lower_bound_check = match (our_lower_bound, their_lower_bound) {
+            (Some(us), Some(them)) => us.is_a_subset_of(them),
+            (Some(_), None) => true,
+            _ => false,
+        };
+
+        let upper_bound_check = match (our_upper_bound, their_upper_bound) {
+            (Some(us), Some(them)) => us.is_a_subset_of(them),
+            (Some(_), None) => true,
+            _ => false,
+        };
+
+        lower_bound_check && upper_bound_check
+    }
 }
 
 impl str::FromStr for VersionReq {
@@ -424,6 +463,21 @@ impl Range {
 
     fn pre_tag_is_compatible(&self, ver: &Version) -> bool {
         self.predicates.iter().any(|p| p.pre_tag_is_compatible(ver))
+    }
+
+    fn boundaries(&self) -> (Option<&Predicate>, Option<&Predicate>) {
+        let lower_bound = self
+            .predicates
+            .iter()
+            .filter(|x| x.is_lower_bound())
+            .max_by_key(|x| x.lower_bound_key());
+        let upper_bound = self
+            .predicates
+            .iter()
+            .filter(|x| x.is_upper_bound())
+            .min_by_key(|x| x.upper_bound_key());
+
+        (lower_bound, upper_bound)
     }
 }
 
@@ -492,6 +546,79 @@ impl Predicate {
 
     fn has_exactly_one_match(&self) -> bool {
         self.op == Ex
+    }
+
+    fn is_a_subset_of(&self, other: &Predicate) -> bool {
+        match (&self.op, &other.op) {
+            (Op::Gt, Op::Lt)
+            | (Op::GtEq, Op::Lt)
+            | (Op::Gt, Op::LtEq)
+            | (Op::GtEq, Op::LtEq)
+            | (Op::Lt, Op::Gt)
+            | (Op::LtEq, Op::Gt)
+            | (Op::Lt, Op::GtEq)
+            | (Op::LtEq, Op::GtEq)
+            | (Op::LtEq, Op::Ex)
+            | (Op::Lt, Op::Ex)
+            | (Op::GtEq, Op::Ex)
+            | (Op::Gt, Op::Ex) => false,
+            (Op::LtEq, _) | (Op::GtEq, _) | (Op::Ex, _) => {
+                let version = self.to_version();
+                other.matches(&version)
+            }
+            (Op::Lt, Op::Lt) => self <= other,
+            (Op::Gt, Op::Gt) => self >= other,
+            (Op::Lt, Op::LtEq) => {
+                let version_a = self.to_version();
+                let version_b = other.to_version();
+                version_a <= version_b
+            }
+            (Op::Gt, Op::GtEq) => {
+                let version_a = self.to_version();
+                let version_b = other.to_version();
+                version_a >= version_b
+            }
+        }
+    }
+
+    fn is_lower_bound(&self) -> bool {
+        matches!(&self.op, Op::Ex | Op::Gt | Op::GtEq)
+    }
+
+    fn is_upper_bound(&self) -> bool {
+        matches!(&self.op, Op::Ex | Op::Lt | Op::LtEq)
+    }
+
+    fn to_version(&self) -> Version {
+        Version {
+            major: self.major,
+            minor: self.minor,
+            patch: self.patch,
+            pre: self.pre.clone(),
+            build: Vec::new(),
+        }
+    }
+
+    fn lower_bound_key<'a>(&'a self) -> impl std::cmp::Ord + 'a {
+        (
+            self.op == Op::Ex,
+            self.major,
+            self.minor,
+            self.patch,
+            &self.pre,
+            self.op == Op::Gt,
+        )
+    }
+
+    fn upper_bound_key<'a>(&'a self) -> impl std::cmp::Ord + 'a {
+        (
+            self.op != Op::Ex,
+            self.major,
+            self.minor,
+            self.patch,
+            &self.pre,
+            self.op != Op::Lt,
+        )
     }
 }
 
@@ -567,7 +694,7 @@ impl fmt::Display for Op {
 #[cfg(test)]
 mod test {
     use super::super::version::Version;
-    use super::{Compat, Op, VersionReq};
+    use super::{Compat, Op, Predicate, VersionReq};
     use std::hash::{Hash, Hasher};
 
     fn req(s: &str) -> VersionReq {
@@ -603,6 +730,158 @@ mod test {
         let mut s = DefaultHasher::new();
         t.hash(&mut s);
         s.finish()
+    }
+
+    macro_rules! assert_subset {
+        (
+            ($op1:expr, $major1:expr, $minor1:expr, $patch1:expr)
+            in
+            ($op2:expr, $major2:expr, $minor2:expr, $patch2:expr)
+        ) => {
+            let predicate1 = Predicate {
+                op: $op1,
+                major: $major1,
+                minor: $minor1,
+                patch: $patch1,
+                pre: Vec::new(),
+            };
+            let predicate2 = Predicate {
+                op: $op2,
+                major: $major2,
+                minor: $minor2,
+                patch: $patch2,
+                pre: Vec::new(),
+            };
+            assert!(
+                predicate1.is_a_subset_of(&predicate2),
+                "{} should be a subset of {}",
+                predicate1,
+                predicate2,
+            );
+            if predicate1 != predicate2 {
+                assert!(
+                    !predicate2.is_a_subset_of(&predicate1),
+                    "{} should not be a subset of {}",
+                    predicate2,
+                    predicate1,
+                );
+            }
+        };
+        (
+            ($op1:expr, $major1:expr, $minor1:expr, $patch1:expr)
+            not in
+            ($op2:expr, $major2:expr, $minor2:expr, $patch2:expr)
+        ) => {
+            let predicate1 = Predicate {
+                op: $op1,
+                major: $major1,
+                minor: $minor1,
+                patch: $patch1,
+                pre: Vec::new(),
+            };
+            let predicate2 = Predicate {
+                op: $op2,
+                major: $major2,
+                minor: $minor2,
+                patch: $patch2,
+                pre: Vec::new(),
+            };
+            assert!(
+                !predicate1.is_a_subset_of(&predicate2),
+                "{} should not be a subset of {}",
+                predicate1,
+                predicate2,
+            );
+        };
+    }
+
+    macro_rules! assert_upper_bound_eq {
+        ($s:expr, $op:expr, $major:expr, $minor:expr, $patch:expr) => {
+            let r = req($s);
+            if let [range] = r.ranges.as_slice() {
+                let (_, got) = range.boundaries();
+                let expected = Predicate {
+                    op: $op,
+                    major: $major,
+                    minor: $minor,
+                    patch: $patch,
+                    pre: Vec::new(),
+                };
+                assert_eq!(got, Some(&expected));
+            } else {
+                assert!(false, "only one range is allowed for this test");
+            }
+        };
+    }
+
+    macro_rules! assert_lower_bound_eq {
+        ($s:expr, $op:expr, $major:expr, $minor:expr, $patch:expr) => {
+            let r = req($s);
+            if let [range] = r.ranges.as_slice() {
+                let (got, _) = range.boundaries();
+                let expected = Predicate {
+                    op: $op,
+                    major: $major,
+                    minor: $minor,
+                    patch: $patch,
+                    pre: Vec::new(),
+                };
+                assert_eq!(got, Some(&expected));
+            } else {
+                assert!(false, "only one range is allowed for this test");
+            }
+        };
+    }
+
+    macro_rules! assert_no_upper_bound {
+        ($s:expr) => {
+            let r = req($s);
+            if let [range] = r.ranges.as_slice() {
+                let (_, got) = range.boundaries();
+                assert_eq!(got, None);
+            } else {
+                assert!(false, "only one range is allowed for this test");
+            }
+        };
+    }
+
+    macro_rules! assert_no_lower_bound {
+        ($s:expr) => {
+            let r = req($s);
+            if let [range] = r.ranges.as_slice() {
+                let (got, _) = range.boundaries();
+                assert_eq!(got, None);
+            } else {
+                assert!(false, "only one range is allowed for this test");
+            }
+        };
+    }
+
+    macro_rules! assert_req_subset {
+        (($s1:expr) in ($s2:expr)) => {
+            assert!(
+                req($s1).is_a_subset_of(&req($s2)),
+                "{} should be a subset of {}",
+                $s1,
+                $s2,
+            );
+            if $s1 != $s2 {
+                assert!(
+                    !req($s2).is_a_subset_of(&req($s1)),
+                    "{} should not be a subset of {}",
+                    $s1,
+                    $s2,
+                );
+            }
+        };
+        (($s1:expr) not in ($s2:expr)) => {
+            assert!(
+                !req($s1).is_a_subset_of(&req($s2)),
+                "{} should not be a subset of {}",
+                $s1,
+                $s2,
+            );
+        };
     }
 
     #[test]
@@ -1088,5 +1367,104 @@ mod test {
         assert!(!req("=1").is_exact());
         assert!(!req(">=1.0.0").is_exact());
         assert!(!req(">=1.0.0, <2.0.0").is_exact());
+    }
+
+    #[test]
+    fn is_a_subset_of() {
+        assert_subset!((Op::Gt, 1, 0, 0) not in (Op::Lt, 1, 0, 0));
+        assert_subset!((Op::Lt, 1, 0, 0) not in (Op::Gt, 1, 0, 0));
+        assert_subset!((Op::GtEq, 1, 0, 0) not in (Op::LtEq, 1, 0, 0));
+        assert_subset!((Op::LtEq, 1, 0, 0) not in (Op::GtEq, 1, 0, 0));
+        assert_subset!((Op::Gt, 1, 0, 0) not in (Op::LtEq, 1, 0, 0));
+        assert_subset!((Op::Lt, 1, 0, 0) not in (Op::GtEq, 1, 0, 0));
+        assert_subset!((Op::GtEq, 1, 0, 0) not in (Op::Lt, 1, 0, 0));
+        assert_subset!((Op::LtEq, 1, 0, 0) not in (Op::Gt, 1, 0, 0));
+
+        assert_subset!((Op::Lt, 1, 0, 0) in (Op::Lt, 1, 0, 0));
+        assert_subset!((Op::Lt, 1, 0, 0) in (Op::Lt, 2, 0, 0));
+        assert_subset!((Op::Gt, 1, 0, 0) in (Op::Gt, 1, 0, 0));
+        assert_subset!((Op::Gt, 2, 0, 0) in (Op::Gt, 1, 0, 0));
+
+        assert_subset!((Op::LtEq, 1, 0, 0) not in (Op::Ex, 1, 0, 0));
+        assert_subset!((Op::Lt, 1, 0, 0) not in (Op::Ex, 1, 0, 0));
+        assert_subset!((Op::GtEq, 1, 0, 0) not in (Op::Ex, 1, 0, 0));
+        assert_subset!((Op::Gt, 1, 0, 0) not in (Op::Ex, 1, 0, 0));
+
+        assert_subset!((Op::LtEq, 1, 0, 0) not in (Op::Lt, 1, 0, 0));
+        assert_subset!((Op::LtEq, 0, 1, 0) in (Op::Lt, 1, 0, 0));
+        assert_subset!((Op::LtEq, 1, 0, 0) in (Op::LtEq, 1, 0, 0));
+        assert_subset!((Op::LtEq, 2, 0, 0) not in (Op::LtEq, 1, 0, 0));
+        assert_subset!((Op::GtEq, 1, 0, 0) not in (Op::Gt, 1, 0, 0));
+        assert_subset!((Op::GtEq, 2, 0, 0) in (Op::Gt, 1, 0, 0));
+        assert_subset!((Op::Ex, 1, 0, 0) in (Op::Ex, 1, 0, 0));
+        assert_subset!((Op::Ex, 1, 0, 0) not in (Op::Ex, 2, 0, 0));
+        assert_subset!((Op::Ex, 1, 0, 0) not in (Op::Lt, 1, 0, 0));
+        assert_subset!((Op::Ex, 1, 0, 0) in (Op::Lt, 2, 0, 0));
+        assert_subset!((Op::Ex, 1, 0, 0) in (Op::LtEq, 1, 0, 0));
+        assert_subset!((Op::Ex, 1, 0, 0) not in (Op::Gt, 1, 0, 0));
+        assert_subset!((Op::Ex, 1, 0, 0) in (Op::Gt, 0, 1, 0));
+        assert_subset!((Op::Ex, 1, 0, 0) in (Op::GtEq, 1, 0, 0));
+        assert_subset!((Op::Ex, 1, 0, 0) in (Op::Ex, 1, 0, 0));
+        assert_subset!((Op::Ex, 1, 0, 0) not in (Op::Ex, 2, 0, 0));
+
+        assert_subset!((Op::Lt, 1, 0, 0) in (Op::LtEq, 1, 0, 0));
+        assert_subset!((Op::Lt, 2, 0, 0) not in (Op::LtEq, 1, 0, 0));
+        assert_subset!((Op::Lt, 1, 0, 0) in (Op::LtEq, 2, 0, 0));
+
+        assert_subset!((Op::Gt, 1, 0, 0) in (Op::GtEq, 1, 0, 0));
+        assert_subset!((Op::Gt, 0, 1, 0) not in (Op::GtEq, 1, 0, 0));
+        assert_subset!((Op::Gt, 1, 0, 0) in (Op::GtEq, 0, 1, 0));
+    }
+
+    #[test]
+    fn upper_bound() {
+        assert_upper_bound_eq!("=1.0.0", Op::Ex, 1, 0, 0);
+        assert_no_upper_bound!(">=1.0.0");
+
+        assert_upper_bound_eq!("<=1.0.0", Op::LtEq, 1, 0, 0);
+        assert_upper_bound_eq!(">0.1 <=1.0.0", Op::LtEq, 1, 0, 0);
+        assert_upper_bound_eq!("<=2.0.0 <=1.0.0", Op::LtEq, 1, 0, 0);
+        assert_upper_bound_eq!("<=1.0.0 <=2.0.0", Op::LtEq, 1, 0, 0);
+        assert_upper_bound_eq!("<=1.0.0 =2.0.0", Op::Ex, 2, 0, 0);
+        assert_upper_bound_eq!("=2.0.0 <=1.0.0", Op::Ex, 2, 0, 0);
+        assert_upper_bound_eq!("<1.0.0 <=2.0.0", Op::Lt, 1, 0, 0);
+        assert_upper_bound_eq!("<=1.0.0 <2.0.0", Op::LtEq, 1, 0, 0);
+        assert_upper_bound_eq!("<=1.0.0 <1.0.0", Op::Lt, 1, 0, 0);
+        assert_upper_bound_eq!("<1.0.0 <=1.0.0", Op::Lt, 1, 0, 0);
+    }
+
+    #[test]
+    fn lower_bound() {
+        assert_lower_bound_eq!("=1.0.0", Op::Ex, 1, 0, 0);
+        assert_no_lower_bound!("<=1.0.0");
+
+        assert_lower_bound_eq!(">=1.0.0", Op::GtEq, 1, 0, 0);
+        assert_lower_bound_eq!("<0.1 >=1.0.0", Op::GtEq, 1, 0, 0);
+        assert_lower_bound_eq!(">=2.0.0 >=1.0.0", Op::GtEq, 2, 0, 0);
+        assert_lower_bound_eq!(">=1.0.0 >=2.0.0", Op::GtEq, 2, 0, 0);
+        assert_lower_bound_eq!(">=1.0.0 =2.0.0", Op::Ex, 2, 0, 0);
+        assert_lower_bound_eq!("=2.0.0 >=1.0.0", Op::Ex, 2, 0, 0);
+        assert_lower_bound_eq!(">1.0.0 >=2.0.0", Op::GtEq, 2, 0, 0);
+        assert_lower_bound_eq!(">=1.0.0 >2.0.0", Op::Gt, 2, 0, 0);
+        assert_lower_bound_eq!(">=1.0.0 >1.0.0", Op::Gt, 1, 0, 0);
+        assert_lower_bound_eq!(">1.0.0 >=1.0.0", Op::Gt, 1, 0, 0);
+    }
+
+    #[test]
+    fn req_is_a_subset_of() {
+        assert_req_subset!(("=1.0.0") in ("=1.0.0"));
+        assert_req_subset!(("=1.0.0") not in ("=2.0.0"));
+        assert_req_subset!(("=1.0.0") in (">=1.0.0"));
+        assert_req_subset!(("=1.0.0") in ("<=1.0.0"));
+        assert_req_subset!(("=1.0.0") not in (">1.0.0"));
+        assert_req_subset!(("=1.0.0") not in ("<1.0.0"));
+
+        assert_req_subset!((">1.0.0 <2.0.0") in (">1.0.0 <3.0.0"));
+        assert_req_subset!((">2.0.0 <3.0.0") in (">1.0.0 <3.0.0"));
+        assert_req_subset!((">1.0.0 <3.0.0") in (">1.0.0 <3.0.0"));
+
+        assert_req_subset!((">1.0.0 <2.0.0") in (">=1.0.0 <2.0.0"));
+        assert_req_subset!((">1.0.0 <2.0.0") in (">1.0.0 <=2.0.0"));
+        assert_req_subset!((">1.0.0 <2.0.0") in (">=1.0.0 <=2.0.0"));
     }
 }
