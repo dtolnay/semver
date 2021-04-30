@@ -81,7 +81,7 @@ fn deserialize_version() {
 fn serialize_versionreq() {
     let v = VersionReq::exact(&Version::parse("1.0.0").unwrap());
 
-    assert_eq!(serde_json::to_string(&v).unwrap(), r#""= 1.0.0""#);
+    assert_eq!(serde_json::to_string(&v).unwrap(), r#""=1.0.0""#);
 }
 
 #[test]
