@@ -1,4 +1,4 @@
-use crate::{BuildMetadata, Comparator, Op, Prerelease, Version};
+use crate::{BuildMetadata, Comparator, Op, Prerelease, Version, VersionReq};
 use std::fmt::{self, Debug, Display};
 
 impl Display for Version {
@@ -15,6 +15,21 @@ impl Display for Version {
         if !self.build.is_empty() {
             formatter.write_str("+")?;
             Display::fmt(&self.build, formatter)?;
+        }
+        Ok(())
+    }
+}
+
+impl Display for VersionReq {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        if self.comparators.is_empty() {
+            return formatter.write_str("*");
+        }
+        for (i, comparator) in self.comparators.iter().enumerate() {
+            if i > 0 {
+                formatter.write_str(", ")?;
+            }
+            Display::fmt(comparator, formatter)?;
         }
         Ok(())
     }
