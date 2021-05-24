@@ -5,6 +5,7 @@ pub(crate) enum ErrorKind {
     UnexpectedEnd(Position),
     UnexpectedChar(Position, char),
     UnexpectedCharAfter(Position, char),
+    ExpectedCommaFound(Position, char),
     LeadingZero(Position),
     Overflow(Position),
     EmptySegment(Position),
@@ -43,6 +44,13 @@ impl Display for Error {
                 Debug::fmt(ch, formatter)?;
                 formatter.write_str(" after ")?;
                 Display::fmt(pos, formatter)?;
+                Ok(())
+            }
+            ErrorKind::ExpectedCommaFound(pos, ch) => {
+                formatter.write_str("expected comma after ")?;
+                Display::fmt(pos, formatter)?;
+                formatter.write_str(", found ")?;
+                Debug::fmt(ch, formatter)?;
                 Ok(())
             }
             ErrorKind::LeadingZero(pos) => {

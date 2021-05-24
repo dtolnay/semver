@@ -66,8 +66,18 @@ impl FromStr for VersionReq {
     type Err = Error;
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
-        let _ = text;
-        unimplemented!()
+        let text = text.trim_start_matches(' ');
+        if let Some(text) = text.strip_prefix('*') {
+            if text.trim_start_matches(' ').is_empty() {
+                return Ok(VersionReq::STAR);
+            } else {
+                return Err(Error::new(ErrorKind::UnexpectedAfterWildcard));
+            }
+        }
+
+        let mut comparators = Vec::new();
+        version_req(text, &mut comparators)?;
+        Ok(VersionReq { comparators })
     }
 }
 
@@ -313,4 +323,20 @@ fn comparator(input: &str) -> Result<(Comparator, Position, &str), Error> {
     };
 
     Ok((comparator, pos, text))
+}
+
+fn version_req(mut input: &str, out: &mut Vec<Comparator>) -> Result<(), Error> {
+    loop {
+        let (comparator, pos, text) = comparator(input)?;
+        out.push(comparator);
+
+        if text.is_empty() {
+            return Ok(());
+        } else if let Some(text) = text.strip_prefix(',') {
+            input = text.trim_start_matches(' ');
+        } else {
+            let unexpected = text.chars().next().unwrap();
+            return Err(Error::new(ErrorKind::ExpectedCommaFound(pos, unexpected)));
+        }
+    }
 }
