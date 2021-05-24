@@ -4,6 +4,20 @@ use crate::identifier::Identifier;
 use crate::{BuildMetadata, Comparator, Op, Prerelease, Version, VersionReq};
 use core::str::FromStr;
 
+/// Error parsing a SemVer version or version requirement.
+///
+/// # Example
+///
+/// ```
+/// use semver::Version;
+///
+/// fn main() {
+///     let err = Version::parse("1.q.r").unwrap_err();
+///
+///     // "unexpected character 'q' while parsing minor version number"
+///     eprintln!("{}", err);
+/// }
+/// ```
 pub struct Error {
     pub(crate) kind: ErrorKind,
 }
