@@ -1,6 +1,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 mod display;
+mod eval;
 mod identifier;
 mod impls;
 mod parse;
@@ -82,8 +83,7 @@ impl VersionReq {
     }
 
     pub fn matches(&self, version: &Version) -> bool {
-        let _ = version;
-        unimplemented!()
+        eval::matches_req(self, version)
     }
 }
 
@@ -94,8 +94,7 @@ impl Comparator {
     }
 
     pub fn matches(&self, version: &Version) -> bool {
-        let _ = version;
-        unimplemented!()
+        eval::matches_comparator(self, version)
     }
 }
 
