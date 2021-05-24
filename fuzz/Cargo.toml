@@ -25,3 +25,9 @@ name = "parse_version_req"
 path = "parse_version_req.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "sort_version"
+path = "sort_version.rs"
+test = false
+doc = false
