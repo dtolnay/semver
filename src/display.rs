@@ -1,5 +1,5 @@
 use crate::{BuildMetadata, Comparator, Op, Prerelease, Version, VersionReq};
-use std::fmt::{self, Debug, Display};
+use core::fmt::{self, Debug, Display};
 
 impl Display for Version {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

@@ -1,8 +1,8 @@
 use crate::identifier::Identifier;
 use crate::{BuildMetadata, Prerelease};
-use std::cmp::Ordering;
-use std::hash::{Hash, Hasher};
-use std::ops::Deref;
+use core::cmp::Ordering;
+use core::hash::{Hash, Hasher};
+use core::ops::Deref;
 
 impl Default for Identifier {
     fn default() -> Self {

@@ -1,4 +1,7 @@
+#![cfg_attr(not(feature = "std"), no_std)]
 #![deny(unsafe_op_in_unsafe_fn)]
+
+extern crate alloc;
 
 mod display;
 mod error;
@@ -11,7 +14,8 @@ mod parse;
 mod serde;
 
 use crate::identifier::Identifier;
-use std::str::FromStr;
+use alloc::vec::Vec;
+use core::str::FromStr;
 
 pub use crate::parse::Error;
 

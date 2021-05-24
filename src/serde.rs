@@ -1,7 +1,7 @@
 use crate::{Version, VersionReq};
+use core::fmt;
 use serde::de::{Deserialize, Deserializer, Error, Visitor};
 use serde::ser::{Serialize, Serializer};
-use std::fmt;
 
 impl Serialize for Version {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

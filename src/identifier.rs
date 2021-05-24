@@ -66,12 +66,12 @@
 // repr, leaving it available as a niche for downstream code. For example this
 // allows size_of::<Version>() == size_of::<Option<Version>>().
 
-use std::alloc::{alloc, dealloc, Layout};
-use std::mem;
-use std::num::{NonZeroU64, NonZeroUsize};
-use std::ptr;
-use std::slice;
-use std::str;
+use alloc::alloc::{alloc, dealloc, Layout};
+use core::mem;
+use core::num::{NonZeroU64, NonZeroUsize};
+use core::ptr;
+use core::slice;
+use core::str;
 
 #[repr(transparent)]
 pub(crate) struct Identifier {

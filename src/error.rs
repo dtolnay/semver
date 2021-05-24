@@ -1,5 +1,5 @@
 use crate::parse::Error;
-use std::fmt::{self, Debug, Display};
+use core::fmt::{self, Debug, Display};
 
 pub(crate) enum ErrorKind {
     UnexpectedEnd(Position),
@@ -23,6 +23,7 @@ pub(crate) enum Position {
     Build,
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for Error {}
 
 impl Display for Error {
