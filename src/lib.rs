@@ -7,6 +7,7 @@ mod impls;
 mod parse;
 
 use crate::identifier::Identifier;
+use std::str::FromStr;
 
 pub use crate::parse::Error;
 
@@ -67,8 +68,7 @@ impl Version {
     }
 
     pub fn parse(text: &str) -> Result<Self, Error> {
-        let _ = text;
-        unimplemented!()
+        Version::from_str(text)
     }
 }
 
@@ -78,8 +78,7 @@ impl VersionReq {
     };
 
     pub fn parse(text: &str) -> Result<Self, Error> {
-        let _ = text;
-        unimplemented!()
+        VersionReq::from_str(text)
     }
 
     pub fn matches(&self, version: &Version) -> bool {
@@ -89,8 +88,7 @@ impl VersionReq {
 
 impl Comparator {
     pub fn parse(text: &str) -> Result<Self, Error> {
-        let _ = text;
-        unimplemented!()
+        Comparator::from_str(text)
     }
 
     pub fn matches(&self, version: &Version) -> bool {
@@ -104,8 +102,7 @@ impl Prerelease {
     };
 
     pub fn new(text: &str) -> Result<Self, Error> {
-        let _ = text;
-        unimplemented!()
+        Prerelease::from_str(text)
     }
 
     pub fn as_str(&self) -> &str {
@@ -123,8 +120,7 @@ impl BuildMetadata {
     };
 
     pub fn new(text: &str) -> Result<Self, Error> {
-        let _ = text;
-        unimplemented!()
+        BuildMetadata::from_str(text)
     }
 
     pub fn as_str(&self) -> &str {
