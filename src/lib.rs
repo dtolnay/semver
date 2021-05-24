@@ -125,6 +125,8 @@ pub struct VersionReq {
     pub comparators: Vec<Comparator>,
 }
 
+/// A pair of comparison operator and partial version, such as `>=1.2`. Forms
+/// one piece of a VersionReq.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Comparator {
     pub op: Op,
