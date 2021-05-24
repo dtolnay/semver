@@ -127,6 +127,8 @@ impl Identifier {
             0x100_0000_0000_0000..=0xffff_ffff_ffff_ffff => {
                 unreachable!("please refrain from storing >64 petabytes of text in semver version");
             }
+            #[cfg(no_exhaustive_int_match)] // rustc <1.33
+            _ => unreachable!(),
         };
         Identifier { repr }
     }

@@ -8,6 +8,13 @@ fn main() {
         None => return,
     };
 
+    if compiler < 33 {
+        // Exhaustive integer patterns. On older compilers, a final `_` arm is
+        // required even if every possible integer value is otherwise covered.
+        // https://github.com/rust-lang/rust/issues/50907
+        println!("cargo:rustc-cfg=no_exhaustive_int_match");
+    }
+
     if compiler < 36 {
         // extern crate alloc.
         // https://blog.rust-lang.org/2019/07/04/Rust-1.36.0.html#the-alloc-crate-is-stable
