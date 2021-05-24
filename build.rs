@@ -8,6 +8,12 @@ fn main() {
         None => return,
     };
 
+    if compiler < 46 {
+        // #[track_caller].
+        // https://blog.rust-lang.org/2020/08/27/Rust-1.46.0.html#track_caller
+        println!("cargo:rustc-cfg=no_track_caller");
+    }
+
     if compiler < 52 {
         // #![deny(unsafe_op_in_unsafe_fn)].
         // https://github.com/rust-lang/rust/issues/71668

@@ -5,7 +5,7 @@ use semver::VersionReq;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-#[track_caller]
+#[cfg_attr(not(no_track_caller), track_caller)]
 fn assert_match_all(req: &VersionReq, versions: &[&str]) {
     for string in versions {
         let parsed = version(string);
@@ -13,7 +13,7 @@ fn assert_match_all(req: &VersionReq, versions: &[&str]) {
     }
 }
 
-#[track_caller]
+#[cfg_attr(not(no_track_caller), track_caller)]
 fn assert_match_none(req: &VersionReq, versions: &[&str]) {
     for string in versions {
         let parsed = version(string);
