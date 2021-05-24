@@ -92,22 +92,22 @@ impl Identifier {
             0 => Self::EMPTY,
             1..=8 => {
                 let mut bytes = [0u8; 8];
-                ptr::copy_nonoverlapping(string.as_ptr(), bytes.as_mut_ptr(), len);
-                NonZeroU64::new_unchecked(u64::from_ne_bytes(bytes))
+                unsafe { ptr::copy_nonoverlapping(string.as_ptr(), bytes.as_mut_ptr(), len) };
+                unsafe { NonZeroU64::new_unchecked(u64::from_ne_bytes(bytes)) }
             }
             9..=0xff_ffff_ffff_ffff => {
-                let size = bytes_for_varint(NonZeroUsize::new_unchecked(len)) + len;
+                let size = bytes_for_varint(unsafe { NonZeroUsize::new_unchecked(len) }) + len;
                 let align = 2;
-                let layout = Layout::from_size_align_unchecked(size, align);
-                let ptr = alloc(layout);
+                let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
+                let ptr = unsafe { alloc(layout) };
                 let mut write = ptr;
                 let mut varint_remaining = len;
                 while varint_remaining > 0 {
-                    ptr::write(write, varint_remaining as u8 | 0x80);
+                    unsafe { ptr::write(write, varint_remaining as u8 | 0x80) };
                     varint_remaining >>= 7;
-                    write = write.add(1);
+                    write = unsafe { write.add(1) };
                 }
-                ptr::copy_nonoverlapping(string.as_ptr(), write, len);
+                unsafe { ptr::copy_nonoverlapping(string.as_ptr(), write, len) };
                 ptr_to_repr(ptr)
             }
             0x100_0000_0000_0000..=0xffff_ffff_ffff_ffff => {
@@ -229,8 +229,8 @@ fn inline_len(repr: NonZeroU64) -> NonZeroUsize {
 unsafe fn inline_as_str(repr: &NonZeroU64) -> &str {
     let ptr = repr as *const NonZeroU64 as *const u8;
     let len = inline_len(*repr).get();
-    let slice = slice::from_raw_parts(ptr, len);
-    str::from_utf8_unchecked(slice)
+    let slice = unsafe { slice::from_raw_parts(ptr, len) };
+    unsafe { str::from_utf8_unchecked(slice) }
 }
 
 // Decode varint. Varints consist of between one and eight base-128 digits, each
@@ -238,11 +238,11 @@ unsafe fn inline_as_str(repr: &NonZeroU64) -> &str {
 // varint in memory there is guaranteed to be at least 9 ASCII bytes, each of
 // which has an unset most significant bit.
 unsafe fn decode_len(ptr: *const u8) -> NonZeroUsize {
-    let [first, second] = ptr::read(ptr as *const [u8; 2]);
+    let [first, second] = unsafe { ptr::read(ptr as *const [u8; 2]) };
     if second < 0x80 {
-        NonZeroUsize::new_unchecked((first & 0x7f) as usize)
+        unsafe { NonZeroUsize::new_unchecked((first & 0x7f) as usize) }
     } else {
-        return decode_len_cold(ptr);
+        return unsafe { decode_len_cold(ptr) };
 
         // Identifiers 128 bytes or longer. This is not exercised by any crate
         // version currently published to crates.io.
@@ -252,11 +252,11 @@ unsafe fn decode_len(ptr: *const u8) -> NonZeroUsize {
             let mut len = 0;
             let mut shift = 0;
             loop {
-                let byte = *ptr;
+                let byte = unsafe { *ptr };
                 if byte < 0x80 {
-                    return NonZeroUsize::new_unchecked(len);
+                    return unsafe { NonZeroUsize::new_unchecked(len) };
                 }
-                ptr = ptr.add(1);
+                ptr = unsafe { ptr.add(1) };
                 len += ((byte & 0x7f) as usize) << shift;
                 shift += 7;
             }
@@ -266,10 +266,10 @@ unsafe fn decode_len(ptr: *const u8) -> NonZeroUsize {
 
 unsafe fn ptr_as_str(repr: &NonZeroU64) -> &str {
     let ptr = repr_to_ptr(*repr);
-    let len = decode_len(ptr);
+    let len = unsafe { decode_len(ptr) };
     let header = bytes_for_varint(len);
-    let slice = slice::from_raw_parts(ptr.add(header), len.get());
-    str::from_utf8_unchecked(slice)
+    let slice = unsafe { slice::from_raw_parts(ptr.add(header), len.get()) };
+    unsafe { str::from_utf8_unchecked(slice) }
 }
 
 // Number of base-128 digits required for the varint representation of a length.
