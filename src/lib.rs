@@ -1,10 +1,11 @@
 #![doc(html_root_url = "https://docs.rs/semver/0.0.0")]
 #![cfg_attr(doc_cfg, feature(doc_cfg))]
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(all(not(feature = "std"), not(no_alloc_crate)), no_std)]
 #![cfg_attr(not(no_unsafe_op_in_unsafe_fn_lint), deny(unsafe_op_in_unsafe_fn))]
 #![cfg_attr(no_unsafe_op_in_unsafe_fn_lint, allow(unused_unsafe))]
 #![cfg_attr(no_str_strip_prefix, allow(unstable_name_collisions))]
 
+#[cfg(not(no_alloc_crate))]
 extern crate alloc;
 
 mod backport;
@@ -18,9 +19,12 @@ mod parse;
 #[cfg(feature = "serde")]
 mod serde;
 
+use crate::alloc::vec::Vec;
 use crate::identifier::Identifier;
-use alloc::vec::Vec;
 use core::str::FromStr;
+
+#[allow(unused_imports)]
+use crate::backport::*;
 
 pub use crate::parse::Error;
 

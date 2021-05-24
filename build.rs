@@ -8,6 +8,12 @@ fn main() {
         None => return,
     };
 
+    if compiler < 36 {
+        // extern crate alloc.
+        // https://blog.rust-lang.org/2019/07/04/Rust-1.36.0.html#the-alloc-crate-is-stable
+        println!("cargo:rustc-cfg=no_alloc_crate");
+    }
+
     if compiler < 39 {
         // const Vec::new.
         // https://doc.rust-lang.org/std/vec/struct.Vec.html#method.new

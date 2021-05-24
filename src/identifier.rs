@@ -66,7 +66,7 @@
 // repr, leaving it available as a niche for downstream code. For example this
 // allows size_of::<Version>() == size_of::<Option<Version>>().
 
-use alloc::alloc::{alloc, dealloc, Layout};
+use crate::alloc::alloc::{alloc, dealloc, Layout};
 use core::mem;
 use core::num::{NonZeroU64, NonZeroUsize};
 use core::ptr;
