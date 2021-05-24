@@ -1,6 +1,25 @@
 use crate::{BuildMetadata, Prerelease, Version};
 use std::fmt::{self, Debug, Display};
 
+impl Display for Version {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        Display::fmt(&self.major, formatter)?;
+        formatter.write_str(".")?;
+        Display::fmt(&self.minor, formatter)?;
+        formatter.write_str(".")?;
+        Display::fmt(&self.patch, formatter)?;
+        if !self.pre.is_empty() {
+            formatter.write_str("-")?;
+            Display::fmt(&self.pre, formatter)?;
+        }
+        if !self.build.is_empty() {
+            formatter.write_str("+")?;
+            Display::fmt(&self.build, formatter)?;
+        }
+        Ok(())
+    }
+}
+
 impl Display for Prerelease {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str(self.as_str())
