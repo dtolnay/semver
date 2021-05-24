@@ -1,5 +1,9 @@
+mod display;
+mod identifier;
 mod impls;
 mod parse;
+
+use crate::identifier::Identifier;
 
 pub use crate::parse::Error;
 
@@ -38,14 +42,14 @@ pub enum Op {
     Wildcard,
 }
 
-#[derive(Default, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Default, Clone, Eq, PartialEq, Hash)]
 pub struct Prerelease {
-    identifier: String,
+    identifier: Identifier,
 }
 
 #[derive(Default, Clone, Eq, PartialEq, Hash)]
 pub struct BuildMetadata {
-    identifier: String,
+    identifier: Identifier,
 }
 
 impl Version {
@@ -95,7 +99,7 @@ impl Comparator {
 
 impl Prerelease {
     pub const EMPTY: Self = Prerelease {
-        identifier: String::new(),
+        identifier: Identifier::empty(),
     };
 
     pub fn new(text: &str) -> Result<Self, Error> {
@@ -114,7 +118,7 @@ impl Prerelease {
 
 impl BuildMetadata {
     pub const EMPTY: Self = BuildMetadata {
-        identifier: String::new(),
+        identifier: Identifier::empty(),
     };
 
     pub fn new(text: &str) -> Result<Self, Error> {

@@ -1,6 +1,22 @@
+use crate::identifier::Identifier;
 use crate::{BuildMetadata, Prerelease};
 use std::cmp::Ordering;
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
+
+impl Default for Identifier {
+    fn default() -> Self {
+        Identifier::empty()
+    }
+}
+
+impl Eq for Identifier {}
+
+impl Hash for Identifier {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.as_str().hash(hasher);
+    }
+}
 
 impl Deref for Prerelease {
     type Target = str;
