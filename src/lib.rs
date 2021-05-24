@@ -4,6 +4,23 @@
 #![cfg_attr(not(no_unsafe_op_in_unsafe_fn_lint), deny(unsafe_op_in_unsafe_fn))]
 #![cfg_attr(no_unsafe_op_in_unsafe_fn_lint, allow(unused_unsafe))]
 #![cfg_attr(no_str_strip_prefix, allow(unstable_name_collisions))]
+#![allow(
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::doc_markdown,
+    clippy::items_after_statements,
+    clippy::match_bool,
+    clippy::missing_errors_doc,
+    clippy::must_use_candidate,
+    clippy::needless_doctest_main,
+    clippy::option_if_let_else,
+    clippy::ptr_as_ptr,
+    clippy::redundant_else,
+    clippy::similar_names,
+    clippy::unnested_or_patterns,
+    clippy::unseparated_literal_suffix,
+    clippy::wildcard_imports
+)]
 
 #[cfg(not(no_alloc_crate))]
 extern crate alloc;
