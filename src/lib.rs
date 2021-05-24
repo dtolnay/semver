@@ -1,3 +1,4 @@
+#![doc(html_root_url = "https://docs.rs/semver/0.0.0")]
 #![cfg_attr(doc_cfg, feature(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(unsafe_op_in_unsafe_fn)]
