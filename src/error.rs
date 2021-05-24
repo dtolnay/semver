@@ -11,6 +11,7 @@ pub(crate) enum ErrorKind {
     EmptySegment(Position),
     IllegalCharacter(Position),
     UnexpectedAfterWildcard,
+    ExcessiveComparators,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -76,6 +77,9 @@ impl Display for Error {
             }
             ErrorKind::UnexpectedAfterWildcard => {
                 formatter.write_str("unexpected character after wildcard in version req")
+            }
+            ErrorKind::ExcessiveComparators => {
+                formatter.write_str("excessive number of version comparators")
             }
         }
     }

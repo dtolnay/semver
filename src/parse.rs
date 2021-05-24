@@ -75,8 +75,10 @@ impl FromStr for VersionReq {
             }
         }
 
+        let depth = 0;
         let mut comparators = Vec::new();
-        version_req(text, &mut comparators)?;
+        let len = version_req(text, &mut comparators, depth)?;
+        unsafe { comparators.set_len(len) }
         Ok(VersionReq { comparators })
     }
 }
@@ -325,18 +327,31 @@ fn comparator(input: &str) -> Result<(Comparator, Position, &str), Error> {
     Ok((comparator, pos, text))
 }
 
-fn version_req(mut input: &str, out: &mut Vec<Comparator>) -> Result<(), Error> {
-    loop {
-        let (comparator, pos, text) = comparator(input)?;
-        out.push(comparator);
+fn version_req(input: &str, out: &mut Vec<Comparator>, depth: usize) -> Result<usize, Error> {
+    let (comparator, pos, text) = comparator(input)?;
 
-        if text.is_empty() {
-            return Ok(());
-        } else if let Some(text) = text.strip_prefix(',') {
-            input = text.trim_start_matches(' ');
-        } else {
-            let unexpected = text.chars().next().unwrap();
-            return Err(Error::new(ErrorKind::ExpectedCommaFound(pos, unexpected)));
-        }
+    if text.is_empty() {
+        out.reserve_exact(depth + 1);
+        unsafe { out.as_mut_ptr().add(depth).write(comparator) }
+        return Ok(depth + 1);
     }
+
+    let text = if let Some(text) = text.strip_prefix(',') {
+        text.trim_start_matches(' ')
+    } else {
+        let unexpected = text.chars().next().unwrap();
+        return Err(Error::new(ErrorKind::ExpectedCommaFound(pos, unexpected)));
+    };
+
+    const MAX_COMPARATORS: usize = 32;
+    if depth + 1 == MAX_COMPARATORS {
+        return Err(Error::new(ErrorKind::ExcessiveComparators));
+    }
+
+    // Recurse to collect parsed Comparator objects on the stack. We perform a
+    // single allocation to allocate exactly the right sized Vec only once the
+    // total number of comparators is known.
+    let len = version_req(text, out, depth + 1)?;
+    unsafe { out.as_mut_ptr().add(depth).write(comparator) }
+    Ok(len)
 }
