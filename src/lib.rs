@@ -39,6 +39,7 @@ pub struct Comparator {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[non_exhaustive]
 pub enum Op {
     Exact,
     Greater,
