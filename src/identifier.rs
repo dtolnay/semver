@@ -250,6 +250,13 @@ fn repr_to_ptr_mut(repr: NonZeroU64) -> *mut u8 {
 // string representation. Short strings are stored as 1 to 8 nonzero ASCII
 // bytes, followed by \0 padding for the remaining bytes.
 fn inline_len(repr: NonZeroU64) -> NonZeroUsize {
+    // Rustc >=1.53 has intrinsics for counting zeros on a non-zeroable integer.
+    // On many architectures these are more efficient than counting on ordinary
+    // zeroable integers (bsf vs cttz). On rustc <1.53 without those intrinsics,
+    // we count zeros in the u64 rather than the NonZeroU64.
+    #[cfg(no_nonzero_bitscan)]
+    let repr = repr.get();
+
     #[cfg(target_endian = "little")]
     let zero_bits_on_string_end = repr.leading_zeros();
     #[cfg(target_endian = "big")]
@@ -336,6 +343,9 @@ unsafe fn ptr_as_str(repr: &NonZeroU64) -> &str {
 
 // Number of base-128 digits required for the varint representation of a length.
 fn bytes_for_varint(len: NonZeroUsize) -> usize {
+    #[cfg(no_nonzero_bitscan)] // rustc <1.53
+    let len = len.get();
+
     let usize_bits = mem::size_of::<usize>() * 8;
     let len_bits = usize_bits - len.leading_zeros() as usize;
     (len_bits + 6) / 7
