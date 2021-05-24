@@ -1,3 +1,5 @@
+#[allow(unused_imports)]
+use crate::backport::*;
 use crate::error::{ErrorKind, Position};
 use crate::identifier::Identifier;
 use crate::{BuildMetadata, Comparator, Op, Prerelease, Version, VersionReq};

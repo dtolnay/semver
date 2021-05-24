@@ -3,9 +3,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(no_unsafe_op_in_unsafe_fn_lint), deny(unsafe_op_in_unsafe_fn))]
 #![cfg_attr(no_unsafe_op_in_unsafe_fn_lint, allow(unused_unsafe))]
+#![cfg_attr(no_str_strip_prefix, allow(unstable_name_collisions))]
 
 extern crate alloc;
 
+mod backport;
 mod display;
 mod error;
 mod eval;

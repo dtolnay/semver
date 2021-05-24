@@ -8,6 +8,12 @@ fn main() {
         None => return,
     };
 
+    if compiler < 45 {
+        // String::strip_prefix.
+        // https://doc.rust-lang.org/std/primitive.str.html#method.repeat
+        println!("cargo:rustc-cfg=no_str_strip_prefix");
+    }
+
     if compiler < 46 {
         // #[track_caller].
         // https://blog.rust-lang.org/2020/08/27/Rust-1.46.0.html#track_caller
