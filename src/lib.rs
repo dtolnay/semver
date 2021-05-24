@@ -7,8 +7,8 @@ pub struct Version {
     pub major: u64,
     pub minor: u64,
     pub patch: u64,
-    pub pre: String,
-    pub build: String,
+    pub pre: Prerelease,
+    pub build: BuildMetadata,
 }
 
 #[derive(Default, Clone, Eq, PartialEq, Hash, Debug)]
@@ -22,7 +22,7 @@ pub struct Comparator {
     pub major: u64,
     pub minor: Option<u64>,
     pub patch: Option<u64>,
-    pub pre: String,
+    pub pre: Prerelease,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -37,14 +37,24 @@ pub enum Op {
     Wildcard,
 }
 
+#[derive(Default, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct Prerelease {
+    identifier: String,
+}
+
+#[derive(Default, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct BuildMetadata {
+    identifier: String,
+}
+
 impl Version {
     pub const fn new(major: u64, minor: u64, patch: u64) -> Self {
         Version {
             major,
             minor,
             patch,
-            pre: String::new(),
-            build: String::new(),
+            pre: Prerelease::EMPTY,
+            build: BuildMetadata::EMPTY,
         }
     }
 
@@ -79,5 +89,43 @@ impl Comparator {
     pub fn matches(&self, version: &Version) -> bool {
         let _ = version;
         unimplemented!()
+    }
+}
+
+impl Prerelease {
+    pub const EMPTY: Self = Prerelease {
+        identifier: String::new(),
+    };
+
+    pub fn new(text: &str) -> Result<Self, Error> {
+        let _ = text;
+        unimplemented!()
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.identifier.as_str()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.identifier.is_empty()
+    }
+}
+
+impl BuildMetadata {
+    pub const EMPTY: Self = BuildMetadata {
+        identifier: String::new(),
+    };
+
+    pub fn new(text: &str) -> Result<Self, Error> {
+        let _ = text;
+        unimplemented!()
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.identifier.as_str()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.identifier.is_empty()
     }
 }
