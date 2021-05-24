@@ -7,6 +7,9 @@ mod identifier;
 mod impls;
 mod parse;
 
+#[cfg(feature = "serde")]
+mod serde;
+
 use crate::identifier::Identifier;
 use std::str::FromStr;
 
