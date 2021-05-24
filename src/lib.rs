@@ -48,7 +48,7 @@ pub struct Comparator {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-#[non_exhaustive]
+#[cfg_attr(not(no_non_exhaustive), non_exhaustive)]
 pub enum Op {
     Exact,
     Greater,
@@ -58,6 +58,10 @@ pub enum Op {
     Tilde,
     Caret,
     Wildcard,
+
+    #[cfg(no_non_exhaustive)] // rustc <1.40
+    #[doc(hidden)]
+    __NonExhaustive,
 }
 
 #[derive(Default, Clone, Eq, PartialEq, Hash)]

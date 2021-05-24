@@ -8,6 +8,12 @@ fn main() {
         None => return,
     };
 
+    if compiler < 40 {
+        // #[non_exhaustive].
+        // https://blog.rust-lang.org/2019/12/19/Rust-1.40.0.html#non_exhaustive-structs-enums-and-variants
+        println!("cargo:rustc-cfg=no_non_exhaustive");
+    }
+
     if compiler < 45 {
         // String::strip_prefix.
         // https://doc.rust-lang.org/std/primitive.str.html#method.repeat

@@ -36,6 +36,8 @@ fn matches_impl(cmp: &Comparator, ver: &Version) -> bool {
         Op::LessEq => !matches_greater(cmp, ver),
         Op::Tilde => matches_tilde(cmp, ver),
         Op::Caret => matches_caret(cmp, ver),
+        #[cfg(no_non_exhaustive)]
+        Op::__NonExhaustive => unreachable!(),
     }
 }
 
