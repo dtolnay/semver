@@ -91,6 +91,7 @@ impl Version {
 }
 
 impl VersionReq {
+    #[cfg(not(no_const_vec_new))] // rustc <1.39
     pub const STAR: Self = VersionReq {
         comparators: Vec::new(),
     };

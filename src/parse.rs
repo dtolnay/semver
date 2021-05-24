@@ -72,7 +72,12 @@ impl FromStr for VersionReq {
         let text = text.trim_start_matches(' ');
         if let Some(text) = text.strip_prefix('*') {
             if text.trim_start_matches(' ').is_empty() {
+                #[cfg(not(no_const_vec_new))]
                 return Ok(VersionReq::STAR);
+                #[cfg(no_const_vec_new)] // rustc <1.39
+                return Ok(VersionReq {
+                    comparators: Vec::new(),
+                });
             } else {
                 return Err(Error::new(ErrorKind::UnexpectedAfterWildcard));
             }

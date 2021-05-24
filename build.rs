@@ -8,6 +8,12 @@ fn main() {
         None => return,
     };
 
+    if compiler < 39 {
+        // const Vec::new.
+        // https://doc.rust-lang.org/std/vec/struct.Vec.html#method.new
+        println!("cargo:rustc-cfg=no_const_vec_new");
+    }
+
     if compiler < 40 {
         // #[non_exhaustive].
         // https://blog.rust-lang.org/2019/12/19/Rust-1.40.0.html#non_exhaustive-structs-enums-and-variants

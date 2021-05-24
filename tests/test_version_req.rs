@@ -315,7 +315,12 @@ pub fn test_logical_or() {
 
 #[test]
 pub fn test_any() {
+    #[cfg(not(no_const_vec_new))]
     let ref r = VersionReq::STAR;
+    #[cfg(no_const_vec_new)]
+    let ref r = VersionReq {
+        comparators: Vec::new(),
+    };
     assert_match_all(r, &["0.0.1", "0.1.0", "1.0.0"]);
 }
 
