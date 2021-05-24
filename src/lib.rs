@@ -1,6 +1,7 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 mod display;
+mod error;
 mod eval;
 mod identifier;
 mod impls;
