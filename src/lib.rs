@@ -38,7 +38,7 @@ pub enum Op {
     Wildcard,
 }
 
-#[derive(Default, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Default, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Prerelease {
     identifier: String,
 }
