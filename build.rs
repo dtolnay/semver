@@ -8,6 +8,12 @@ fn main() {
         None => return,
     };
 
+    if compiler < 32 {
+        // u64::from_ne_bytes.
+        // https://doc.rust-lang.org/std/primitive.u64.html#method.from_ne_bytes
+        println!("cargo:rustc-cfg=no_from_ne_bytes");
+    }
+
     if compiler < 33 {
         // Exhaustive integer patterns. On older compilers, a final `_` arm is
         // required even if every possible integer value is otherwise covered.

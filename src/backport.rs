@@ -14,6 +14,18 @@ impl StripPrefixExt for str {
     }
 }
 
+#[cfg(no_from_ne_bytes)] // rustc <1.32
+pub(crate) trait FromNeBytes {
+    fn from_ne_bytes(bytes: [u8; 8]) -> Self;
+}
+
+#[cfg(no_from_ne_bytes)]
+impl FromNeBytes for u64 {
+    fn from_ne_bytes(bytes: [u8; 8]) -> Self {
+        unsafe { std::mem::transmute(bytes) }
+    }
+}
+
 pub(crate) use crate::alloc::vec::Vec;
 
 #[cfg(no_alloc_crate)] // rustc <1.36

@@ -67,6 +67,8 @@
 // allows size_of::<Version>() == size_of::<Option<Version>>().
 
 use crate::alloc::alloc::{alloc, dealloc, Layout};
+#[cfg(no_from_ne_bytes)]
+use crate::backport::FromNeBytes;
 use core::mem;
 use core::num::{NonZeroU64, NonZeroUsize};
 use core::ptr;
