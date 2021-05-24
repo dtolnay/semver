@@ -24,6 +24,12 @@ impl PartialOrd for Prerelease {
     }
 }
 
+impl PartialOrd for BuildMetadata {
+    fn partial_cmp(&self, rhs: &Self) -> Option<Ordering> {
+        Some(Ord::cmp(self, rhs))
+    }
+}
+
 impl Ord for Prerelease {
     fn cmp(&self, rhs: &Self) -> Ordering {
         match self.is_empty() {
@@ -64,6 +70,48 @@ impl Ord for Prerelease {
                 // Spec: "Identifiers with letters or hyphens are compared
                 // lexically in ASCII sort order."
                 (false, false) => string_cmp(),
+            };
+
+            if ordering != Ordering::Equal {
+                return ordering;
+            }
+        }
+
+        if rhs.next().is_none() {
+            Ordering::Equal
+        } else {
+            Ordering::Less
+        }
+    }
+}
+
+impl Ord for BuildMetadata {
+    fn cmp(&self, rhs: &Self) -> Ordering {
+        let lhs = self.as_str().split('.');
+        let mut rhs = rhs.as_str().split('.');
+
+        for lhs in lhs {
+            let rhs = match rhs.next() {
+                None => return Ordering::Greater,
+                Some(rhs) => rhs,
+            };
+
+            let is_ascii_digit = |b: u8| b.is_ascii_digit();
+            let ordering = match (
+                lhs.bytes().all(is_ascii_digit),
+                rhs.bytes().all(is_ascii_digit),
+            ) {
+                (true, true) => {
+                    // 0 < 00 < 1 < 01 < 001 < 2 < 02 < 002 < 10
+                    let lhval = lhs.trim_start_matches('0');
+                    let rhval = rhs.trim_start_matches('0');
+                    Ord::cmp(&lhval.len(), &rhval.len())
+                        .then_with(|| Ord::cmp(lhval, rhval))
+                        .then_with(|| Ord::cmp(&lhs.len(), &rhs.len()))
+                }
+                (true, false) => return Ordering::Less,
+                (false, true) => return Ordering::Greater,
+                (false, false) => Ord::cmp(lhs, rhs),
             };
 
             if ordering != Ordering::Equal {

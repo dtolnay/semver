@@ -43,7 +43,7 @@ pub struct Prerelease {
     identifier: String,
 }
 
-#[derive(Default, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Default, Clone, Eq, PartialEq, Hash)]
 pub struct BuildMetadata {
     identifier: String,
 }
