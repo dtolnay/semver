@@ -86,27 +86,41 @@ impl Identifier {
         Identifier { repr: Self::EMPTY }
     }
 
+    // SAFETY: string must be ASCII and not contain \0 bytes.
     pub(crate) unsafe fn new_unchecked(string: &str) -> Self {
         let len = string.len();
         let repr = match len as u64 {
             0 => Self::EMPTY,
             1..=8 => {
                 let mut bytes = [0u8; 8];
+                // SAFETY: string is big enough to read len bytes, bytes is big
+                // enough to write len bytes, and they do not overlap.
                 unsafe { ptr::copy_nonoverlapping(string.as_ptr(), bytes.as_mut_ptr(), len) };
+                // SAFETY: it's nonzero because the input string was at least 1
+                // byte of ASCII and did not contain \0.
                 unsafe { NonZeroU64::new_unchecked(u64::from_ne_bytes(bytes)) }
             }
             9..=0xff_ffff_ffff_ffff => {
+                // SAFETY: len is in a range that does not contain 0.
                 let size = bytes_for_varint(unsafe { NonZeroUsize::new_unchecked(len) }) + len;
                 let align = 2;
+                // SAFETY: align is not zero, align is a power of two, and
+                // rounding size up to align does not overflow usize::MAX.
                 let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
+                // SAFETY: layout's size is nonzero.
                 let ptr = unsafe { alloc(layout) };
                 let mut write = ptr;
                 let mut varint_remaining = len;
                 while varint_remaining > 0 {
+                    // SAFETY: size is bytes_for_varint(len) bytes + len bytes.
+                    // This is writing the first bytes_for_variant(len) bytes.
                     unsafe { ptr::write(write, varint_remaining as u8 | 0x80) };
                     varint_remaining >>= 7;
+                    // SAFETY: still in bounds of the same allocation.
                     write = unsafe { write.add(1) };
                 }
+                // SAFETY: size is bytes_for_varint(len) bytes + len bytes. This
+                // is writing to the last len bytes.
                 unsafe { ptr::copy_nonoverlapping(string.as_ptr(), write, len) };
                 ptr_to_repr(ptr)
             }
@@ -136,8 +150,10 @@ impl Identifier {
         if self.is_empty() {
             ""
         } else if self.is_inline() {
+            // SAFETY: repr is in the inline representation.
             unsafe { inline_as_str(&self.repr) }
         } else {
+            // SAFETY: repr is in the heap allocated representation.
             unsafe { ptr_as_str(&self.repr) }
         }
     }
@@ -149,11 +165,20 @@ impl Clone for Identifier {
             self.repr
         } else {
             let ptr = repr_to_ptr(self.repr);
+            // SAFETY: ptr is one of our own heap allocations.
             let len = unsafe { decode_len(ptr) };
             let size = bytes_for_varint(len) + len.get();
             let align = 2;
+            // SAFETY: align is not zero, align is a power of two, and rounding
+            // size up to align does not overflow usize::MAX. This is just
+            // duplicating a previous allocation where all of these guarantees
+            // were already made.
             let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
+            // SAFETY: layout's size is nonzero.
             let clone = unsafe { alloc(layout) };
+            // SAFETY: new allocation cannot overlap the previous one (this was
+            // not a realloc). The argument ptrs are readable/writeable
+            // respectively for size bytes.
             unsafe { ptr::copy_nonoverlapping(ptr, clone, size) }
             ptr_to_repr(clone)
         };
@@ -167,10 +192,16 @@ impl Drop for Identifier {
             return;
         }
         let ptr = repr_to_ptr_mut(self.repr);
+        // SAFETY: ptr is one of our own heap allocations.
         let len = unsafe { decode_len(ptr) };
         let size = bytes_for_varint(len) + len.get();
         let align = 2;
+        // SAFETY: align is not zero, align is a power of two, and rounding
+        // size up to align does not overflow usize::MAX. These guarantees were
+        // made when originally allocating this memory.
         let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
+        // SAFETY: ptr was previously allocated by the same allocator with the
+        // same layout.
         unsafe { dealloc(ptr, layout) }
     }
 }
@@ -183,6 +214,7 @@ impl PartialEq for Identifier {
         } else if rhs.is_empty_or_inline() {
             false
         } else {
+            // SAFETY: both reprs are in the heap allocated representation.
             unsafe { ptr_as_str(&self.repr) == ptr_as_str(&rhs.repr) }
         }
     }
@@ -197,6 +229,8 @@ fn ptr_to_repr(ptr: *mut u8) -> NonZeroU64 {
     // `shld rax, rdi, 63`
     let repr = (ptr as u64 | 1).rotate_right(1);
 
+    // SAFETY: the most significant bit of repr is known to be set, so the value
+    // is not zero.
     unsafe { NonZeroU64::new_unchecked(repr) }
 }
 
@@ -223,13 +257,22 @@ fn inline_len(repr: NonZeroU64) -> NonZeroUsize {
 
     let nonzero_bytes = 8 - zero_bits_on_string_end as usize / 8;
 
+    // SAFETY: repr is nonzero, so it has at most 63 zero bits on either end,
+    // thus at least one nonzero byte.
     unsafe { NonZeroUsize::new_unchecked(nonzero_bytes) }
 }
 
+// SAFETY: repr must be in the inline representation, i.e. at least 1 and at
+// most 8 nonzero ASCII bytes padded on the end with \0 bytes.
 unsafe fn inline_as_str(repr: &NonZeroU64) -> &str {
     let ptr = repr as *const NonZeroU64 as *const u8;
     let len = inline_len(*repr).get();
+    // SAFETY: we are viewing the nonzero ASCII prefix of the inline repr's
+    // contents as a slice of bytes. Input/output lifetimes are correctly
+    // associated.
     let slice = unsafe { slice::from_raw_parts(ptr, len) };
+    // SAFETY: the string contents are known to be only ASCII bytes, which are
+    // always valid UTF-8.
     unsafe { str::from_utf8_unchecked(slice) }
 }
 
@@ -237,9 +280,18 @@ unsafe fn inline_as_str(repr: &NonZeroU64) -> &str {
 // of which is stored in a byte with most significant bit set. Adjacent to the
 // varint in memory there is guaranteed to be at least 9 ASCII bytes, each of
 // which has an unset most significant bit.
+//
+// SAFETY: ptr must be one of our own heap allocations, with the varint header
+// already written.
 unsafe fn decode_len(ptr: *const u8) -> NonZeroUsize {
+    // SAFETY: There is at least one byte of varint followed by at least 9 bytes
+    // of string content, which is at least 10 bytes total for the allocation,
+    // so reading the first two is no problem.
     let [first, second] = unsafe { ptr::read(ptr as *const [u8; 2]) };
     if second < 0x80 {
+        // SAFETY: the length of this heap allocated string has been encoded as
+        // one base-128 digit, so the length is at least 9 and at most 127. It
+        // cannot be zero.
         unsafe { NonZeroUsize::new_unchecked((first & 0x7f) as usize) }
     } else {
         return unsafe { decode_len_cold(ptr) };
@@ -252,10 +304,16 @@ unsafe fn decode_len(ptr: *const u8) -> NonZeroUsize {
             let mut len = 0;
             let mut shift = 0;
             loop {
+                // SAFETY: varint continues while there are bytes having the
+                // most significant bit set, i.e. until we start hitting the
+                // ASCII string content with msb unset.
                 let byte = unsafe { *ptr };
                 if byte < 0x80 {
+                    // SAFETY: the string length is known to be 128 bytes or
+                    // longer.
                     return unsafe { NonZeroUsize::new_unchecked(len) };
                 }
+                // SAFETY: still in bounds of the same allocation.
                 ptr = unsafe { ptr.add(1) };
                 len += ((byte & 0x7f) as usize) << shift;
                 shift += 7;
@@ -264,11 +322,15 @@ unsafe fn decode_len(ptr: *const u8) -> NonZeroUsize {
     }
 }
 
+// SAFETY: repr must be in the heap allocated representation, with varint header
+// and string contents already written.
 unsafe fn ptr_as_str(repr: &NonZeroU64) -> &str {
     let ptr = repr_to_ptr(*repr);
     let len = unsafe { decode_len(ptr) };
     let header = bytes_for_varint(len);
     let slice = unsafe { slice::from_raw_parts(ptr.add(header), len.get()) };
+    // SAFETY: all identifier contents are ASCII bytes, which are always valid
+    // UTF-8.
     unsafe { str::from_utf8_unchecked(slice) }
 }
 
