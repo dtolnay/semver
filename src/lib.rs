@@ -1,3 +1,7 @@
+mod parse;
+
+pub use crate::parse::Error;
+
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Version {
     pub major: u64,
@@ -31,4 +35,49 @@ pub enum Op {
     Tilde,
     Caret,
     Wildcard,
+}
+
+impl Version {
+    pub const fn new(major: u64, minor: u64, patch: u64) -> Self {
+        Version {
+            major,
+            minor,
+            patch,
+            pre: String::new(),
+            build: String::new(),
+        }
+    }
+
+    pub fn parse(text: &str) -> Result<Self, Error> {
+        let _ = text;
+        unimplemented!()
+    }
+}
+
+impl VersionReq {
+    pub const STAR: Self = VersionReq {
+        comparators: Vec::new(),
+    };
+
+    pub fn parse(text: &str) -> Result<Self, Error> {
+        let _ = text;
+        unimplemented!()
+    }
+
+    pub fn matches(&self, version: &Version) -> bool {
+        let _ = version;
+        unimplemented!()
+    }
+}
+
+impl Comparator {
+    pub fn parse(text: &str) -> Result<Self, Error> {
+        let _ = text;
+        unimplemented!()
+    }
+
+    pub fn matches(&self, version: &Version) -> bool {
+        let _ = version;
+        unimplemented!()
+    }
 }
