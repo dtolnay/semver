@@ -1,6 +1,6 @@
 use crate::error::{ErrorKind, Position};
 use crate::identifier::Identifier;
-use crate::{BuildMetadata, Comparator, Prerelease, Version, VersionReq};
+use crate::{BuildMetadata, Comparator, Op, Prerelease, Version, VersionReq};
 use std::str::FromStr;
 
 pub struct Error {
@@ -75,8 +75,13 @@ impl FromStr for Comparator {
     type Err = Error;
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
-        let _ = text;
-        unimplemented!()
+        let text = text.trim_start_matches(' ');
+        let (comparator, pos, rest) = comparator(text)?;
+        if !rest.is_empty() {
+            let unexpected = rest.chars().next().unwrap();
+            return Err(Error::new(ErrorKind::UnexpectedCharAfter(pos, unexpected)));
+        }
+        Ok(comparator)
     }
 }
 
@@ -108,6 +113,10 @@ impl Error {
     fn new(kind: ErrorKind) -> Self {
         Error { kind }
     }
+}
+
+impl Op {
+    const DEFAULT: Self = Op::Caret;
 }
 
 fn numeric_identifier(input: &str, pos: Position) -> Result<(u64, &str), Error> {
@@ -202,4 +211,106 @@ fn identifier(input: &str, pos: Position) -> Result<(&str, &str), Error> {
             }
         }
     }
+}
+
+fn op(input: &str) -> (Op, &str) {
+    let bytes = input.as_bytes();
+    if bytes.get(0) == Some(&b'=') {
+        (Op::Exact, &input[1..])
+    } else if bytes.get(0) == Some(&b'>') {
+        if bytes.get(1) == Some(&b'=') {
+            (Op::GreaterEq, &input[2..])
+        } else {
+            (Op::Greater, &input[1..])
+        }
+    } else if bytes.get(0) == Some(&b'<') {
+        if bytes.get(1) == Some(&b'=') {
+            (Op::LessEq, &input[2..])
+        } else {
+            (Op::Less, &input[1..])
+        }
+    } else if bytes.get(0) == Some(&b'~') {
+        (Op::Tilde, &input[1..])
+    } else if bytes.get(0) == Some(&b'^') {
+        (Op::Caret, &input[1..])
+    } else {
+        (Op::DEFAULT, input)
+    }
+}
+
+fn comparator(input: &str) -> Result<(Comparator, Position, &str), Error> {
+    let (mut op, text) = op(input);
+    let default_op = input.len() == text.len();
+    let text = text.trim_start_matches(' ');
+
+    let mut pos = Position::Major;
+    let (major, text) = numeric_identifier(text, pos)?;
+
+    let (minor, text) = if let Some(text) = text.strip_prefix('.') {
+        pos = Position::Minor;
+        if let Some(text) = text.strip_prefix('*') {
+            if default_op {
+                op = Op::Wildcard;
+            }
+            (None, text)
+        } else {
+            let (minor, text) = numeric_identifier(text, pos)?;
+            (Some(minor), text)
+        }
+    } else {
+        (None, text)
+    };
+
+    let (patch, text) = if let Some(text) = text.strip_prefix('.') {
+        pos = Position::Patch;
+        if let Some(text) = text.strip_prefix('*') {
+            if default_op {
+                op = Op::Wildcard;
+            }
+            (None, text)
+        } else if op == Op::Wildcard {
+            return Err(Error::new(ErrorKind::UnexpectedAfterWildcard));
+        } else {
+            let (patch, text) = numeric_identifier(text, pos)?;
+            (Some(patch), text)
+        }
+    } else {
+        (None, text)
+    };
+
+    let (pre, text) = if patch.is_some() && text.starts_with('-') {
+        pos = Position::Pre;
+        let text = &text[1..];
+        let (pre, text) = prerelease_identifier(text)?;
+        if pre.is_empty() {
+            return Err(Error::new(ErrorKind::EmptySegment(pos)));
+        }
+        (pre, text)
+    } else {
+        (Prerelease::EMPTY, text)
+    };
+
+    let text = if patch.is_some() && text.starts_with('+') {
+        pos = Position::Build;
+        let text = &text[1..];
+        let (build, text) = build_identifier(text)?;
+        if build.is_empty() {
+            return Err(Error::new(ErrorKind::EmptySegment(pos)));
+        }
+        text
+    } else {
+        text
+    };
+
+    let text = text.trim_start_matches(' ');
+
+    let comparator = Comparator {
+        op,
+        major,
+        minor,
+        patch,
+        pre,
+    };
+
+    Ok((comparator, pos, text))
 }

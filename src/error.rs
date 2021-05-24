@@ -9,6 +9,7 @@ pub(crate) enum ErrorKind {
     Overflow(Position),
     EmptySegment(Position),
     IllegalCharacter(Position),
+    UnexpectedAfterWildcard,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq)]
@@ -64,6 +65,9 @@ impl Display for Error {
                 formatter.write_str("unexpected character in ")?;
                 Display::fmt(pos, formatter)?;
                 Ok(())
+            }
+            ErrorKind::UnexpectedAfterWildcard => {
+                formatter.write_str("unexpected character after wildcard in version req")
             }
         }
     }
