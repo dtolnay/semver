@@ -24,6 +24,7 @@ pub(crate) enum Position {
 }
 
 #[cfg(feature = "std")]
+#[cfg_attr(doc_cfg, doc(cfg(feature = "std")))]
 impl std::error::Error for Error {}
 
 impl Display for Error {
