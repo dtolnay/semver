@@ -277,10 +277,12 @@ fn comparator(input: &str) -> Result<(Comparator, Position, &str), Error> {
 
     let mut pos = Position::Major;
     let (major, text) = numeric_identifier(text, pos)?;
+    let mut has_wildcard = false;
 
     let (minor, text) = if let Some(text) = text.strip_prefix('.') {
         pos = Position::Minor;
         if let Some(text) = text.strip_prefix('*') {
+            has_wildcard = true;
             if default_op {
                 op = Op::Wildcard;
             }
@@ -300,7 +302,7 @@ fn comparator(input: &str) -> Result<(Comparator, Position, &str), Error> {
                 op = Op::Wildcard;
             }
             (None, text)
-        } else if op == Op::Wildcard {
+        } else if has_wildcard {
             return Err(Error::new(ErrorKind::UnexpectedAfterWildcard));
         } else {
             let (patch, text) = numeric_identifier(text, pos)?;
