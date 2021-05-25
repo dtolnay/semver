@@ -1,0 +1,33 @@
+[package]
+name = "semver-fuzz"
+version = "0.0.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+edition = "2018"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+semver = { path = ".." }
+
+[workspace]
+
+[[bin]]
+name = "parse_version"
+path = "parse_version.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "parse_version_req"
+path = "parse_version_req.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "sort_version"
+path = "sort_version.rs"
+test = false
+doc = false
