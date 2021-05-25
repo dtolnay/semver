@@ -14,7 +14,7 @@ Cargo/crates.io ecosystem for Rust.
 
 ```toml
 [dependencies]
-semver = "0.0"
+semver = "1.0.0-rc"
 ```
 
 *Compiler support: requires rustc 1.31+*
