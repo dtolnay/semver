@@ -377,6 +377,18 @@ fn test_cargo3202() {
 }
 
 #[test]
+fn test_digit_after_wildcard() {
+    let err = req_err("*.1");
+    assert_to_string(err, "unexpected character after wildcard in version req");
+
+    let err = req_err("1.*.1");
+    assert_to_string(err, "unexpected character after wildcard in version req");
+
+    let err = req_err(">=1.*.1");
+    assert_to_string(err, "unexpected character after wildcard in version req");
+}
+
+#[test]
 fn test_eq_hash() {
     fn calculate_hash(value: impl Hash) -> u64 {
         let mut hasher = DefaultHasher::new();
