@@ -41,6 +41,9 @@ fn test_parse() {
     let err = version_err("1.2.3 abc");
     assert_to_string(err, "unexpected character ' ' after patch version number");
 
+    let err = version_err("1.2.3-01");
+    assert_to_string(err, "invalid leading zero in pre-release identifier");
+
     let parsed = version("1.2.3");
     let expected = Version::new(1, 2, 3);
     assert_eq!(parsed, expected);
@@ -73,6 +76,16 @@ fn test_parse() {
     };
     assert_eq!(parsed, expected);
 
+    let parsed = version("1.2.3+5build");
+    let expected = Version {
+        major: 1,
+        minor: 2,
+        patch: 3,
+        pre: Prerelease::EMPTY,
+        build: build_metadata("5build"),
+    };
+    assert_eq!(parsed, expected);
+
     let parsed = version("1.2.3-alpha1+build5");
     let expected = Version {
         major: 1,
@@ -90,6 +103,16 @@ fn test_parse() {
         patch: 3,
         pre: prerelease("1.alpha1.9"),
         build: build_metadata("build5.7.3aedf"),
+    };
+    assert_eq!(parsed, expected);
+
+    let parsed = version("1.2.3-0a.alpha1.9+05build.7.3aedf");
+    let expected = Version {
+        major: 1,
+        minor: 2,
+        patch: 3,
+        pre: prerelease("0a.alpha1.9"),
+        build: build_metadata("05build.7.3aedf"),
     };
     assert_eq!(parsed, expected);
 
