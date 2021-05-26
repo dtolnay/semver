@@ -121,7 +121,7 @@ pub use crate::parse::Error;
 /// - The pre-release identifier, if present, must conform to the syntax
 ///   documented for [`Prerelease`].
 ///
-/// - The build metadata, if present, must conform to the syntax documneted for
+/// - The build metadata, if present, must conform to the syntax documented for
 ///   [`BuildMetadata`].
 ///
 /// - Whitespace is not allowed anywhere in the version.
