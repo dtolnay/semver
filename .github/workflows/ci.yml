@@ -20,6 +20,17 @@ jobs:
           toolchain: ${{matrix.rust}}
       - run: cargo test
 
+  node:
+    name: Node
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@stable
+      - run: npm install semver
+      - run: cargo test
+        env:
+          RUSTFLAGS: --cfg test_node_semver
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest

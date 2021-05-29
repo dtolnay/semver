@@ -1,9 +1,14 @@
+mod node;
 mod util;
 
 use crate::util::*;
-use semver::VersionReq;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+
+#[cfg(test_node_semver)]
+use node::{req, VersionReq};
+#[cfg(not(test_node_semver))]
+use semver::VersionReq;
 
 #[cfg_attr(not(no_track_caller), track_caller)]
 fn assert_match_all(req: &VersionReq, versions: &[&str]) {
