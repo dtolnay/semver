@@ -32,8 +32,8 @@ fn matches_impl(cmp: &Comparator, ver: &Version) -> bool {
         Op::Exact | Op::Wildcard => matches_exact(cmp, ver),
         Op::Greater => matches_greater(cmp, ver),
         Op::GreaterEq => matches_exact(cmp, ver) || matches_greater(cmp, ver),
-        Op::Less => !matches_exact(cmp, ver) && !matches_greater(cmp, ver),
-        Op::LessEq => !matches_greater(cmp, ver),
+        Op::Less => matches_less(cmp, ver),
+        Op::LessEq => matches_exact(cmp, ver) || matches_less(cmp, ver),
         Op::Tilde => matches_tilde(cmp, ver),
         Op::Caret => matches_caret(cmp, ver),
         #[cfg(no_non_exhaustive)]
@@ -85,6 +85,32 @@ fn matches_greater(cmp: &Comparator, ver: &Version) -> bool {
     }
 
     ver.pre > cmp.pre
+}
+
+fn matches_less(cmp: &Comparator, ver: &Version) -> bool {
+    if ver.major != cmp.major {
+        return ver.major < cmp.major;
+    }
+
+    match cmp.minor {
+        None => return false,
+        Some(minor) => {
+            if ver.minor != minor {
+                return ver.minor < minor;
+            }
+        }
+    }
+
+    match cmp.patch {
+        None => return false,
+        Some(patch) => {
+            if ver.patch != patch {
+                return ver.patch < patch;
+            }
+        }
+    }
+
+    ver.pre < cmp.pre
 }
 
 fn matches_tilde(cmp: &Comparator, ver: &Version) -> bool {
