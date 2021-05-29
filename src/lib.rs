@@ -194,7 +194,9 @@ pub struct Comparator {
     pub op: Op,
     pub major: u64,
     pub minor: Option<u64>,
+    /// Patch is only allowed if minor is Some.
     pub patch: Option<u64>,
+    /// Non-empty pre-release is only allowed if patch is Some.
     pub pre: Prerelease,
 }
 
