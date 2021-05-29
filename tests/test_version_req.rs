@@ -80,19 +80,25 @@ pub fn test_greater_than() {
 #[test]
 pub fn test_less_than() {
     let ref r = req("< 1.0.0");
-
     assert_to_string(r, "<1.0.0");
-
     assert_match_all(r, &["0.1.0", "0.0.1"]);
     assert_match_none(r, &["1.0.0", "1.0.0-beta", "1.0.1", "0.9.9-alpha"]);
 
     let ref r = req("<= 2.1.0-alpha2");
-
     assert_match_all(r, &["2.1.0-alpha2", "2.1.0-alpha1", "2.0.0", "1.0.0"]);
     assert_match_none(
         r,
         &["2.1.0", "2.2.0-alpha1", "2.0.0-alpha2", "1.0.0-alpha2"],
     );
+
+    let ref r = req(">1.0.0-alpha, <1.0.0");
+    assert_match_all(r, &["1.0.0-beta"]);
+
+    let ref r = req(">1.0.0-alpha, <1.0");
+    assert_match_none(r, &["1.0.0-beta"]);
+
+    let ref r = req(">1.0.0-alpha, <1");
+    assert_match_none(r, &["1.0.0-beta"]);
 }
 
 #[test]
