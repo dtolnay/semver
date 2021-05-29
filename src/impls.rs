@@ -1,7 +1,8 @@
 use crate::identifier::Identifier;
-use crate::{BuildMetadata, Prerelease};
+use crate::{BuildMetadata, Comparator, Prerelease, VersionReq};
 use core::cmp::Ordering;
 use core::hash::{Hash, Hasher};
+use core::iter::FromIterator;
 use core::ops::Deref;
 
 impl Default for Identifier {
@@ -140,5 +141,15 @@ impl Ord for BuildMetadata {
         } else {
             Ordering::Less
         }
+    }
+}
+
+impl FromIterator<Comparator> for VersionReq {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = Comparator>,
+    {
+        let comparators = Vec::from_iter(iter);
+        VersionReq { comparators }
     }
 }
