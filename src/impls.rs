@@ -1,3 +1,4 @@
+use crate::backport::*;
 use crate::identifier::Identifier;
 use crate::{BuildMetadata, Comparator, Prerelease, VersionReq};
 use core::cmp::Ordering;
