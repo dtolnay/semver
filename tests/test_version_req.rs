@@ -264,7 +264,7 @@ pub fn test_wildcard() {
 
     let ref r = req("*");
     assert_match_all(r, &["0.9.1", "2.9.0", "0.0.9", "1.0.1", "1.1.1"]);
-    assert_match_none(r, &[]);
+    assert_match_none(r, &["1.0.0-pre"]);
 
     for s in &["x", "X"] {
         assert_eq!(*r, req(s));
@@ -272,7 +272,7 @@ pub fn test_wildcard() {
 
     let ref r = req("1.*");
     assert_match_all(r, &["1.2.0", "1.2.1", "1.1.1", "1.3.0"]);
-    assert_match_none(r, &["0.0.9"]);
+    assert_match_none(r, &["0.0.9", "1.2.0-pre"]);
 
     for s in &["1.x", "1.X", "1.*.*"] {
         assert_eq!(*r, req(s));
@@ -280,7 +280,7 @@ pub fn test_wildcard() {
 
     let ref r = req("1.2.*");
     assert_match_all(r, &["1.2.0", "1.2.2", "1.2.4"]);
-    assert_match_none(r, &["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
+    assert_match_none(r, &["1.9.0", "1.0.9", "2.0.1", "0.1.3", "1.2.2-pre"]);
 
     for s in &["1.2.x", "1.2.X"] {
         assert_eq!(*r, req(s));
