@@ -82,7 +82,7 @@ impl FromStr for VersionReq {
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
         let text = text.trim_start_matches(' ');
-        if let Some(text) = text.strip_prefix('*') {
+        if let Some(text) = wildcard(text) {
             if text.trim_start_matches(' ').is_empty() {
                 #[cfg(not(no_const_vec_new))]
                 return Ok(VersionReq::STAR);
@@ -178,6 +178,18 @@ fn numeric_identifier(input: &str, pos: Position) -> Result<(u64, &str), Error> 
         Err(Error::new(ErrorKind::UnexpectedChar(pos, unexpected)))
     } else {
         Err(Error::new(ErrorKind::UnexpectedEnd(pos)))
+    }
+}
+
+fn wildcard(input: &str) -> Option<&str> {
+    if let Some(rest) = input.strip_prefix('*') {
+        Some(rest)
+    } else if let Some(rest) = input.strip_prefix('x') {
+        Some(rest)
+    } else if let Some(rest) = input.strip_prefix('X') {
+        Some(rest)
+    } else {
+        None
     }
 }
 
@@ -281,7 +293,7 @@ fn comparator(input: &str) -> Result<(Comparator, Position, &str), Error> {
 
     let (minor, text) = if let Some(text) = text.strip_prefix('.') {
         pos = Position::Minor;
-        if let Some(text) = text.strip_prefix('*') {
+        if let Some(text) = wildcard(text) {
             has_wildcard = true;
             if default_op {
                 op = Op::Wildcard;
@@ -297,7 +309,7 @@ fn comparator(input: &str) -> Result<(Comparator, Position, &str), Error> {
 
     let (patch, text) = if let Some(text) = text.strip_prefix('.') {
         pos = Position::Patch;
-        if let Some(text) = text.strip_prefix('*') {
+        if let Some(text) = wildcard(text) {
             if default_op {
                 op = Op::Wildcard;
             }
