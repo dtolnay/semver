@@ -266,49 +266,25 @@ pub fn test_wildcard() {
     assert_match_all(r, &["0.9.1", "2.9.0", "0.0.9", "1.0.1", "1.1.1"]);
     assert_match_none(r, &[]);
 
-    let err = req_err("x");
-    assert_to_string(
-        err,
-        "unexpected character 'x' while parsing major version number",
-    );
-
-    let err = req_err("X");
-    assert_to_string(
-        err,
-        "unexpected character 'X' while parsing major version number",
-    );
+    for s in &["x", "X"] {
+        assert_eq!(*r, req(s));
+    }
 
     let ref r = req("1.*");
     assert_match_all(r, &["1.2.0", "1.2.1", "1.1.1", "1.3.0"]);
     assert_match_none(r, &["0.0.9"]);
 
-    let err = req_err("1.x");
-    assert_to_string(
-        err,
-        "unexpected character 'x' while parsing minor version number",
-    );
-
-    let err = req_err("1.X");
-    assert_to_string(
-        err,
-        "unexpected character 'X' while parsing minor version number",
-    );
+    for s in &["1.x", "1.X", "1.*.*"] {
+        assert_eq!(*r, req(s));
+    }
 
     let ref r = req("1.2.*");
     assert_match_all(r, &["1.2.0", "1.2.2", "1.2.4"]);
     assert_match_none(r, &["1.9.0", "1.0.9", "2.0.1", "0.1.3"]);
 
-    let err = req_err("1.2.x");
-    assert_to_string(
-        err,
-        "unexpected character 'x' while parsing patch version number",
-    );
-
-    let err = req_err("1.2.X");
-    assert_to_string(
-        err,
-        "unexpected character 'X' while parsing patch version number",
-    );
+    for s in &["1.2.x", "1.2.X"] {
+        assert_eq!(*r, req(s));
+    }
 }
 
 #[test]
