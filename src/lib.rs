@@ -78,6 +78,7 @@
     clippy::option_if_let_else,
     clippy::ptr_as_ptr,
     clippy::redundant_else,
+    clippy::semicolon_if_nothing_returned, // https://github.com/rust-lang/rust-clippy/issues/7324
     clippy::similar_names,
     clippy::unnested_or_patterns,
     clippy::unseparated_literal_suffix,
