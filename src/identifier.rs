@@ -115,7 +115,7 @@ impl Identifier {
                 let mut varint_remaining = len;
                 while varint_remaining > 0 {
                     // SAFETY: size is bytes_for_varint(len) bytes + len bytes.
-                    // This is writing the first bytes_for_variant(len) bytes.
+                    // This is writing the first bytes_for_varint(len) bytes.
                     unsafe { ptr::write(write, varint_remaining as u8 | 0x80) };
                     varint_remaining >>= 7;
                     // SAFETY: still in bounds of the same allocation.
