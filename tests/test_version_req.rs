@@ -27,11 +27,17 @@ fn assert_match_none(req: &VersionReq, versions: &[&str]) {
 }
 
 #[test]
-fn test_default() {
+fn test_simple() {
     let ref r = req("1.0.0");
     assert_to_string(r, "^1.0.0");
     assert_match_all(r, &["1.0.0", "1.1.0", "1.0.1"]);
     assert_match_none(r, &["0.9.9", "0.10.0", "0.1.0", "1.0.0-pre", "1.0.1-pre"]);
+}
+
+#[test]
+fn test_default() {
+    let ref r = VersionReq::default();
+    assert_eq!(r, &VersionReq::STAR);
 }
 
 #[test]

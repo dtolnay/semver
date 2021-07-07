@@ -169,6 +169,8 @@ pub struct Version {
 /// **SemVer version requirement** describing the intersection of some version
 /// comparators, such as `>=1.2.3, <1.8`.
 ///
+/// The [`Default`] implementation is equivalent to [`VersionReq::STAR`].
+///
 /// # Syntax
 ///
 /// - Either `*` (meaning "any"), or one or more comma-separated comparators.
