@@ -35,6 +35,7 @@ fn test_simple() {
 }
 
 #[test]
+#[cfg(not(no_const_vec_new))]
 fn test_default() {
     let ref r = VersionReq::default();
     assert_eq!(r, &VersionReq::STAR);
