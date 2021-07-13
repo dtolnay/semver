@@ -318,7 +318,7 @@ pub struct Prerelease {
 }
 
 /// Optional build metadata identifier. This comes after `+` in a SemVer
-/// verison, as in `0.8.1+zstd.1.5.0`.
+/// version, as in `0.8.1+zstd.1.5.0`.
 ///
 /// # Examples
 ///
