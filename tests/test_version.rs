@@ -225,3 +225,11 @@ fn test_spec_order() {
         i += 1;
     }
 }
+
+#[test]
+fn test_align() {
+    let version = version("1.2.3-rc1");
+    assert_eq!("1.2.3-rc1           ", format!("{:20}", version));
+    assert_eq!("*****1.2.3-rc1******", format!("{:*^20}", version));
+    assert_eq!("           1.2.3-rc1", format!("{:>20}", version));
+}
