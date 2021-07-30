@@ -3,18 +3,12 @@ use core::fmt::{self, Debug, Display};
 
 impl Display for Version {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        Display::fmt(&self.major, formatter)?;
-        formatter.write_str(".")?;
-        Display::fmt(&self.minor, formatter)?;
-        formatter.write_str(".")?;
-        Display::fmt(&self.patch, formatter)?;
+        write!(formatter, "{}.{}.{}", self.major, self.minor, self.patch)?;
         if !self.pre.is_empty() {
-            formatter.write_str("-")?;
-            Display::fmt(&self.pre, formatter)?;
+            write!(formatter, "-{}", self.pre)?;
         }
         if !self.build.is_empty() {
-            formatter.write_str("+")?;
-            Display::fmt(&self.build, formatter)?;
+            write!(formatter, "+{}", self.build)?;
         }
         Ok(())
     }
@@ -29,7 +23,7 @@ impl Display for VersionReq {
             if i > 0 {
                 formatter.write_str(", ")?;
             }
-            Display::fmt(comparator, formatter)?;
+            write!(formatter, "{}", comparator)?;
         }
         Ok(())
     }
@@ -50,16 +44,13 @@ impl Display for Comparator {
             Op::__NonExhaustive => unreachable!(),
         };
         formatter.write_str(op)?;
-        Display::fmt(&self.major, formatter)?;
+        write!(formatter, "{}", self.major)?;
         if let Some(minor) = &self.minor {
-            formatter.write_str(".")?;
-            Display::fmt(minor, formatter)?;
+            write!(formatter, ".{}", minor)?;
             if let Some(patch) = &self.patch {
-                formatter.write_str(".")?;
-                Display::fmt(patch, formatter)?;
+                write!(formatter, ".{}", patch)?;
                 if !self.pre.is_empty() {
-                    formatter.write_str("-")?;
-                    Display::fmt(&self.pre, formatter)?;
+                    write!(formatter, "-{}", self.pre)?;
                 }
             } else if self.op == Op::Wildcard {
                 formatter.write_str(".*")?;
@@ -102,18 +93,12 @@ impl Debug for Version {
 
 impl Debug for Prerelease {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("Prerelease(\"")?;
-        Display::fmt(self, formatter)?;
-        formatter.write_str("\")")?;
-        Ok(())
+        write!(formatter, "Prerelease(\"{}\")", self)
     }
 }
 
 impl Debug for BuildMetadata {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("BuildMetadata(\"")?;
-        Display::fmt(self, formatter)?;
-        formatter.write_str("\")")?;
-        Ok(())
+        write!(formatter, "BuildMetadata(\"{}\")", self)
     }
 }
