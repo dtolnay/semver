@@ -31,51 +31,32 @@ impl Display for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match &self.kind {
             ErrorKind::UnexpectedEnd(pos) => {
-                formatter.write_str("unexpected end of input while parsing ")?;
-                Display::fmt(pos, formatter)?;
-                Ok(())
+                write!(formatter, "unexpected end of input while parsing {}", pos)
             }
             ErrorKind::UnexpectedChar(pos, ch) => {
-                formatter.write_str("unexpected character ")?;
-                Debug::fmt(ch, formatter)?;
-                formatter.write_str(" while parsing ")?;
-                Display::fmt(pos, formatter)?;
-                Ok(())
+                write!(
+                    formatter,
+                    "unexpected character {:?} while parsing {}",
+                    ch, pos,
+                )
             }
             ErrorKind::UnexpectedCharAfter(pos, ch) => {
-                formatter.write_str("unexpected character ")?;
-                Debug::fmt(ch, formatter)?;
-                formatter.write_str(" after ")?;
-                Display::fmt(pos, formatter)?;
-                Ok(())
+                write!(formatter, "unexpected character {:?} after {}", ch, pos)
             }
             ErrorKind::ExpectedCommaFound(pos, ch) => {
-                formatter.write_str("expected comma after ")?;
-                Display::fmt(pos, formatter)?;
-                formatter.write_str(", found ")?;
-                Debug::fmt(ch, formatter)?;
-                Ok(())
+                write!(formatter, "expected comma after {}, found {:?}", pos, ch)
             }
             ErrorKind::LeadingZero(pos) => {
-                formatter.write_str("invalid leading zero in ")?;
-                Display::fmt(pos, formatter)?;
-                Ok(())
+                write!(formatter, "invalid leading zero in {}", pos)
             }
             ErrorKind::Overflow(pos) => {
-                formatter.write_str("value of ")?;
-                Display::fmt(pos, formatter)?;
-                formatter.write_str(" exceeds u64::MAX")?;
-                Ok(())
+                write!(formatter, "value of {} exceeds u64::MAX", pos)
             }
             ErrorKind::EmptySegment(pos) => {
-                formatter.write_str("empty identifier segment in ")?;
-                Display::fmt(pos, formatter)?;
-                Ok(())
+                write!(formatter, "empty identifier segment in {}", pos)
             }
             ErrorKind::IllegalCharacter(pos) => {
-                formatter.write_str("unexpected character in ")?;
-                Display::fmt(pos, formatter)?;
-                Ok(())
+                write!(formatter, "unexpected character in {}", pos)
             }
             ErrorKind::UnexpectedAfterWildcard => {
                 formatter.write_str("unexpected character after wildcard in version req")
