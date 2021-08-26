@@ -2,9 +2,17 @@ use std::env;
 use std::process::Command;
 use std::str;
 
+struct RustcVersion {
+    minor: u32,
+    is_nightly: bool,
+}
+
 fn main() {
-    let compiler = match rustc_minor_version() {
-        Some(compiler) => compiler,
+    let compiler = match rustc_version() {
+        // Since some projects pin to a nightly version, we could be on an old nightly compiler.
+        // An old nightly may not yet have implemented the feature we want, so decrement the
+        // version by 1 if we are on nightly compiler
+        Some(compiler) => compiler.minor - if compiler.is_nightly { 1 } else { 0 },
         None => return,
     };
 
@@ -67,7 +75,7 @@ fn main() {
     }
 }
 
-fn rustc_minor_version() -> Option<u32> {
+fn rustc_version() -> Option<RustcVersion> {
     let rustc = env::var_os("RUSTC")?;
     let output = Command::new(rustc).arg("--version").output().ok()?;
     let version = str::from_utf8(&output.stdout).ok()?;
@@ -75,5 +83,8 @@ fn rustc_minor_version() -> Option<u32> {
     if pieces.next() != Some("rustc 1") {
         return None;
     }
-    pieces.next()?.parse().ok()
+    let minor = pieces.next()?.parse().ok()?;
+    let is_nightly = version.contains("nightly");
+
+    Some(RustcVersion { minor, is_nightly })
 }
