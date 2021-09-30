@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_lines, clippy::wildcard_imports)]
+
 mod util;
 
 use crate::util::*;

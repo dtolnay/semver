@@ -1,3 +1,10 @@
+#![allow(
+    clippy::missing_panics_doc,
+    clippy::shadow_unrelated,
+    clippy::toplevel_ref_arg,
+    clippy::wildcard_imports
+)]
+
 mod node;
 mod util;
 

@@ -1,3 +1,10 @@
+#![allow(
+    clippy::eq_op,
+    clippy::needless_pass_by_value,
+    clippy::toplevel_ref_arg,
+    clippy::wildcard_imports
+)]
+
 mod util;
 
 use crate::util::*;
