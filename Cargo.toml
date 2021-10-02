@@ -3,6 +3,7 @@ name = "semver"
 version = "1.0.4"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 edition = "2018"
+rust-version = "1.31"
 license = "MIT OR Apache-2.0"
 description = "Parser and evaluator for Cargo's flavor of Semantic Versioning"
 repository = "https://github.com/dtolnay/semver"
