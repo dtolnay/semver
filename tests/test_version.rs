@@ -1,4 +1,8 @@
-#![allow(clippy::too_many_lines, clippy::wildcard_imports)]
+#![allow(
+    clippy::nonminimal_bool,
+    clippy::too_many_lines,
+    clippy::wildcard_imports
+)]
 
 mod util;
 
