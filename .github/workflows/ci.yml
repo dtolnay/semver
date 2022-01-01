@@ -6,7 +6,7 @@ on:
   schedule: [cron: "40 1 * * *"]
 
 env:
-  RUSTFLAGS: '-Dwarnings'
+  RUSTFLAGS: -Dwarnings
 
 jobs:
   test:
@@ -35,7 +35,7 @@ jobs:
       - run: npm install semver
       - run: cargo test
         env:
-          RUSTFLAGS: --cfg test_node_semver
+          RUSTFLAGS: --cfg test_node_semver ${{env.RUSTFLAGS}}
 
   clippy:
     name: Clippy
