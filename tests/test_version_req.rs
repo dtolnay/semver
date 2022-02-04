@@ -417,7 +417,10 @@ fn test_leading_digit_in_pre_and_build() {
 #[test]
 fn test_wildcard_and_another() {
     let err = req_err("*, 0.20.0-any");
-    assert_to_string(err, "unexpected character after wildcard in version req");
+    assert_to_string(
+        err,
+        "wildcard req (*) must be the only comparator in the version req",
+    );
 
     let err = req_err("0.20.0-any, *");
     assert_to_string(
