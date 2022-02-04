@@ -184,7 +184,8 @@ pub struct Version {
 /// - Whitespace is permitted around commas and around operators. Whitespace is
 ///   not permitted within a partial version, i.e. anywhere between the major
 ///   version number and its minor, patch, pre-release, or build metadata.
-#[derive(Default, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(no_const_vec_new, derive(Default))]
 pub struct VersionReq {
     pub comparators: Vec<Comparator>,
 }
@@ -474,6 +475,14 @@ impl VersionReq {
     /// described by `self`.
     pub fn matches(&self, version: &Version) -> bool {
         eval::matches_req(self, version)
+    }
+}
+
+/// The default VersionReq is the same as [`VersionReq::STAR`].
+#[cfg(not(no_const_vec_new))]
+impl Default for VersionReq {
+    fn default() -> Self {
+        VersionReq::STAR
     }
 }
 
