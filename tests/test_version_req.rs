@@ -396,7 +396,7 @@ fn test_eq_hash() {
 }
 
 #[test]
-fn test_parsing_pre_and_build_metadata_see_issue_217() {
+fn test_leading_digit_in_pre_and_build() {
     for op in &["=", ">", ">=", "<", "<=", "~", "^"] {
         // digit then alpha
         req(&format!("{} 1.2.3-1a", op));
