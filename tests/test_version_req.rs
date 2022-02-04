@@ -413,3 +413,18 @@ fn test_leading_digit_in_pre_and_build() {
         req(&format!("{} 1.2.3-1a-1a+1a-1a-1a", op));
     }
 }
+
+#[test]
+fn test_wildcard_and_another() {
+    let err = req_err("*, 0.20.0-any");
+    assert_to_string(
+        err,
+        "wildcard req (*) must be the only comparator in the version req",
+    );
+
+    let err = req_err("0.20.0-any, *");
+    assert_to_string(
+        err,
+        "unexpected character '*' while parsing major version number",
+    );
+}
