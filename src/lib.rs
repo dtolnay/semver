@@ -71,6 +71,7 @@
     clippy::cast_possible_truncation,
     clippy::doc_markdown,
     clippy::items_after_statements,
+    clippy::manual_map,
     clippy::match_bool,
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
