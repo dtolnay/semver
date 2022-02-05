@@ -92,7 +92,7 @@ impl FromStr for VersionReq {
                     comparators: Vec::new(),
                 });
             } else if rest.starts_with(',') {
-                return Err(Error::new(ErrorKind::CommaAfterWildcard(ch)));
+                return Err(Error::new(ErrorKind::WildcardNotTheOnlyComparator(ch)));
             } else {
                 return Err(Error::new(ErrorKind::UnexpectedAfterWildcard));
             }
@@ -365,7 +365,18 @@ fn comparator(input: &str) -> Result<(Comparator, Position, &str), Error> {
 }
 
 fn version_req(input: &str, out: &mut Vec<Comparator>, depth: usize) -> Result<usize, Error> {
-    let (comparator, pos, text) = comparator(input)?;
+    let (comparator, pos, text) = match comparator(input) {
+        Ok(success) => success,
+        Err(mut error) => {
+            if let Some((ch, mut rest)) = wildcard(input) {
+                rest = rest.trim_start_matches(' ');
+                if rest.is_empty() || rest.starts_with(',') {
+                    error.kind = ErrorKind::WildcardNotTheOnlyComparator(ch);
+                }
+            }
+            return Err(error);
+        }
+    };
 
     if text.is_empty() {
         out.reserve_exact(depth + 1);

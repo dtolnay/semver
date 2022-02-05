@@ -10,7 +10,7 @@ pub(crate) enum ErrorKind {
     Overflow(Position),
     EmptySegment(Position),
     IllegalCharacter(Position),
-    CommaAfterWildcard(char),
+    WildcardNotTheOnlyComparator(char),
     UnexpectedAfterWildcard,
     ExcessiveComparators,
 }
@@ -59,7 +59,7 @@ impl Display for Error {
             ErrorKind::IllegalCharacter(pos) => {
                 write!(formatter, "unexpected character in {}", pos)
             }
-            ErrorKind::CommaAfterWildcard(ch) => {
+            ErrorKind::WildcardNotTheOnlyComparator(ch) => {
                 write!(
                     formatter,
                     "wildcard req ({}) must be the only comparator in the version req",
