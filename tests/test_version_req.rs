@@ -336,7 +336,7 @@ pub fn test_parse_errors() {
     let err = req_err("\0");
     assert_to_string(
         err,
-        "unexpected character '\\u{0}' while parsing major version number",
+        "unexpected character '\\0' while parsing major version number",
     );
 
     let err = req_err(">= >= 0.0.2");
