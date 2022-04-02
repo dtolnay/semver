@@ -208,13 +208,13 @@ fn dot(input: &str, pos: Position) -> Result<&str, Error> {
 
 fn prerelease_identifier(input: &str) -> Result<(Prerelease, &str), Error> {
     let (string, rest) = identifier(input, Position::Pre)?;
-    let identifier = unsafe { Identifier::new_unchecked(string) };
+    let identifier = Identifier::new(string);
     Ok((Prerelease { identifier }, rest))
 }
 
 fn build_identifier(input: &str) -> Result<(BuildMetadata, &str), Error> {
     let (string, rest) = identifier(input, Position::Build)?;
-    let identifier = unsafe { Identifier::new_unchecked(string) };
+    let identifier = Identifier::new(string);
     Ok((BuildMetadata { identifier }, rest))
 }
 
