@@ -88,18 +88,30 @@ mod repr {
 
     #[cfg(target_pointer_width = "64")]
     #[derive(PartialEq, Eq, Clone, Copy)]
+    #[repr(C)]
     pub struct Repr {
         ptr: NonNull<u8>,
     }
 
     #[cfg(target_pointer_width = "32")]
     #[derive(PartialEq, Eq, Clone, Copy)]
+    #[repr(C)]
     pub struct Repr {
         ptr: NonNull<u8>,
         remainder: usize,
     }
 
     impl Repr {
+        #[cfg(target_pointer_width = "32")]
+        pub fn as_u64(self) -> u64 {
+            self.ptr.as_ptr() as u64 + ((self.remainder as u64) << 32)
+        }
+
+        #[cfg(target_pointer_width = "64")]
+        pub fn as_u64(self) -> u64 {
+            self.ptr.as_ptr() as u64
+        }
+
         pub fn as_ptr(self) -> *const u8 {
             self.ptr.as_ptr()
         }
@@ -107,8 +119,8 @@ mod repr {
         #[cfg(target_pointer_width = "32")]
         pub const fn from_ptr(ptr: NonNull<u8>) -> Self {
             Repr {
-                remainder: 0,
                 ptr: ptr,
+                remainder: 0,
             }
         }
 
@@ -122,7 +134,7 @@ mod repr {
 
         #[cfg(target_pointer_width = "32")]
         pub fn is_inline(self) -> bool {
-            self.remainder >> 31 == 0
+            self.ptr.as_ptr() as usize >> 31 == 0
         }
 
         #[cfg(target_pointer_width = "64")]
@@ -296,11 +308,12 @@ fn ptr_to_repr(ptr: *mut u8) -> Repr {
     // `mov eax, 1`
     // `shld rax, rdi, 63`
     let prev = ptr as usize;
-    let repr = (prev | 1).rotate_right(1);
+    let new = (prev | 1).rotate_right(1);
 
     // SAFETY: the most significant bit of repr is known to be set, so the value
     // is not zero.
-    Repr::from_ptr(unsafe { NonNull::new_unchecked(ptr.wrapping_sub(prev).wrapping_add(repr)) })
+    let diff = new.wrapping_sub(prev);
+    Repr::from_ptr(unsafe { NonNull::new_unchecked(ptr.wrapping_add(diff)) })
 }
 
 // Shift out the 1 previously placed into the most significant bit of the least
@@ -308,10 +321,10 @@ fn ptr_to_repr(ptr: *mut u8) -> Repr {
 // aligned pointer.
 fn repr_to_ptr(repr: Repr) -> *const u8 {
     // `lea rax, [rdi + rdi]`
-    let int_repr = repr.as_ptr() as usize;
-    repr.as_ptr()
-        .wrapping_sub(int_repr)
-        .wrapping_add(int_repr << 1)
+    let prev = repr.as_ptr() as usize;
+    let new = prev << 1;
+    let diff = new.wrapping_sub(prev);
+    repr.as_ptr().wrapping_add(diff)
 }
 
 fn repr_to_ptr_mut(repr: Repr) -> *mut u8 {
@@ -326,7 +339,7 @@ fn inline_len(repr: Repr) -> NonZeroUsize {
     // On many architectures these are more efficient than counting on ordinary
     // zeroable integers (bsf vs cttz). On rustc <1.53 without those intrinsics,
     // we count zeros in the u64 rather than the NonZeroU64.
-    let repr = repr.as_ptr() as usize;
+    let repr = repr.as_u64();
 
     #[cfg(target_endian = "little")]
     let zero_bits_on_string_end = repr.leading_zeros();
