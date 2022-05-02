@@ -49,10 +49,16 @@ jobs:
   miri:
     name: Miri
     runs-on: ubuntu-latest
+    env:
+      MIRIFLAGS: -Zmiri-tag-raw-pointers
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@miri
       - run: cargo miri test
+      - name: Run cargo miri test (32-bit little endian)
+        run: cargo miri test --target i686-unknown-linux-gnu
+      - name: Run cargo miri test (32-bit big endian)
+        run: cargo miri test --target mips-unknown-linux-gnu
 
   outdated:
     name: Outdated
