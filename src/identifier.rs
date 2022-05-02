@@ -249,6 +249,9 @@ impl PartialEq for Identifier {
     }
 }
 
+unsafe impl Send for Identifier {}
+unsafe impl Sync for Identifier {}
+
 // We use heap pointers that are 2-byte aligned, meaning they have an
 // insignificant 0 in the least significant bit. We take advantage of that
 // unneeded bit to rotate a 1 into the most significant bit to make the repr
