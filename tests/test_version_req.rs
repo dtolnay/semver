@@ -441,3 +441,17 @@ fn test_wildcard_and_another() {
         "wildcard req (*) must be the only comparator in the version req",
     );
 }
+
+#[test]
+fn test_major_zero() {
+    let ref r = req("^0.4.0");
+    assert_match_all(r, &["0.4.0", "0.4.6"]);
+    assert_match_none(r, &["0.3.0", "0.5.0", "1.0.0"]);
+}
+
+#[test]
+fn test_major_minor_zero() {
+    let ref r = req("^0.0.0");
+    assert_match_all(r, &["0.0.0"]);
+    assert_match_none(r, &["0.0.1", "0.1.0", "1.0.0"]);
+}
