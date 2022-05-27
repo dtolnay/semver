@@ -1,6 +1,7 @@
 use crate::parse::Error;
 use core::fmt::{self, Debug, Display};
 
+#[derive(Clone)]
 pub(crate) enum ErrorKind {
     UnexpectedEnd(Position),
     UnexpectedChar(Position, char),

@@ -18,6 +18,7 @@ use core::str::FromStr;
 ///     eprintln!("{}", err);
 /// }
 /// ```
+#[derive(Clone)]
 pub struct Error {
     pub(crate) kind: ErrorKind,
 }
