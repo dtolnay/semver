@@ -497,6 +497,11 @@ impl Comparator {
 }
 
 impl Prerelease {
+    // Work around https://github.com/rust-lang/rust/issues/97933
+    #[cfg(doc)]
+    pub const EMPTY: Self = "";
+
+    #[cfg(not(doc))]
     pub const EMPTY: Self = Prerelease {
         identifier: Identifier::empty(),
     };
@@ -515,6 +520,11 @@ impl Prerelease {
 }
 
 impl BuildMetadata {
+    // Work around https://github.com/rust-lang/rust/issues/97933
+    #[cfg(doc)]
+    pub const EMPTY: Self = "";
+
+    #[cfg(not(doc))]
     pub const EMPTY: Self = BuildMetadata {
         identifier: Identifier::empty(),
     };
