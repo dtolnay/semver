@@ -63,6 +63,15 @@ jobs:
       - name: Run cargo miri test (32-bit big endian)
         run: cargo miri test --target mips-unknown-linux-gnu
 
+  fuzz:
+    name: Fuzz
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: dtolnay/install@cargo-fuzz
+      - run: cargo fuzz build -O
+
   outdated:
     name: Outdated
     runs-on: ubuntu-latest
