@@ -54,6 +54,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@miri
+      - uses: dtolnay/install@xargo
+        with:
+          bin: xargo-check
       - run: cargo miri test
       - name: Run cargo miri test (32-bit little endian)
         run: cargo miri test --target i686-unknown-linux-gnu
