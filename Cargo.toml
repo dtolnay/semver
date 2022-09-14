@@ -8,7 +8,6 @@ documentation = "https://docs.rs/semver"
 edition = "2018"
 keywords = ["cargo"]
 license = "MIT OR Apache-2.0"
-readme = "README.md"
 repository = "https://github.com/dtolnay/semver"
 rust-version = "1.31"
 
