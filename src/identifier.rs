@@ -66,7 +66,7 @@
 // repr, leaving it available as a niche for downstream code. For example this
 // allows size_of::<Version>() == size_of::<Option<Version>>().
 
-use crate::alloc::alloc::{alloc, dealloc, Layout};
+use crate::alloc::alloc::{alloc, dealloc, handle_alloc_error, Layout};
 use core::mem;
 use core::num::{NonZeroU64, NonZeroUsize};
 use core::ptr::{self, NonNull};
@@ -123,6 +123,9 @@ impl Identifier {
                 let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
                 // SAFETY: layout's size is nonzero.
                 let ptr = unsafe { alloc(layout) };
+                if ptr.is_null() {
+                    handle_alloc_error(layout);
+                }
                 let mut write = ptr;
                 let mut varint_remaining = len;
                 while varint_remaining > 0 {
@@ -203,6 +206,9 @@ impl Clone for Identifier {
             let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
             // SAFETY: layout's size is nonzero.
             let clone = unsafe { alloc(layout) };
+            if clone.is_null() {
+                handle_alloc_error(layout);
+            }
             // SAFETY: new allocation cannot overlap the previous one (this was
             // not a realloc). The argument ptrs are readable/writeable
             // respectively for size bytes.
