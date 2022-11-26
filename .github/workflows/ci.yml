@@ -19,6 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         rust: [nightly, beta, stable, 1.52.0, 1.46.0, 1.40.0, 1.39.0, 1.36.0, 1.33.0, 1.32.0, 1.31.0]
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
@@ -32,6 +33,7 @@ jobs:
   node:
     name: Node
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -44,6 +46,7 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@clippy
@@ -54,6 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MIRIFLAGS: -Zmiri-strict-provenance
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@miri
@@ -69,6 +73,7 @@ jobs:
   fuzz:
     name: Fuzz
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@nightly
@@ -79,6 +84,7 @@ jobs:
     name: Outdated
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/install@cargo-outdated
