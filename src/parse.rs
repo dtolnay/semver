@@ -26,6 +26,10 @@ impl FromStr for Version {
     type Err = Error;
 
     fn from_str(text: &str) -> Result<Self, Self::Err> {
+        if text.is_empty() {
+            return Err(Error::new(ErrorKind::Empty));
+        }
+
         let mut pos = Position::Major;
         let (major, text) = numeric_identifier(text, pos)?;
         let text = dot(text, pos)?;

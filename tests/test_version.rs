@@ -12,10 +12,7 @@ use semver::{BuildMetadata, Prerelease, Version};
 #[test]
 fn test_parse() {
     let err = version_err("");
-    assert_to_string(
-        err,
-        "unexpected end of input while parsing major version number",
-    );
+    assert_to_string(err, "empty string, expected a semver version");
 
     let err = version_err("  ");
     assert_to_string(
