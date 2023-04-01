@@ -60,20 +60,25 @@ impl Display for Comparator {
             Op::__NonExhaustive => unreachable!(),
         };
         formatter.write_str(op)?;
+
         write!(formatter, "{}", self.major)?;
+
         if let Some(minor) = &self.minor {
             write!(formatter, ".{}", minor)?;
-            if let Some(patch) = &self.patch {
-                write!(formatter, ".{}", patch)?;
-                if !self.pre.is_empty() {
-                    write!(formatter, "-{}", self.pre)?;
-                }
-            } else if self.op == Op::Wildcard {
-                formatter.write_str(".*")?;
-            }
         } else if self.op == Op::Wildcard {
-            formatter.write_str(".*")?;
+            return formatter.write_str(".*");
         }
+
+        if let Some(patch) = &self.patch {
+            write!(formatter, ".{}", patch)?;
+        } else if self.op == Op::Wildcard {
+            return formatter.write_str(".*");
+        }
+
+        if !self.pre.is_empty() {
+            write!(formatter, "-{}", self.pre)?;
+        }
+
         Ok(())
     }
 }
