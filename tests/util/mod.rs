@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use semver::{BuildMetadata, Error, Prerelease, Version, VersionReq};
+use semver::{BuildMetadata, Comparator, Error, Prerelease, Version, VersionReq};
 use std::fmt::Display;
 
 #[cfg_attr(not(no_track_caller), track_caller)]
@@ -29,6 +29,11 @@ pub(super) fn prerelease(text: &str) -> Prerelease {
 }
 
 #[cfg_attr(not(no_track_caller), track_caller)]
+pub(super) fn prerelease_err(text: &str) -> Error {
+    Prerelease::new(text).unwrap_err()
+}
+
+#[cfg_attr(not(no_track_caller), track_caller)]
 pub(super) fn build_metadata(text: &str) -> BuildMetadata {
     BuildMetadata::new(text).unwrap()
 }
@@ -36,4 +41,14 @@ pub(super) fn build_metadata(text: &str) -> BuildMetadata {
 #[cfg_attr(not(no_track_caller), track_caller)]
 pub(super) fn assert_to_string(value: impl Display, expected: &str) {
     assert_eq!(value.to_string(), expected);
+}
+
+#[cfg_attr(not(no_track_caller), track_caller)]
+pub(super) fn comparator(text: &str) -> Comparator {
+    Comparator::parse(text).unwrap()
+}
+
+#[cfg_attr(not(no_track_caller), track_caller)]
+pub(super) fn comparator_err(text: &str) -> Error {
+    Comparator::parse(text).unwrap_err()
 }

@@ -168,6 +168,9 @@ pub fn test_multiple() {
     // https://github.com/steveklabnik/semver/issues/56
     let err = req_err("1.2.3 - 2.3.4");
     assert_to_string(err, "expected comma after patch version number, found '-'");
+
+    let err = req_err(">=2,22002222022222222,2,21,222,2,2,2,222,2,221,222,2,2,2,21,222,2,2,2,2,2,222,2222,2,2,2,222,2,222,2,222,'6");
+    assert_to_string(err, "excessive number of version comparators");
 }
 
 #[test]
