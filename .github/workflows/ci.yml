@@ -53,6 +53,18 @@ jobs:
         env:
           RUSTFLAGS: --cfg test_node_semver ${{env.RUSTFLAGS}}
 
+  minimal:
+    name: Minimal versions
+    needs: pre_ci
+    if: needs.pre_ci.outputs.continue
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo generate-lockfile -Z minimal-versions
+      - run: cargo check --locked --features serde
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
