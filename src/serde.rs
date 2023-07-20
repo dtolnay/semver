@@ -1,4 +1,4 @@
-use crate::{Comparator, Version, VersionReq};
+use crate::{BareVersion, Comparator, Version, VersionReq};
 use core::fmt;
 use serde::de::{Deserialize, Deserializer, Error, Visitor};
 use serde::ser::{Serialize, Serializer};
@@ -22,6 +22,15 @@ impl Serialize for VersionReq {
 }
 
 impl Serialize for Comparator {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.collect_str(self)
+    }
+}
+
+impl Serialize for BareVersion {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -105,5 +114,31 @@ impl<'de> Deserialize<'de> for Comparator {
         }
 
         deserializer.deserialize_str(ComparatorVisitor)
+    }
+}
+
+impl<'de> Deserialize<'de> for BareVersion {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct VersionVisitor;
+
+        impl<'de> Visitor<'de> for VersionVisitor {
+            type Value = BareVersion;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("bare version")
+            }
+
+            fn visit_str<E>(self, string: &str) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                string.parse().map_err(Error::custom)
+            }
+        }
+
+        deserializer.deserialize_str(VersionVisitor)
     }
 }

@@ -1,7 +1,7 @@
 use crate::backport::*;
 use crate::error::{ErrorKind, Position};
 use crate::identifier::Identifier;
-use crate::{BuildMetadata, Comparator, Op, Prerelease, Version, VersionReq};
+use crate::{BareVersion, BuildMetadata, Comparator, Op, Prerelease, Version, VersionReq};
 use core::str::FromStr;
 
 /// Error parsing a SemVer version or version requirement.
@@ -145,6 +145,43 @@ impl FromStr for BuildMetadata {
             return Err(Error::new(ErrorKind::IllegalCharacter(Position::Build)));
         }
         Ok(build)
+    }
+}
+
+impl FromStr for BareVersion {
+    type Err = Error;
+
+    fn from_str(text: &str) -> Result<Self, Self::Err> {
+        if text.is_empty() {
+            return Err(Error::new(ErrorKind::Empty));
+        }
+
+        let mut pos = Position::Major;
+        let (major, text) = numeric_identifier(text, pos)?;
+        let text = dot(text, pos)?;
+
+        pos = Position::Minor;
+        let (minor, text) = numeric_identifier(text, pos)?;
+
+        let patch = if text.is_empty() {
+            None
+        } else {
+            let text = dot(text, pos)?;
+            pos = Position::Patch;
+            let (patch, text) = numeric_identifier(text, pos)?;
+
+            if let Some(unexpected) = text.chars().next() {
+                return Err(Error::new(ErrorKind::UnexpectedCharAfter(pos, unexpected)));
+            }
+
+            Some(patch)
+        };
+
+        Ok(BareVersion {
+            major,
+            minor,
+            patch,
+        })
     }
 }
 

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use semver::{BuildMetadata, Error, Prerelease, Version, VersionReq};
+use semver::{BareVersion, BuildMetadata, Error, Prerelease, Version, VersionReq};
 use std::fmt::Display;
 
 #[cfg_attr(not(no_track_caller), track_caller)]
@@ -21,6 +21,16 @@ pub(super) fn req(text: &str) -> VersionReq {
 #[cfg_attr(not(no_track_caller), track_caller)]
 pub(super) fn req_err(text: &str) -> Error {
     VersionReq::parse(text).unwrap_err()
+}
+
+#[cfg_attr(not(no_track_caller), track_caller)]
+pub(super) fn bare_version(text: &str) -> BareVersion {
+    BareVersion::parse(text).unwrap()
+}
+
+#[cfg_attr(not(no_track_caller), track_caller)]
+pub(super) fn bare_version_err(text: &str) -> Error {
+    BareVersion::parse(text).unwrap_err()
 }
 
 #[cfg_attr(not(no_track_caller), track_caller)]

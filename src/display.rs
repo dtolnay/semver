@@ -1,4 +1,4 @@
-use crate::{BuildMetadata, Comparator, Op, Prerelease, Version, VersionReq};
+use crate::{BareVersion, BuildMetadata, Comparator, Op, Prerelease, Version, VersionReq};
 use core::fmt::{self, Alignment, Debug, Display, Write};
 
 impl Display for Version {
@@ -90,6 +90,27 @@ impl Display for BuildMetadata {
     }
 }
 
+impl Display for BareVersion {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        let do_display = |formatter: &mut fmt::Formatter| -> fmt::Result {
+            write!(formatter, "{}.{}", self.major, self.minor)?;
+            if let Some(patch) = self.patch {
+                write!(formatter, ".{}", patch)?;
+            }
+            Ok(())
+        };
+
+        let do_len = || -> usize {
+            digits(self.major)
+                + 1
+                + digits(self.minor)
+                + self.patch.map(|patch| 1 + digits(patch)).unwrap_or(0)
+        };
+
+        pad(formatter, do_display, do_len)
+    }
+}
+
 impl Debug for Version {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         let mut debug = formatter.debug_struct("Version");
@@ -116,6 +137,17 @@ impl Debug for Prerelease {
 impl Debug for BuildMetadata {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "BuildMetadata(\"{}\")", self)
+    }
+}
+
+impl Debug for BareVersion {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        let mut debug = formatter.debug_struct("BareVersion");
+        debug
+            .field("major", &self.major)
+            .field("minor", &self.minor)
+            .field("patch", &self.patch);
+        debug.finish()
     }
 }
 

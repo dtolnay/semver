@@ -377,6 +377,14 @@ pub struct BuildMetadata {
     identifier: Identifier,
 }
 
+/// Bare version number as used by the [`rust-version` field](https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field) in `Cargo.toml`.
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct BareVersion {
+    pub major: u64,
+    pub minor: u64,
+    pub patch: Option<u64>,
+}
+
 impl Version {
     /// Create `Version` with an empty pre-release and build metadata.
     ///
@@ -430,6 +438,52 @@ impl Version {
     /// - `23456789999999999999.0.0` &mdash; overflow of a u64.
     pub fn parse(text: &str) -> Result<Self, Error> {
         Version::from_str(text)
+    }
+}
+
+impl BareVersion {
+    /// Create `BareVersion`.
+    ///
+    /// Equivalent to:
+    ///
+    /// ```
+    /// # use semver::{BareVersion, BuildMetadata, Prerelease};
+    /// #
+    /// # const fn new(major: u64, minor: u64, patch: Option<u64>) -> BareVersion {
+    /// BareVersion {
+    ///     major,
+    ///     minor,
+    ///     patch,
+    /// }
+    /// # }
+    /// ```
+    pub const fn new(major: u64, minor: u64, patch: Option<u64>) -> Self {
+        BareVersion {
+            major,
+            minor,
+            patch,
+        }
+    }
+
+    /// Create `BareVersion` by parsing from string representation.
+    ///
+    /// # Errors
+    ///
+    /// Possible reasons for the parse to fail include:
+    ///
+    /// - `1` &mdash; too few numeric components. A bare version must have
+    ///   at least two.
+    ///
+    /// - `1.0.01` &mdash; a numeric component has a leading zero.
+    ///
+    /// - `1.0.unknown` &mdash; unexpected character in one of the components.
+    ///
+    /// - `1.0.0-alpha` &mdash; pre-release and build metadata are not supported
+    ///   by bare versions. If you want to represent them, use [`Version`] instead.
+    ///
+    /// - `23456789999999999999.0.0` &mdash; overflow of a u64.
+    pub fn parse(text: &str) -> Result<Self, Error> {
+        BareVersion::from_str(text)
     }
 }
 
