@@ -24,6 +24,16 @@ pub(super) fn req_err(text: &str) -> Error {
 }
 
 #[cfg_attr(not(no_track_caller), track_caller)]
+pub(super) fn comparator(text: &str) -> Comparator {
+    Comparator::parse(text).unwrap()
+}
+
+#[cfg_attr(not(no_track_caller), track_caller)]
+pub(super) fn comparator_err(text: &str) -> Error {
+    Comparator::parse(text).unwrap_err()
+}
+
+#[cfg_attr(not(no_track_caller), track_caller)]
 pub(super) fn prerelease(text: &str) -> Prerelease {
     Prerelease::new(text).unwrap()
 }
@@ -41,14 +51,4 @@ pub(super) fn build_metadata(text: &str) -> BuildMetadata {
 #[cfg_attr(not(no_track_caller), track_caller)]
 pub(super) fn assert_to_string(value: impl Display, expected: &str) {
     assert_eq!(value.to_string(), expected);
-}
-
-#[cfg_attr(not(no_track_caller), track_caller)]
-pub(super) fn comparator(text: &str) -> Comparator {
-    Comparator::parse(text).unwrap()
-}
-
-#[cfg_attr(not(no_track_caller), track_caller)]
-pub(super) fn comparator_err(text: &str) -> Error {
-    Comparator::parse(text).unwrap_err()
 }

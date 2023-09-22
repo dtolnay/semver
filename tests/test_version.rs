@@ -47,13 +47,13 @@ fn test_parse() {
     let err = version_err("1.2.3-01");
     assert_to_string(err, "invalid leading zero in pre-release identifier");
 
-    let err = version_err("5.1.5++");
+    let err = version_err("1.2.3++");
     assert_to_string(err, "empty identifier segment in build metadata");
 
     let err = version_err("07");
     assert_to_string(err, "invalid leading zero in major version number");
 
-    let err = version_err("75774777777757777757");
+    let err = version_err("111111111111111111111.0.0");
     assert_to_string(err, "value of major version number exceeds u64::MAX");
 
     let err = version_err("8\0");

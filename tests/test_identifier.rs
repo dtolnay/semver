@@ -46,31 +46,31 @@ fn test_eq() {
 
 #[test]
 fn test_comparator() {
-    let compatator = comparator("4.4.5-44");
-    assert_to_string(compatator, "^4.4.5-44");
+    let parsed = comparator("1.2.3-alpha");
+    assert_to_string(parsed, "^1.2.3-alpha");
 
-    let compatator = comparator("2.X");
-    assert_to_string(compatator, "2.*");
+    let parsed = comparator("2.X");
+    assert_to_string(parsed, "2.*");
 
-    let compatator = comparator("2");
-    assert_to_string(compatator, "^2");
+    let parsed = comparator("2");
+    assert_to_string(parsed, "^2");
 
-    let compatator = comparator("5.x.x");
-    assert_to_string(compatator, "5.*");
+    let parsed = comparator("2.x.x");
+    assert_to_string(parsed, "2.*");
 }
 
 #[test]
 fn test_prerelease() {
-    let err = prerelease_err("88.6688.b.rrrrrrr8.b.6bbbbbbb66.66\0");
+    let err = prerelease_err("1.b\0");
     assert_to_string(err, "unexpected character in pre-release identifier");
 }
 
 #[test]
 fn test_comparator_err() {
-    let err = comparator_err("4.4.4-012");
+    let err = comparator_err("1.2.3-01");
     assert_to_string(err, "invalid leading zero in pre-release identifier");
 
-    let err = comparator_err("5.4.4+4.");
+    let err = comparator_err("1.2.3+4.");
     assert_to_string(err, "empty identifier segment in build metadata");
 
     let err = comparator_err(">");
@@ -79,15 +79,15 @@ fn test_comparator_err() {
         "unexpected end of input while parsing major version number",
     );
 
-    let err = comparator_err("4.");
+    let err = comparator_err("1.");
     assert_to_string(
         err,
         "unexpected end of input while parsing minor version number",
     );
 
-    let err = comparator_err("4.*.");
+    let err = comparator_err("1.*.");
     assert_to_string(err, "unexpected character after wildcard in version req");
 
-    let err = comparator_err("55444.4.45-6+6.4.5.45-5644ÿ");
+    let err = comparator_err("1.2.3+4ÿ");
     assert_to_string(err, "unexpected character 'ÿ' after build metadata");
 }
