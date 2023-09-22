@@ -335,7 +335,7 @@ pub fn test_pre() {
 }
 
 #[test]
-pub fn test_parse_errors() {
+pub fn test_parse() {
     let err = req_err("\0");
     assert_to_string(
         err,
@@ -368,6 +368,45 @@ pub fn test_parse_errors() {
         err,
         "unexpected end of input while parsing major version number",
     );
+}
+
+#[test]
+fn test_comparator_parse() {
+    let parsed = comparator("1.2.3-alpha");
+    assert_to_string(parsed, "^1.2.3-alpha");
+
+    let parsed = comparator("2.X");
+    assert_to_string(parsed, "2.*");
+
+    let parsed = comparator("2");
+    assert_to_string(parsed, "^2");
+
+    let parsed = comparator("2.x.x");
+    assert_to_string(parsed, "2.*");
+
+    let err = comparator_err("1.2.3-01");
+    assert_to_string(err, "invalid leading zero in pre-release identifier");
+
+    let err = comparator_err("1.2.3+4.");
+    assert_to_string(err, "empty identifier segment in build metadata");
+
+    let err = comparator_err(">");
+    assert_to_string(
+        err,
+        "unexpected end of input while parsing major version number",
+    );
+
+    let err = comparator_err("1.");
+    assert_to_string(
+        err,
+        "unexpected end of input while parsing minor version number",
+    );
+
+    let err = comparator_err("1.*.");
+    assert_to_string(err, "unexpected character after wildcard in version req");
+
+    let err = comparator_err("1.2.3+4ÿ");
+    assert_to_string(err, "unexpected character 'ÿ' after build metadata");
 }
 
 #[test]
