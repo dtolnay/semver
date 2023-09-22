@@ -169,7 +169,7 @@ pub fn test_multiple() {
     let err = req_err("1.2.3 - 2.3.4");
     assert_to_string(err, "expected comma after patch version number, found '-'");
 
-    let err = req_err(">=2,22002222022222222,2,21,222,2,2,2,222,2,221,222,2,2,2,21,222,2,2,2,2,2,222,2222,2,2,2,222,2,222,2,222,'6");
+    let err = req_err(">1, >2, >3, >4, >5, >6, >7, >8, >9, >10, >11, >12, >13, >14, >15, >16, >17, >18, >19, >20, >21, >22, >23, >24, >25, >26, >27, >28, >29, >30, >31, >32, >33");
     assert_to_string(err, "excessive number of version comparators");
 }
 
