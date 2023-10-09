@@ -102,6 +102,8 @@ mod serde;
 
 use crate::alloc::vec::Vec;
 use crate::identifier::Identifier;
+use core::cmp::Ordering;
+use core::hash::{Hash, Hasher};
 use core::str::FromStr;
 
 #[allow(unused_imports)]
@@ -158,13 +160,48 @@ pub use crate::parse::Error;
 ///     identifier:&ensp;`1.0.0-pre.1` is less than `1.0.0-pre.x`.
 ///
 /// Example:&ensp;`1.0.0-alpha`&ensp;&lt;&ensp;`1.0.0-alpha.1`&ensp;&lt;&ensp;`1.0.0-alpha.beta`&ensp;&lt;&ensp;`1.0.0-beta`&ensp;&lt;&ensp;`1.0.0-beta.2`&ensp;&lt;&ensp;`1.0.0-beta.11`&ensp;&lt;&ensp;`1.0.0-rc.1`&ensp;&lt;&ensp;`1.0.0`
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Clone)]
 pub struct Version {
     pub major: u64,
     pub minor: u64,
     pub patch: u64,
     pub pre: Prerelease,
     pub build: BuildMetadata,
+}
+
+impl PartialEq for Version {
+    fn eq(&self, other: &Self) -> bool {
+        PartialEq::eq(
+            &(self.major, self.minor, self.patch, &self.pre),
+            &(other.major, other.minor, other.patch, &other.pre),
+        )
+    }
+}
+
+impl Eq for Version {}
+
+impl PartialOrd for Version {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(Ord::cmp(self, other))
+    }
+}
+
+impl Ord for Version {
+    fn cmp(&self, other: &Self) -> Ordering {
+        Ord::cmp(
+            &(self.major, self.minor, self.patch, &self.pre),
+            &(other.major, other.minor, other.patch, &other.pre),
+        )
+    }
+}
+
+impl Hash for Version {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.major.hash(hasher);
+        self.minor.hash(hasher);
+        self.patch.hash(hasher);
+        self.pre.hash(hasher);
+    }
 }
 
 /// **SemVer version requirement** describing the intersection of some version
