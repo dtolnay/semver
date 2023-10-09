@@ -102,6 +102,7 @@ mod serde;
 
 use crate::alloc::vec::Vec;
 use crate::identifier::Identifier;
+use core::cmp::Ordering;
 use core::str::FromStr;
 
 #[allow(unused_imports)]
@@ -430,6 +431,53 @@ impl Version {
     /// - `23456789999999999999.0.0` &mdash; overflow of a u64.
     pub fn parse(text: &str) -> Result<Self, Error> {
         Version::from_str(text)
+    }
+
+    /// Compare the major, minor, patch, and pre-release value of two versions,
+    /// disregarding build metadata. Versions that differ only in build metadata
+    /// are considered equal. This comparison is what the SemVer spec refers to
+    /// as "precedence".
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use semver::Version;
+    ///
+    /// let mut versions = [
+    ///     "1.20.0+c144a98".parse::<Version>().unwrap(),
+    ///     "1.20.0".parse().unwrap(),
+    ///     "1.0.0".parse().unwrap(),
+    ///     "1.0.0-alpha".parse().unwrap(),
+    ///     "1.20.0+bc17664".parse().unwrap(),
+    /// ];
+    ///
+    /// // This is a stable sort, so it preserves the relative order of equal
+    /// // elements. The three 1.20.0 versions differ only in build metadata so
+    /// // they are not reordered relative to one another.
+    /// versions.sort_by(Version::cmp_precedence);
+    /// assert_eq!(versions, [
+    ///     "1.0.0-alpha".parse().unwrap(),
+    ///     "1.0.0".parse().unwrap(),
+    ///     "1.20.0+c144a98".parse().unwrap(),
+    ///     "1.20.0".parse().unwrap(),
+    ///     "1.20.0+bc17664".parse().unwrap(),
+    /// ]);
+    ///
+    /// // Totally order the versions, including comparing the build metadata.
+    /// versions.sort();
+    /// assert_eq!(versions, [
+    ///     "1.0.0-alpha".parse().unwrap(),
+    ///     "1.0.0".parse().unwrap(),
+    ///     "1.20.0".parse().unwrap(),
+    ///     "1.20.0+bc17664".parse().unwrap(),
+    ///     "1.20.0+c144a98".parse().unwrap(),
+    /// ]);
+    /// ```
+    pub fn cmp_precedence(&self, other: &Self) -> Ordering {
+        Ord::cmp(
+            &(self.major, self.minor, self.patch, &self.pre),
+            &(other.major, other.minor, other.patch, &other.pre),
+        )
     }
 }
 
