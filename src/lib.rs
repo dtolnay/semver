@@ -76,7 +76,6 @@
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
     clippy::needless_doctest_main,
-    clippy::option_if_let_else,
     clippy::ptr_as_ptr,
     clippy::redundant_else,
     clippy::semicolon_if_nothing_returned, // https://github.com/rust-lang/rust-clippy/issues/7324
