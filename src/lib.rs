@@ -70,6 +70,7 @@
     clippy::cast_lossless,
     clippy::cast_possible_truncation,
     clippy::doc_markdown,
+    clippy::incompatible_msrv,
     clippy::items_after_statements,
     clippy::manual_map,
     clippy::match_bool,
