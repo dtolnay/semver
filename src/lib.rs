@@ -100,7 +100,6 @@ mod parse;
 #[cfg(feature = "serde")]
 mod serde;
 
-use crate::alloc::vec::Vec;
 use crate::identifier::Identifier;
 use core::cmp::Ordering;
 use core::str::FromStr;
