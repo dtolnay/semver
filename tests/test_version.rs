@@ -20,17 +20,19 @@ fn test_parse() {
         "unexpected character ' ' while parsing major version number",
     );
 
-    let err = version_err("1");
-    assert_to_string(
-        err,
-        "unexpected end of input while parsing major version number",
-    );
+    // this is allowed now
+    // let err = version_err("1");
+    // assert_to_string(
+    //     err,
+    //     "unexpected end of input while parsing major version number",
+    // );
 
-    let err = version_err("1.2");
-    assert_to_string(
-        err,
-        "unexpected end of input while parsing minor version number",
-    );
+    // this is allowed now
+    // let err = version_err("1.2");
+    // assert_to_string(
+    //     err,
+    //     "unexpected end of input while parsing minor version number",
+    // );
 
     let err = version_err("1.2.3-");
     assert_to_string(err, "empty identifier segment in pre-release identifier");
