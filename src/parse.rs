@@ -32,10 +32,20 @@ impl FromStr for Version {
 
         let mut pos = Position::Major;
         let (major, text) = numeric_identifier(text, pos)?;
+
+        if text.is_empty() {
+            return Ok(Version::new(major, 0, 0));
+        }
+
         let text = dot(text, pos)?;
 
         pos = Position::Minor;
         let (minor, text) = numeric_identifier(text, pos)?;
+
+        if text.is_empty() {
+            return Ok(Version::new(major, minor, 0));
+        }
+
         let text = dot(text, pos)?;
 
         pos = Position::Patch;
@@ -184,9 +194,14 @@ fn numeric_identifier(input: &str, pos: Position) -> Result<(u64, &str), Error> 
     } else if let Some(unexpected) = input[len..].chars().next() {
         Err(Error::new(ErrorKind::UnexpectedChar(pos, unexpected)))
     } else {
-        Err(Error::new(ErrorKind::UnexpectedEnd(pos)))
+        // this allows to parse string that are missing minor and/or patch e.g. "1", "1.3" 
+        Ok((value, EMPTY)) // EMPTY defined below
+        // the line below has been commented out to allow for incomplete versions parsing
+        // Err(Error::new(ErrorKind::UnexpectedEnd(pos)))
     }
 }
+
+const EMPTY: &str = "";
 
 fn wildcard(input: &str) -> Option<(char, &str)> {
     if let Some(rest) = input.strip_prefix('*') {
