@@ -1,3 +1,0 @@
-[toolchain]
-channel = "nightly-2024-03-17"
-components = ["rustc", "cargo", "rust-std", "rustfmt", "clippy"]
