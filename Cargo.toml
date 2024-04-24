@@ -6,3 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+chumsky ={ git = "https://github.com/zesterer/chumsky.git", rev = "ef9f20f"}
+snafu = "0.8.2"
