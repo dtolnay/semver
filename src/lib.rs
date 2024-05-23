@@ -135,10 +135,10 @@ pub use crate::parse::Error;
 /// comparison operators.
 ///
 /// - The major, minor, and patch number are compared numerically from left to
-/// right, lexicographically ordered as a 3-tuple of integers. So for example
-/// version `1.5.0` is less than version `1.19.0`, despite the fact that
-/// "1.19.0" &lt; "1.5.0" as ASCIIbetically compared strings and 1.19 &lt; 1.5
-/// as real numbers.
+///   right, lexicographically ordered as a 3-tuple of integers. So for example
+///   version `1.5.0` is less than version `1.19.0`, despite the fact that
+///   "1.19.0" &lt; "1.5.0" as ASCIIbetically compared strings and 1.19 &lt; 1.5
+///   as real numbers.
 ///
 /// - When major, minor, and patch are equal, a pre-release version is
 ///   considered less than the ordinary release:&ensp;version `1.0.0-alpha.1` is
