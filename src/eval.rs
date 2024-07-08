@@ -1,13 +1,13 @@
-use crate::{Comparator, Op, Version, VersionReq};
+use crate::{Comparator, Op, Prerelease, Version, VersionReq};
 
-pub(crate) fn matches_req(req: &VersionReq, ver: &Version) -> bool {
+pub(crate) fn matches_req(req: &VersionReq, ver: &Version, prerelease_matches: bool) -> bool {
     for cmp in &req.comparators {
-        if !matches_impl(cmp, ver) {
+        if !matches_impl(cmp, ver, prerelease_matches) {
             return false;
         }
     }
 
-    if ver.pre.is_empty() {
+    if ver.pre.is_empty() || prerelease_matches {
         return true;
     }
 
@@ -24,10 +24,10 @@ pub(crate) fn matches_req(req: &VersionReq, ver: &Version) -> bool {
 }
 
 pub(crate) fn matches_comparator(cmp: &Comparator, ver: &Version) -> bool {
-    matches_impl(cmp, ver) && (ver.pre.is_empty() || pre_is_compatible(cmp, ver))
+    matches_impl(cmp, ver, false) && (ver.pre.is_empty() || pre_is_compatible(cmp, ver))
 }
 
-fn matches_impl(cmp: &Comparator, ver: &Version) -> bool {
+fn matches_impl(cmp: &Comparator, ver: &Version, prerelease_matches: bool) -> bool {
     match cmp.op {
         Op::Exact | Op::Wildcard => matches_exact(cmp, ver),
         Op::Greater => matches_greater(cmp, ver),
@@ -35,7 +35,12 @@ fn matches_impl(cmp: &Comparator, ver: &Version) -> bool {
         Op::Less => matches_less(cmp, ver),
         Op::LessEq => matches_exact(cmp, ver) || matches_less(cmp, ver),
         Op::Tilde => matches_tilde(cmp, ver),
-        Op::Caret => matches_caret(cmp, ver),
+        Op::Caret => {
+            if prerelease_matches {
+                return matches_caret_prerelease(cmp, ver);
+            }
+            matches_caret(cmp, ver)
+        }
         #[cfg(no_non_exhaustive)]
         Op::__NonExhaustive => unreachable!(),
     }
@@ -131,6 +136,39 @@ fn matches_tilde(cmp: &Comparator, ver: &Version) -> bool {
     }
 
     ver.pre >= cmp.pre
+}
+
+fn matches_caret_prerelease(cmp: &Comparator, ver: &Version) -> bool {
+    if matches_exact(cmp, ver) {
+        return true;
+    }
+    if !matches_greater(cmp, ver) {
+        return false;
+    }
+
+    let mut pre_cmp = Comparator {
+        op: Op::LessEq,
+        pre: Prerelease::new("0").unwrap(),
+        ..cmp.clone()
+    };
+    let Comparator {
+        major,
+        minor,
+        patch,
+        ..
+    } = *cmp;
+
+    if major > 0 {
+        pre_cmp.major += 1;
+        pre_cmp.minor = Some(0);
+        pre_cmp.patch = Some(0);
+    } else if minor.is_some() && minor.unwrap() > 0 {
+        pre_cmp.minor = Some(minor.unwrap() + 1);
+        pre_cmp.patch = Some(0);
+    } else {
+        pre_cmp.patch = Some(patch.unwrap() + 1);
+    }
+    matches_less(&pre_cmp, ver)
 }
 
 fn matches_caret(cmp: &Comparator, ver: &Version) -> bool {
