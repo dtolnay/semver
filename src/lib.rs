@@ -526,7 +526,27 @@ impl VersionReq {
 
     /// Simliar to [`Self::matches`], it allows to match any "Semver-compatible" pre-release version.
     pub fn matches_prerelease(&self, version: &Version) -> bool {
-        eval::matches_req(self, version, true)
+        let req = {
+            let mut req = self.clone();
+            req.comparators = req
+                .comparators
+                .into_iter()
+                .map(|mut cmp| {
+                    // Paritial VersionReq (eg. `0.24`) needs to be filled with minor and patch,
+                    // so that we can make sure `0.24.2-pre` matches `~0.24` or `0.24`
+                    if cmp.minor.is_none() {
+                        cmp.minor = Some(0);
+                        cmp.patch = Some(0);
+                    } else if cmp.patch.is_none() {
+                        cmp.patch = Some(0);
+                    }
+                    cmp
+                })
+                .collect();
+            req
+        };
+
+        eval::matches_req(&req, version, true)
     }
 }
 

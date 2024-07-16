@@ -48,26 +48,51 @@ fn patch_caret() {
 
 #[test]
 fn minor_caret() {
+    let ref r = req("0.24");
+    // Match >= 0.24.0, < 0.25.0-0
+    assert_prerelease_match_all(r, &["0.24.0", "0.24.1-0", "0.24.1-pre", "0.24.1"]);
+    // Not Match < 0.24.0
+    assert_prerelease_match_none(r, &["0.1.0", "0.8.0-pre"]);
+    // Not Match >= 0.25.0-0
+    assert_prerelease_match_none(r, &["0.25.0-0", "0.25.0", "0.25.8", "2.0.0-0"]);
+
     let ref r = req("0.8.0");
-    // Match >=0.8.0, <0.9.0-0
+    // Match >= 0.8.0, < 0.9.0-0
     assert_prerelease_match_all(r, &["0.8.0", "0.8.1-0", "0.8.1-pre", "0.8.1"]);
     // Not Match <0.8.0
     assert_prerelease_match_none(r, &["0.1.0", "0.8.0-pre"]);
-    // Not Match >=0.9.0
+    // Not Match >=0.9.0-0
+    assert_prerelease_match_none(r, &["0.9.0-0", "1.0.0-pre", "2.0.0-0"]);
 
     let ref r = req("0.8.0-0");
-    // Match >=0.8.0-0, <0.9.0-0
+    // Match >= 0.8.0-0, < 0.9.0-0
     assert_prerelease_match_all(r, &["0.8.0-0", "0.8.0", "0.8.1-pre", "0.8.1"]);
-    // Not Match <0.8.0-0
+    // Not Match < 0.8.0-0
     assert_prerelease_match_none(r, &["0.1.0", "0.7.7-pre", "0.7.7"]);
-    // Not Match >=0.9.0
+    // Not Match >= 0.9.0-0
     assert_prerelease_match_none(r, &["0.9.0-0", "0.9.0", "1.0.0-pre", "2.0.0-0"]);
 }
 
 #[test]
 fn major_caret() {
+    let ref r = req("1");
+    // Match >= 1.0.0, < 2.0.0-0
+    assert_prerelease_match_all(r, &["1.2.3", "1.2.4-0", "1.2.4", "1.8.8"]);
+    // Not Match < 1.0.0
+    assert_prerelease_match_none(r, &["0.0.8", "0.9.0", "1.0.0-pre"]);
+    // Not Match >= 2.0.0-0
+    assert_prerelease_match_none(r, &["2.0.0-0", "2.0.0", "2.0.1"]);
+
+    let ref r = req("1.2");
+    // Match >= 1.2.0, < 1.3.0-0
+    assert_prerelease_match_all(r, &["1.2.3", "1.2.4-0", "1.2.4", "1.8.8"]);
+    // Not Match < 1.2.0
+    assert_prerelease_match_none(r, &["0.0.8", "0.9.0", "1.0.0-pre"]);
+    // Not Match >= 1.3.0-0
+    assert_prerelease_match_none(r, &["2.0.0-0", "2.0.0", "2.0.1"]);
+
     let ref r = req("1.2.3");
-    // Match >=1.2.3, <2.0.0-0
+    // Match >=1.2.3, < 2.0.0-0
     assert_prerelease_match_all(r, &["1.2.3", "1.2.4-0", "1.2.4", "1.8.8"]);
     // Not Match < 1.2.3
     assert_prerelease_match_none(r, &["0.8.8", "1.2.0", "1.2.3-pre"]);
@@ -75,35 +100,120 @@ fn major_caret() {
     assert_prerelease_match_none(r, &["2.0.0-0", "2.0.0", "2.0.1"]);
 
     let ref r = req("1.2.3-0");
-    // Match >=1.2.3-0, <2.0.0-0
+    // Match >= 1.2.3-0, < 2.0.0-0
     assert_prerelease_match_all(r, &["1.2.3-pre", "1.2.3", "1.2.4-0", "1.2.4"]);
     // Not Match < 1.2.3-0, >= 2.0.0-0
     assert_prerelease_match_none(r, &["1.2.0", "2.0.0-0", "2.0.0"]);
 }
 
 #[test]
-fn test_non_caret() {
-    let ref r: VersionReq = req(">=1.0.0");
+fn test_tilde() {
+    let ref r = req("~0.0.24");
+    // Match >= 0.0.24, < 0.1.0-0
+    assert_prerelease_match_all(r, &["0.0.24", "0.0.25-0", "0.0.25"]);
+    // Not Match < 0.0.24
+    assert_prerelease_match_none(r, &["0.0.1", "0.0.9", "0.0.24-pre"]);
+    // Not Match >= 0.1.0-0
+    assert_prerelease_match_none(r, &["0.1.0-0", "0.1.0", "1.2.3", "2.0.0"]);
+
+    let ref r = req("~0.24");
+    // Match >= 0.24.0, < 0.25.0-0
+    assert_prerelease_match_all(r, &["0.24.0", "0.24.1-pre", "0.24.1", "0.24.9"]);
+    // Not Match < 0.24.0
+    assert_prerelease_match_none(r, &["0.0.1", "0.9.9", "0.24.0-pre"]);
+    // Not Match >= 0.25.0-0
+    assert_prerelease_match_none(r, &["0.25.0-0", "1.1.0", "1.2.3", "2.0.0"]);
+
+    let ref r = req("~1");
+    // Match >= 1.0.0, < 1.1.0-0
+    assert_prerelease_match_all(r, &["1.0.0", "1.0.1-pre", "1.0.1", "1.0.9"]);
+    // Not Match < 1.0.0
+    assert_prerelease_match_none(r, &["0.0.1", "0.9.9", "1.0.0-pre"]);
+    // Not Match >= 1.1.0-0
+    assert_prerelease_match_none(r, &["1.1.0-0", "1.1.0", "1.2.3", "2.0.0"]);
+
+    let ref r = req("~1.2");
+    // Match >= 1.2.0, < 1.3.0-0
+    assert_prerelease_match_all(r, &["1.2.0", "1.2.1", "1.2.2-pre", "1.2.9"]);
+    // Not Match < 1.2.0
+    assert_prerelease_match_none(r, &["0.0.1", "1.0.0-pre", "1.1.0-0", "1.1.0"]);
+    // Not Match >= 1.3.0-0
+    assert_prerelease_match_none(r, &["1.3.0-0", "1.3.0", "1.4.3-pre", "1.8.9", "2.0.0"]);
+
+    let ref r = req("~1.2.3");
+    // Match >= 1.2.3, < 1.3.0-0
+    assert_prerelease_match_all(r, &["1.2.3", "1.2.4-pre", "1.2.4"]);
+    // Not Match < 1.2.3
+    assert_prerelease_match_none(r, &["0.0.1", "1.0.0-pre", "1.1.0-0", "1.1.0"]);
+    // Not Match >= 1.3.0-0
+    assert_prerelease_match_none(r, &["1.3.0-0", "1.3.0", "1.3.1-0", "1.3.1", "2.0.0"]);
+
+    let ref r = req("~1.2.3-0");
+    // Match >= 1.2.3-0, < 1.3.0-0
+    assert_prerelease_match_all(r, &["1.2.3-0", "1.2.3", "1.2.4-pre", "1.2.4"]);
+    // Not Match < 1.2.3-0
+    assert_prerelease_match_none(r, &["0.0.1", "1.0.0-pre", "1.1.0-0", "1.1.0"]);
+    // Not Match >= 1.3.0-0
+    assert_prerelease_match_none(r, &["1.3.0-0", "1.3.0", "1.3.1-0", "1.3.1", "2.0.0"]);
+}
+
+#[test]
+fn test_range() {
+    let ref r = req(">=1.0.0");
     assert_prerelease_match_all(r, &["1.0.0", "1.0.1-pre", "2.0.0-0", "2.0.0"]);
     assert_prerelease_match_none(r, &["0.9.9", "0.10.0", "1.0.0-pre.0"]);
 
-    let ref r: VersionReq = req(">=1.0.0-pre.1");
+    let ref r = req(">=1.0.0-pre.1");
     assert_prerelease_match_all(r, &["1.0.0-pre.1", "1.0.0", "1.0.1-pre", "2.0.0-0"]);
     assert_prerelease_match_none(r, &["0.9.9", "0.10.0", "1.0.0-pre.0"]);
 
-    let ref r: VersionReq = req("<=1.0.0");
+    let ref r = req("<=1.0.0");
     assert_prerelease_match_all(r, &["0.9.9", "0.10.0", "1.0.0-pre", "1.0.0"]);
     assert_prerelease_match_none(r, &["1.0.1", "1.0.1-pre", "1.1.0", "2.0.0-0"]);
 
-    let ref r: VersionReq = req("<=1.0.0-0");
+    let ref r = req("<=1.0.0-0");
     assert_prerelease_match_all(r, &["0.9.9", "0.1.0", "0.10.0", "1.0.0-0"]);
     assert_prerelease_match_none(r, &["1.0.0-pre", "1.0.1-pre", "1.1.0", "2.0.0-0"]);
 
-    let ref r: VersionReq = req(">1.0.0-0,<=1.1.0-0");
+    let ref r = req(">1.0.0-0,<=1.1.0-0");
     assert_prerelease_match_all(r, &["1.0.0-pre", "1.0.0", "1.0.9", "1.1.0-0"]);
     assert_prerelease_match_none(r, &["0.0.1", "1.0.0-0", "1.2.3-pre", "2.0.0"]);
 
-    let ref r: VersionReq = req(">=1.0.0,<1.1.0-0");
+    let ref r = req(">=1.0.0,<1.1.0-0");
     assert_prerelease_match_all(r, &["1.0.0", "1.0.0", "1.0.9"]);
     assert_prerelease_match_none(r, &["0.0.1", "1.0.0-pre", "1.1.0-0", "1.1.0", "2.0.0"]);
+}
+
+#[test]
+fn test_range_partial() {
+    let ref r = req(">=0.24");
+    assert_prerelease_match_all(r, &["0.24.0", "0.24.1", "2.0.0-0", "2.0.0"]);
+    assert_prerelease_match_none(r, &["0.9.9", "0.10.0", "0.24.0-pre.0"]);
+
+    let ref r = req(">=1");
+    assert_prerelease_match_all(r, &["1.0.0", "1.0.1-pre", "2.0.0-0", "2.0.0"]);
+    assert_prerelease_match_none(r, &["0.9.9", "0.10.0", "1.0.0-pre.0"]);
+
+    let ref r = req("<1");
+    assert_prerelease_match_none(r, &["1.0.0", "1.0.1-pre", "2.0.0-0", "2.0.0"]);
+    assert_prerelease_match_all(r, &["0.9.9", "0.10.0", "1.0.0-pre.0"]);
+
+    let ref r = req(">=1.1");
+    assert_prerelease_match_all(r, &["1.1.0", "1.1.1-pre", "2.0.0-0"]);
+    assert_prerelease_match_none(r, &["0.9.9", "0.10.0", "1.0.0-pre.0"]);
+
+    let ref r = req("<1.1");
+    assert_prerelease_match_none(r, &["1.1.0", "1.1.1-pre", "2.0.0-0"]);
+    assert_prerelease_match_all(r, &["0.9.9", "0.10.0", "1.0.0-pre.0"]);
+
+    let ref r = req(">1,<=1.1");
+    assert_prerelease_match_all(r, &["1.0.9", "1.1.0-0"]);
+    assert_prerelease_match_none(r, &["0.0.1", "1.0.0-0", "1.2.3-pre", "2.0.0"]);
+
+    let ref r = req(">=1.1,<2");
+    assert_prerelease_match_all(r, &["1.1.0", "1.2.9-pre", "1.2.9", "2.0.0-pre"]);
+    assert_prerelease_match_none(r, &["0.0.1", "1.0.0-pre", "1.1.0-pre"]);
+
+    let ref r = req("*");
+    assert_prerelease_match_all(r, &["0.0.1", "1.0.0", "1.2.9", "2.0.0-pre"]);
 }
