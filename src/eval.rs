@@ -31,30 +31,34 @@ pub(crate) fn matches_comparator(cmp: &Comparator, ver: &Version) -> bool {
     matches_impl(cmp, ver) && (ver.pre.is_empty() || pre_is_compatible(cmp, ver))
 }
 // If VersionReq missing Minor, Patch, then filling them with 0
-fn fill_partial_req(cmp: &mut Comparator) {
+fn fill_partial_req(cmp: &Comparator) -> Comparator {
+    let mut cmp = cmp.clone();
     if cmp.minor.is_none() {
         cmp.minor = Some(0);
         cmp.patch = Some(0);
     } else if cmp.patch.is_none() {
         cmp.patch = Some(0);
     }
+    cmp
 }
 
 fn matches_prerelease_impl(cmp: &Comparator, ver: &Version) -> bool {
-    let cmp = &{
-        let mut cmp = cmp.clone();
-        match cmp.op {
-            Op::Greater | Op::GreaterEq | Op::Less | Op::LessEq => fill_partial_req(&mut cmp),
-            _ => {}
-        }
-        cmp
-    };
     match cmp.op {
         Op::Exact | Op::Wildcard => matches_exact_prerelease(cmp, ver),
         Op::Greater => matches_greater(cmp, ver),
-        Op::GreaterEq => matches_exact(cmp, ver) || matches_greater(cmp, ver),
-        Op::Less => matches_less(cmp, ver),
-        Op::LessEq => matches_exact(cmp, ver) || matches_less(cmp, ver),
+        Op::GreaterEq => {
+            if matches_exact_prerelease(cmp, ver) {
+                return true;
+            }
+            matches_greater(cmp, ver)
+        }
+        Op::Less => matches_less(&fill_partial_req(cmp), ver),
+        Op::LessEq => {
+            if matches_exact_prerelease(cmp, ver) {
+                return true;
+            }
+            matches_less(&fill_partial_req(cmp), ver)
+        }
         Op::Tilde => matches_tilde_prerelease(cmp, ver),
         Op::Caret => matches_caret_prerelease(cmp, ver),
         #[cfg(no_non_exhaustive)]
@@ -87,12 +91,7 @@ fn matches_exact_prerelease(cmp: &Comparator, ver: &Version) -> bool {
         return false;
     }
 
-    let mut lower = Comparator {
-        op: Op::Less,
-        ..cmp.clone()
-    };
-    fill_partial_req(&mut lower);
-    if !matches_greater(&lower, ver) {
+    if !matches_greater(&fill_partial_req(cmp), ver) {
         return false;
     }
 
@@ -200,9 +199,7 @@ fn matches_tilde_prerelease(cmp: &Comparator, ver: &Version) -> bool {
         return true;
     }
 
-    let mut lower = cmp.clone();
-    fill_partial_req(&mut lower);
-    if !matches_greater(&lower, ver) {
+    if !matches_greater(&fill_partial_req(cmp), ver) {
         return false;
     }
 
@@ -252,9 +249,8 @@ fn matches_caret_prerelease(cmp: &Comparator, ver: &Version) -> bool {
     if matches_exact(cmp, ver) {
         return true;
     }
-    let mut lower = cmp.clone();
-    fill_partial_req(&mut lower);
-    if !matches_greater(&lower, ver) {
+
+    if !matches_greater(&fill_partial_req(cmp), ver) {
         return false;
     }
 
