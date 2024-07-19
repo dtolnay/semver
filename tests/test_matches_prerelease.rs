@@ -75,9 +75,6 @@ fn minor_caret() {
 
 #[test]
 fn major_caret() {
-    let ref r = req("=0.0.0-r");
-    assert_prerelease_match_all(r, &["0.0.0"]);
-
     let ref r = req("0");
     // Match >= 0.0.0, < 1.0.0-0
     assert_prerelease_match_all(r, &["0.0.0", "0.0.1-0", "0.0.1-pre", "0.1.1"]);
@@ -269,12 +266,10 @@ fn test_exact() {
     assert_prerelease_match_none(r, &["1.2.3", "4.2.1-pre", "4.2.2", "5.0.0"]);
 
     let ref r = req("=4.2.1-0");
-    // Match >= 4.2.1-0 < 4.2.2-0
-    assert_prerelease_match_all(r, &["4.2.1-0", "4.2.1-1", "4.2.1-pre"]);
-    // Not Match < 4.2.1-0
-    assert_prerelease_match_none(r, &["1.2.3", "4.2.0"]);
-    // Not Match >= 4.2.2-0
-    assert_prerelease_match_none(r, &["4.2.2-0", "4.2.2", "4.3.5", "6.8.9"]);
+    // Only exactly match 4.2.1-0
+    assert_prerelease_match_all(r, &["4.2.1-0"]);
+    // Not match others
+    assert_prerelease_match_none(r, &["1.2.3", "4.2.0", "4.2.1-1", "4.2.2", "4.3.5"]);
 
     // Speicial Case
     let ref r = req("=0");

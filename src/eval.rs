@@ -81,6 +81,12 @@ fn matches_exact_prerelease(cmp: &Comparator, ver: &Version) -> bool {
         return true;
     }
 
+    // If the comparator has a prerelease tag like =3.0.0-alpha.24,
+    // then it shoud be only exactly match 3.0.0-alpha.24.
+    if !cmp.pre.is_empty() {
+        return false;
+    }
+
     let mut lower = Comparator {
         op: Op::Less,
         ..cmp.clone()
