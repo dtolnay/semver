@@ -53,6 +53,17 @@ jobs:
         env:
           RUSTFLAGS: --cfg test_node_semver ${{env.RUSTFLAGS}}
 
+  mirror_node_matches_prerelease:
+    name: mirror_node_matches_prerelease
+    needs: pre_ci
+    if: needs.pre_ci.outputs.continue
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run:  cargo test --package semver --test test_matches_prerelease --features "mirror_node_matches_prerelease" 
+
   minimal:
     name: Minimal versions
     needs: pre_ci

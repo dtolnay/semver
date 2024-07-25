@@ -13,6 +13,7 @@ rust-version = "1.31"
 
 [features]
 default = ["std"]
+mirror_node_matches_prerelease = []
 std = []
 
 [dependencies]

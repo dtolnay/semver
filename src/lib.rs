@@ -93,6 +93,7 @@ mod backport;
 mod display;
 mod error;
 mod eval;
+mod eval_ext;
 mod identifier;
 mod impls;
 mod parse;
