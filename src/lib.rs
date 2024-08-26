@@ -93,6 +93,7 @@ mod backport;
 mod display;
 mod error;
 mod eval;
+mod eval_ext;
 mod identifier;
 mod impls;
 mod parse;
@@ -521,7 +522,12 @@ impl VersionReq {
     /// Evaluate whether the given `Version` satisfies the version requirement
     /// described by `self`.
     pub fn matches(&self, version: &Version) -> bool {
-        eval::matches_req(self, version)
+        eval::matches_req(self, version, false)
+    }
+
+    /// Simliar to [`Self::matches`], it allows to match any "Semver-compatible" pre-release version.
+    pub fn matches_prerelease(&self, version: &Version) -> bool {
+        eval::matches_req(self, version, true)
     }
 }
 

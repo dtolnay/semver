@@ -1,13 +1,17 @@
-use crate::{Comparator, Op, Version, VersionReq};
+use crate::{eval_ext, Comparator, Op, Version, VersionReq};
 
-pub(crate) fn matches_req(req: &VersionReq, ver: &Version) -> bool {
+pub(crate) fn matches_req(req: &VersionReq, ver: &Version, prerelease_matches: bool) -> bool {
     for cmp in &req.comparators {
-        if !matches_impl(cmp, ver) {
+        if prerelease_matches {
+            if !eval_ext::matches_prerelease_impl(cmp, ver) {
+                return false;
+            }
+        } else if !matches_impl(cmp, ver) {
             return false;
         }
     }
 
-    if ver.pre.is_empty() {
+    if ver.pre.is_empty() || prerelease_matches {
         return true;
     }
 
@@ -41,7 +45,7 @@ fn matches_impl(cmp: &Comparator, ver: &Version) -> bool {
     }
 }
 
-fn matches_exact(cmp: &Comparator, ver: &Version) -> bool {
+pub(super) fn matches_exact(cmp: &Comparator, ver: &Version) -> bool {
     if ver.major != cmp.major {
         return false;
     }
@@ -61,7 +65,7 @@ fn matches_exact(cmp: &Comparator, ver: &Version) -> bool {
     ver.pre == cmp.pre
 }
 
-fn matches_greater(cmp: &Comparator, ver: &Version) -> bool {
+pub(super) fn matches_greater(cmp: &Comparator, ver: &Version) -> bool {
     if ver.major != cmp.major {
         return ver.major > cmp.major;
     }
@@ -87,7 +91,7 @@ fn matches_greater(cmp: &Comparator, ver: &Version) -> bool {
     ver.pre > cmp.pre
 }
 
-fn matches_less(cmp: &Comparator, ver: &Version) -> bool {
+pub(super) fn matches_less(cmp: &Comparator, ver: &Version) -> bool {
     if ver.major != cmp.major {
         return ver.major < cmp.major;
     }
