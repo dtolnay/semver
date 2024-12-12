@@ -200,6 +200,10 @@ impl Identifier {
             unsafe { ptr_as_str(&self.head) }
         }
     }
+
+    pub(crate) fn ptr_eq(&self, rhs: &Self) -> bool {
+        self.head == rhs.head && self.tail == rhs.tail
+    }
 }
 
 impl Clone for Identifier {
@@ -254,12 +258,6 @@ impl Drop for Identifier {
         // SAFETY: ptr was previously allocated by the same allocator with the
         // same layout.
         unsafe { dealloc(ptr, layout) }
-    }
-}
-
-impl Identifier {
-    pub(crate) fn ptr_eq(&self, rhs: &Self) -> bool {
-        self.head == rhs.head && self.tail == rhs.tail
     }
 }
 

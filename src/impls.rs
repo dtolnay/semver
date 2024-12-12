@@ -53,6 +53,7 @@ impl Ord for Prerelease {
         if self.identifier.ptr_eq(&rhs.identifier) {
             return Ordering::Equal;
         }
+
         match self.is_empty() {
             // A real release compares greater than prerelease.
             true => return Ordering::Greater,
@@ -110,6 +111,7 @@ impl Ord for BuildMetadata {
         if self.identifier.ptr_eq(&rhs.identifier) {
             return Ordering::Equal;
         }
+
         let lhs = self.as_str().split('.');
         let mut rhs = rhs.as_str().split('.');
 
