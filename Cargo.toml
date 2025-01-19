@@ -1,6 +1,6 @@
 [package]
 name = "semver"
-version = "1.0.24"
+version = "1.0.25"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 categories = ["data-structures", "no-std"]
 description = "Parser and evaluator for Cargo's flavor of Semantic Versioning"
