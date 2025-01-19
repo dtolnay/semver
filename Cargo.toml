@@ -21,6 +21,9 @@ serde = { version = "1.0.194", optional = true, default-features = false }
 [lib]
 doc-scrape-examples = false
 
+[package.metadata.playground]
+features = ["serde"]
+
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 rustdoc-args = ["--generate-link-to-definition"]
