@@ -478,6 +478,26 @@ impl Version {
             &(other.major, other.minor, other.patch, &other.pre),
         )
     }
+
+    /// The default version 0.0.0 is considered empty (if pre is empty too).
+    /// Build metadata may exist.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use semver::Version;
+    ///
+    /// assert_eq!(Version::default().is_empty(), true);
+    /// assert_eq!(Version::parse("0.0.0").unwrap().is_empty(), true);
+    /// assert_eq!(Version::parse("0.0.0+c7fcc0e").unwrap().is_empty(), true);
+    /// assert_eq!(Version::parse("0.0.0-alpha.1").unwrap().is_empty(), false);
+    /// assert_eq!(Version::parse("0.0.1").unwrap().is_empty(), false);
+    /// assert_eq!(Version::parse("0.1.0").unwrap().is_empty(), false);
+    /// assert_eq!(Version::parse("1.0.0").unwrap().is_empty(), false);
+    /// ```
+    pub fn is_empty(&self) -> bool {
+        self.major == 0 && self.minor == 0 && self.patch == 0 && self.pre.is_empty()
+    }
 }
 
 impl VersionReq {

@@ -179,6 +179,22 @@ fn test_display() {
 }
 
 #[test]
+fn test_default() {
+    assert_to_string(version("0.0.0"), "0.0.0");
+    assert_to_string(Version::default(), "0.0.0");
+    assert_eq!(Version::default(), version("0.0.0"));
+}
+
+#[test]
+fn test_is_empty() {
+    assert_eq!(Version::default().is_empty(), true);
+    assert_eq!(version("0.0.0").is_empty(), true);
+    assert_eq!(version("0.0.0+build.42").is_empty(), true);
+    assert_eq!(version("0.0.0-alpha1").is_empty(), false);
+    assert_eq!(version("0.0.1").is_empty(), false);
+}
+
+#[test]
 fn test_lt() {
     assert!(version("0.0.0") < version("1.2.3-alpha2"));
     assert!(version("1.0.0") < version("1.2.3-alpha2"));

@@ -1,6 +1,6 @@
 use crate::backport::*;
 use crate::identifier::Identifier;
-use crate::{BuildMetadata, Comparator, Prerelease, VersionReq};
+use crate::{BuildMetadata, Comparator, Prerelease, Version, VersionReq};
 use core::cmp::Ordering;
 use core::hash::{Hash, Hasher};
 use core::iter::FromIterator;
@@ -149,6 +149,12 @@ impl Ord for BuildMetadata {
         } else {
             Ordering::Less
         }
+    }
+}
+
+impl Default for Version {
+    fn default() -> Self {
+        Version::new(0, 0, 0) // is_empty() -> true
     }
 }
 
