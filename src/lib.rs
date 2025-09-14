@@ -187,7 +187,6 @@ pub struct Version {
 ///   not permitted within a partial version, i.e. anywhere between the major
 ///   version number and its minor, patch, pre-release, or build metadata.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
-#[cfg_attr(no_const_vec_new, derive(Default))]
 pub struct VersionReq {
     pub comparators: Vec<Comparator>,
 }
@@ -496,7 +495,6 @@ impl VersionReq {
     /// pre-release component. Since `*` is not written with an explicit major,
     /// minor, and patch version, and does not contain a nonempty pre-release
     /// component, it does not match any pre-release versions.
-    #[cfg(not(no_const_vec_new))] // rustc <1.39
     pub const STAR: Self = VersionReq {
         comparators: Vec::new(),
     };
@@ -528,7 +526,6 @@ impl VersionReq {
 }
 
 /// The default VersionReq is the same as [`VersionReq::STAR`].
-#[cfg(not(no_const_vec_new))]
 impl Default for VersionReq {
     fn default() -> Self {
         VersionReq::STAR
