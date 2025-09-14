@@ -6,6 +6,7 @@ categories = ["data-structures", "no-std"]
 description = "Parser and evaluator for Cargo's flavor of Semantic Versioning"
 documentation = "https://docs.rs/semver"
 edition = "2018"
+exclude = ["build.rs"]
 keywords = ["cargo"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/dtolnay/semver"
