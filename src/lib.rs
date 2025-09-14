@@ -69,10 +69,12 @@
 #![allow(
     clippy::cast_lossless,
     clippy::cast_possible_truncation,
+    clippy::checked_conversions,
     clippy::doc_markdown,
     clippy::incompatible_msrv,
     clippy::items_after_statements,
     clippy::manual_map,
+    clippy::manual_range_contains,
     clippy::match_bool,
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
@@ -81,6 +83,7 @@
     clippy::redundant_else,
     clippy::semicolon_if_nothing_returned, // https://github.com/rust-lang/rust-clippy/issues/7324
     clippy::similar_names,
+    clippy::uninlined_format_args,
     clippy::unnested_or_patterns,
     clippy::unseparated_literal_suffix,
     clippy::wildcard_imports

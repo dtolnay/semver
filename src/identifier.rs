@@ -67,13 +67,11 @@
 // allows size_of::<Version>() == size_of::<Option<Version>>().
 
 use crate::alloc::alloc::{alloc, dealloc, handle_alloc_error, Layout};
-use core::isize;
 use core::mem;
 use core::num::{NonZeroU64, NonZeroUsize};
 use core::ptr::{self, NonNull};
 use core::slice;
 use core::str;
-use core::usize;
 
 const PTR_BYTES: usize = mem::size_of::<NonNull<u8>>();
 
