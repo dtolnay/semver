@@ -250,7 +250,7 @@ pub struct Comparator {
 /// - &ensp;**`I.J.*`**&emsp;&mdash;&emsp;equivalent to `=I.J`
 /// - &ensp;**`I.*`**&ensp;or&ensp;**`I.*.*`**&emsp;&mdash;&emsp;equivalent to `=I`
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-#[cfg_attr(not(no_non_exhaustive), non_exhaustive)]
+#[non_exhaustive]
 pub enum Op {
     Exact,
     Greater,
@@ -260,10 +260,6 @@ pub enum Op {
     Tilde,
     Caret,
     Wildcard,
-
-    #[cfg(no_non_exhaustive)] // rustc <1.40
-    #[doc(hidden)]
-    __NonExhaustive,
 }
 
 /// Optional pre-release identifier on a version string. This comes after `-` in

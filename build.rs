@@ -11,18 +11,11 @@ fn main() {
     };
 
     if compiler >= 80 {
-        println!("cargo:rustc-check-cfg=cfg(no_non_exhaustive)");
         println!("cargo:rustc-check-cfg=cfg(no_nonzero_bitscan)");
         println!("cargo:rustc-check-cfg=cfg(no_str_strip_prefix)");
         println!("cargo:rustc-check-cfg=cfg(no_track_caller)");
         println!("cargo:rustc-check-cfg=cfg(no_unsafe_op_in_unsafe_fn_lint)");
         println!("cargo:rustc-check-cfg=cfg(test_node_semver)");
-    }
-
-    if compiler < 40 {
-        // #[non_exhaustive].
-        // https://blog.rust-lang.org/2019/12/19/Rust-1.40.0.html#non_exhaustive-structs-enums-and-variants
-        println!("cargo:rustc-cfg=no_non_exhaustive");
     }
 
     if compiler < 45 {
