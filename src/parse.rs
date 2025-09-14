@@ -1,7 +1,7 @@
-use crate::backport::*;
 use crate::error::{ErrorKind, Position};
 use crate::identifier::Identifier;
 use crate::{BuildMetadata, Comparator, Op, Prerelease, Version, VersionReq};
+use alloc::vec::Vec;
 use core::str::FromStr;
 
 /// Error parsing a SemVer version or version requirement.

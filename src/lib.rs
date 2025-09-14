@@ -89,7 +89,6 @@
 
 extern crate alloc;
 
-mod backport;
 mod display;
 mod error;
 mod eval;
@@ -101,11 +100,9 @@ mod parse;
 mod serde;
 
 use crate::identifier::Identifier;
+use alloc::vec::Vec;
 use core::cmp::Ordering;
 use core::str::FromStr;
-
-#[allow(unused_imports)]
-use crate::backport::*;
 
 pub use crate::parse::Error;
 
