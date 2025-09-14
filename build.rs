@@ -12,14 +12,7 @@ fn main() {
 
     if compiler >= 80 {
         println!("cargo:rustc-check-cfg=cfg(no_nonzero_bitscan)");
-        println!("cargo:rustc-check-cfg=cfg(no_unsafe_op_in_unsafe_fn_lint)");
         println!("cargo:rustc-check-cfg=cfg(test_node_semver)");
-    }
-
-    if compiler < 52 {
-        // #![deny(unsafe_op_in_unsafe_fn)].
-        // https://github.com/rust-lang/rust/issues/71668
-        println!("cargo:rustc-cfg=no_unsafe_op_in_unsafe_fn_lint");
     }
 
     if compiler < 53 {
