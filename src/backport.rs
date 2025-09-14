@@ -15,9 +15,3 @@ impl StripPrefixExt for str {
 }
 
 pub(crate) use crate::alloc::vec::Vec;
-
-#[cfg(no_alloc_crate)] // rustc <1.36
-pub(crate) mod alloc {
-    pub use std::alloc;
-    pub use std::vec;
-}

@@ -11,7 +11,6 @@ fn main() {
     };
 
     if compiler >= 80 {
-        println!("cargo:rustc-check-cfg=cfg(no_alloc_crate)");
         println!("cargo:rustc-check-cfg=cfg(no_const_vec_new)");
         println!("cargo:rustc-check-cfg=cfg(no_non_exhaustive)");
         println!("cargo:rustc-check-cfg=cfg(no_nonzero_bitscan)");
@@ -19,12 +18,6 @@ fn main() {
         println!("cargo:rustc-check-cfg=cfg(no_track_caller)");
         println!("cargo:rustc-check-cfg=cfg(no_unsafe_op_in_unsafe_fn_lint)");
         println!("cargo:rustc-check-cfg=cfg(test_node_semver)");
-    }
-
-    if compiler < 36 {
-        // extern crate alloc.
-        // https://blog.rust-lang.org/2019/07/04/Rust-1.36.0.html#the-alloc-crate-is-stable
-        println!("cargo:rustc-cfg=no_alloc_crate");
     }
 
     if compiler < 39 {

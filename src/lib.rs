@@ -62,7 +62,7 @@
 
 #![doc(html_root_url = "https://docs.rs/semver/1.0.26")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![cfg_attr(all(not(feature = "std"), not(no_alloc_crate)), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(not(no_unsafe_op_in_unsafe_fn_lint), deny(unsafe_op_in_unsafe_fn))]
 #![cfg_attr(no_unsafe_op_in_unsafe_fn_lint, allow(unused_unsafe))]
 #![cfg_attr(no_str_strip_prefix, allow(unstable_name_collisions))]
@@ -89,7 +89,6 @@
     clippy::wildcard_imports
 )]
 
-#[cfg(not(no_alloc_crate))]
 extern crate alloc;
 
 mod backport;
