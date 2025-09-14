@@ -11,17 +11,7 @@ fn main() {
     };
 
     if compiler >= 80 {
-        println!("cargo:rustc-check-cfg=cfg(no_nonzero_bitscan)");
         println!("cargo:rustc-check-cfg=cfg(test_node_semver)");
-    }
-
-    if compiler < 53 {
-        // Efficient intrinsics for count-leading-zeros and count-trailing-zeros
-        // on NonZero integers stabilized in 1.53.0. On many architectures these
-        // are more efficient than counting zeros on ordinary zeroable integers.
-        // https://doc.rust-lang.org/std/num/struct.NonZeroU64.html#method.leading_zeros
-        // https://doc.rust-lang.org/std/num/struct.NonZeroU64.html#method.trailing_zeros
-        println!("cargo:rustc-cfg=no_nonzero_bitscan");
     }
 }
 
