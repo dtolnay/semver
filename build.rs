@@ -12,15 +12,8 @@ fn main() {
 
     if compiler >= 80 {
         println!("cargo:rustc-check-cfg=cfg(no_nonzero_bitscan)");
-        println!("cargo:rustc-check-cfg=cfg(no_track_caller)");
         println!("cargo:rustc-check-cfg=cfg(no_unsafe_op_in_unsafe_fn_lint)");
         println!("cargo:rustc-check-cfg=cfg(test_node_semver)");
-    }
-
-    if compiler < 46 {
-        // #[track_caller].
-        // https://blog.rust-lang.org/2020/08/27/Rust-1.46.0.html#track_caller
-        println!("cargo:rustc-cfg=no_track_caller");
     }
 
     if compiler < 52 {
