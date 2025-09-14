@@ -73,6 +73,7 @@
     clippy::incompatible_msrv,
     clippy::items_after_statements,
     clippy::manual_map,
+    clippy::manual_range_contains,
     clippy::match_bool,
     clippy::missing_errors_doc,
     clippy::must_use_candidate,
