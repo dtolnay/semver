@@ -12,16 +12,9 @@ fn main() {
 
     if compiler >= 80 {
         println!("cargo:rustc-check-cfg=cfg(no_nonzero_bitscan)");
-        println!("cargo:rustc-check-cfg=cfg(no_str_strip_prefix)");
         println!("cargo:rustc-check-cfg=cfg(no_track_caller)");
         println!("cargo:rustc-check-cfg=cfg(no_unsafe_op_in_unsafe_fn_lint)");
         println!("cargo:rustc-check-cfg=cfg(test_node_semver)");
-    }
-
-    if compiler < 45 {
-        // String::strip_prefix.
-        // https://doc.rust-lang.org/std/primitive.str.html#method.strip_prefix
-        println!("cargo:rustc-cfg=no_str_strip_prefix");
     }
 
     if compiler < 46 {
