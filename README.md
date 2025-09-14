@@ -17,7 +17,7 @@ Cargo/crates.io ecosystem for Rust.
 semver = "1.0"
 ```
 
-*Compiler support: requires rustc 1.35+*
+*Compiler support: requires rustc 1.43+*
 
 <br>
 
