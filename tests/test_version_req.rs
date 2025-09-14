@@ -2,6 +2,7 @@
     clippy::missing_panics_doc,
     clippy::shadow_unrelated,
     clippy::toplevel_ref_arg,
+    clippy::uninlined_format_args,
     clippy::wildcard_imports
 )]
 

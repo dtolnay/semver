@@ -83,6 +83,7 @@
     clippy::redundant_else,
     clippy::semicolon_if_nothing_returned, // https://github.com/rust-lang/rust-clippy/issues/7324
     clippy::similar_names,
+    clippy::uninlined_format_args,
     clippy::unnested_or_patterns,
     clippy::unseparated_literal_suffix,
     clippy::wildcard_imports
