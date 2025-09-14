@@ -14,10 +14,14 @@ rust-version = "1.61"
 
 [features]
 default = ["std"]
+serde = ["dep:serde"]
 std = []
 
 [dependencies]
-serde = { package = "serde_core", version = "1.0.194", optional = true, default-features = false }
+serde = { package = "serde_core", version = "1.0.220", optional = true, default-features = false }
+
+[target.'cfg(any())'.dependencies]
+serde = { version = "1.0.220", optional = true, default-features = false }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
