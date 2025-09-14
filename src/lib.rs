@@ -69,6 +69,7 @@
 #![allow(
     clippy::cast_lossless,
     clippy::cast_possible_truncation,
+    clippy::checked_conversions,
     clippy::doc_markdown,
     clippy::incompatible_msrv,
     clippy::items_after_statements,
