@@ -11,19 +11,12 @@ fn main() {
     };
 
     if compiler >= 80 {
-        println!("cargo:rustc-check-cfg=cfg(no_const_vec_new)");
         println!("cargo:rustc-check-cfg=cfg(no_non_exhaustive)");
         println!("cargo:rustc-check-cfg=cfg(no_nonzero_bitscan)");
         println!("cargo:rustc-check-cfg=cfg(no_str_strip_prefix)");
         println!("cargo:rustc-check-cfg=cfg(no_track_caller)");
         println!("cargo:rustc-check-cfg=cfg(no_unsafe_op_in_unsafe_fn_lint)");
         println!("cargo:rustc-check-cfg=cfg(test_node_semver)");
-    }
-
-    if compiler < 39 {
-        // const Vec::new.
-        // https://doc.rust-lang.org/std/vec/struct.Vec.html#method.new
-        println!("cargo:rustc-cfg=no_const_vec_new");
     }
 
     if compiler < 40 {
