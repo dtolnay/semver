@@ -318,7 +318,7 @@ unsafe fn inline_len(repr: &Identifier) -> NonZeroUsize {
     // SAFETY: Identifier's layout is align(8) and at least size 8. We're doing
     // an aligned read of the first 8 bytes from it. The bytes are not all zero
     // because inline strings are at least 1 byte long and cannot contain \0.
-    let repr = unsafe { ptr::read((repr as *const Identifier).cast::<NonZeroU64>()) };
+    let repr = unsafe { ptr::read(ptr::addr_of!(*repr).cast::<NonZeroU64>()) };
 
     #[cfg(target_endian = "little")]
     let zero_bits_on_string_end = repr.leading_zeros();
@@ -335,7 +335,7 @@ unsafe fn inline_len(repr: &Identifier) -> NonZeroUsize {
 // SAFETY: repr must be in the inline representation, i.e. at least 1 and at
 // most 8 nonzero ASCII bytes padded on the end with \0 bytes.
 unsafe fn inline_as_str(repr: &Identifier) -> &str {
-    let ptr = (repr as *const Identifier).cast::<u8>();
+    let ptr = ptr::addr_of!(*repr).cast::<u8>();
     let len = unsafe { inline_len(repr) }.get();
     // SAFETY: we are viewing the nonzero ASCII prefix of the inline repr's
     // contents as a slice of bytes. Input/output lifetimes are correctly
