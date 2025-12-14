@@ -3,7 +3,6 @@ use crate::{BuildMetadata, Comparator, Prerelease, VersionReq};
 use alloc::vec::Vec;
 use core::cmp::Ordering;
 use core::hash::{Hash, Hasher};
-use core::iter::FromIterator;
 use core::ops::Deref;
 
 impl Default for Identifier {
