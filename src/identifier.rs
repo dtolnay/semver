@@ -306,7 +306,7 @@ fn repr_to_ptr(modified: NonNull<u8>) -> *const u8 {
 }
 
 fn repr_to_ptr_mut(repr: NonNull<u8>) -> *mut u8 {
-    repr_to_ptr(repr) as *mut u8
+    repr_to_ptr(repr).cast_mut()
 }
 
 // Compute the length of the inline string, assuming the argument is in short
