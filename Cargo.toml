@@ -23,6 +23,13 @@ serde = { package = "serde_core", version = "1.0.220", optional = true, default-
 [target.'cfg(any())'.dependencies]
 serde = { version = "1.0.220", optional = true, default-features = false }
 
+[target.'cfg(not(miri))'.dev-dependencies]
+criterion = { version = "0.8", default-features = false }
+
+[[bench]]
+name = "parse"
+harness = false
+
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 rustdoc-args = [
