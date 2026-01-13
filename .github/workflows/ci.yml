@@ -39,10 +39,13 @@ jobs:
       - run: cargo check --no-default-features
       - run: cargo check --features serde
       - run: cargo check --features borsh
+        if: matrix.rust != '1.68.0' # Some borsh dependency do not compile in this rustc version
       - run: cargo check --features serde,borsh
       - run: cargo check --no-default-features --features serde
       - run: cargo check --no-default-features --features borsh
+        if: matrix.rust != '1.68.0' # Some borsh dependency do not compile in this rustc version
       - run: cargo check --no-default-features --features serde,borsh
+        if: matrix.rust != '1.68.0' # Some borsh dependency do not compile in this rustc version
       - uses: actions/upload-artifact@v6
         if: matrix.rust == 'nightly' && always()
         with:
@@ -60,7 +63,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - run: npm install semver
-      - run: cargo test --features serde
+      - run: cargo test --features serde,borsh
         env:
           RUSTFLAGS: --cfg test_node_semver ${{env.RUSTFLAGS}}
 
