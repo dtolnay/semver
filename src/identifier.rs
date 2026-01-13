@@ -279,11 +279,11 @@ impl borsh::ser::BorshSerialize for Identifier {
 
         // Write the size of the identifier
         let size = (internals.len() as u32).to_le_bytes();
-        writer.write(&size)?;
+        writer.write_all(&size)?;
 
         // Write the content of the identifier if non-empty
         if !internals.is_empty() {
-            writer.write(self.as_str().as_bytes())?;
+            writer.write_all(self.as_str().as_bytes())?;
         }
         Ok(())
     }
