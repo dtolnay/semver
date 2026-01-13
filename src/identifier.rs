@@ -271,6 +271,118 @@ impl PartialEq for Identifier {
     }
 }
 
+#[cfg(feature = "borsh")]
+impl borsh::ser::BorshSerialize for Identifier {
+    fn serialize<W: borsh::io::Write>(&self, writer: &mut W) -> borsh::io::Result<()> {
+        let internals = self.as_str().as_bytes();
+        assert!(internals.len() <= u32::MAX as usize);
+
+        // Write the size of the identifier
+        let size = (internals.len() as u32).to_le_bytes();
+        writer.write(&size)?;
+
+        // Write the content of the identifier if non-empty
+        if !internals.is_empty() {
+            writer.write(self.as_str().as_bytes())?;
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "borsh")]
+impl borsh::de::BorshDeserialize for Identifier {
+    fn deserialize_reader<R: borsh::io::Read>(reader: &mut R) -> borsh::io::Result<Self> {
+        // First we read the size of the identifier
+        let mut len = [0u8; 4];
+        reader.read_exact(&mut len)?;
+        let len = u32::from_le_bytes(len) as usize;
+
+        // Allocate an Identifier of the correct size
+        match len {
+            0 => Ok(Self::empty()),
+            1..9 => {
+                // Short string representation no allocation required
+                let mut buffer = [0u8; 8];
+                let buffer_slice = &mut buffer[0..len];
+                reader.read_exact(buffer_slice)?;
+
+                // Ensure no '\0' is present
+                for char in buffer_slice.iter() {
+                    if !char.is_ascii() || *char == 0u8 {
+                        unreachable!(
+                            "Corrupted data: should only contain ASCII character and no NIL bytes"
+                        );
+                    }
+                }
+
+                // SAFETY: Bytes are valid UTF-8 as they are non-null ASCII characters
+                let buffer_slice = unsafe { str::from_utf8_unchecked(buffer_slice) };
+                Ok(unsafe { Self::new_unchecked(buffer_slice) })
+            }
+            9..=0xff_ffff_ffff_ffff => {
+                // SAFETY: len is in a range that does not contain 0.
+                let size = bytes_for_varint(unsafe { NonZeroUsize::new_unchecked(len) }) + len;
+                let align = 2;
+
+                // On 32-bit and 16-bit architecture, check for size overflowing
+                // isize::MAX. Making an allocation request bigger than this to
+                // the allocator is considered UB. All allocations (including
+                // static ones) are limited to isize::MAX so we're guaranteed
+                // len <= isize::MAX, and we know bytes_for_varint(len) <= 5
+                // because 128**5 > isize::MAX, which means the only problem
+                // that can arise is when isize::MAX - 5 <= len <= isize::MAX.
+                // This is pretty much guaranteed to be malicious input so we
+                // don't need to care about returning a good error message.
+                if mem::size_of::<usize>() < 8 {
+                    let max_alloc = usize::MAX / 2 - align;
+                    assert!(size <= max_alloc);
+                }
+
+                // SAFETY: align is not zero, align is a power of two, and
+                // rounding size up to align does not overflow isize::MAX.
+                let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
+                // SAFETY: layout's size is nonzero.
+                let ptr = unsafe { alloc(layout) };
+                if ptr.is_null() {
+                    handle_alloc_error(layout);
+                }
+                let mut write = ptr;
+                let mut varint_remaining = len;
+                while varint_remaining > 0 {
+                    // SAFETY: size is bytes_for_varint(len) bytes + len bytes.
+                    // This is writing the first bytes_for_varint(len) bytes.
+                    unsafe { ptr::write(write, varint_remaining as u8 | 0x80) };
+                    varint_remaining >>= 7;
+                    // SAFETY: still in bounds of the same allocation.
+                    write = unsafe { write.add(1) };
+                }
+
+                // SAFETY: data is non-null and size is bytes_for_varint(len) bytes + len bytes.
+                // This is writing to the last len bytes
+                let buffer = unsafe { core::slice::from_raw_parts_mut(write, len) };
+                reader.read_exact(buffer)?;
+
+                // Check that all bytes are either
+                for char in buffer {
+                    if !char.is_ascii() || *char == 0u8 {
+                        unreachable!(
+                            "Corrupted data: should only contain ASCII character and no NIL bytes"
+                        );
+                    }
+                }
+
+                Ok(Identifier {
+                    head: ptr_to_repr(ptr),
+                    tail: [0; TAIL_BYTES],
+                })
+            }
+            _ => {
+                unreachable!("you should really refrain from storing >64 petabytes of text in semver version");
+            }
+        }
+    }
+}
+
 unsafe impl Send for Identifier {}
 unsafe impl Sync for Identifier {}
 
