@@ -15,10 +15,12 @@ rust-version = "1.68"
 [features]
 default = ["std"]
 serde = ["dep:serde"]
+borsh = ["dep:borsh"]
 std = []
 
 [dependencies]
 serde = { package = "serde_core", version = "1.0.220", optional = true, default-features = false }
+borsh = { version = "^1", optional = true, default-features = false, features = ["derive"]}
 
 [target.'cfg(any())'.dependencies]
 serde = { version = "1.0.220", optional = true, default-features = false }
@@ -41,4 +43,4 @@ rustdoc-args = [
 ]
 
 [package.metadata.playground]
-features = ["serde"]
+features = ["serde", "borsh"]
