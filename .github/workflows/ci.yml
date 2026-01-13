@@ -41,6 +41,7 @@ jobs:
       - run: cargo check --features borsh
         if: matrix.rust != '1.68.0' # Some borsh dependency do not compile in this rustc version
       - run: cargo check --features serde,borsh
+        if: matrix.rust != '1.68.0' # Some borsh dependency do not compile in this rustc version
       - run: cargo check --no-default-features --features serde
       - run: cargo check --no-default-features --features borsh
         if: matrix.rust != '1.68.0' # Some borsh dependency do not compile in this rustc version
