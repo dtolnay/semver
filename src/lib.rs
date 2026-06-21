@@ -100,6 +100,8 @@ mod serde;
 
 use crate::identifier::Identifier;
 use alloc::vec::Vec;
+#[cfg(feature = "borsh")]
+use borsh::{BorshDeserialize, BorshSerialize};
 use core::cmp::Ordering;
 use core::str::FromStr;
 
@@ -155,6 +157,7 @@ pub use crate::parse::Error;
 ///
 /// Example:&ensp;`1.0.0-alpha`&ensp;&lt;&ensp;`1.0.0-alpha.1`&ensp;&lt;&ensp;`1.0.0-alpha.beta`&ensp;&lt;&ensp;`1.0.0-beta`&ensp;&lt;&ensp;`1.0.0-beta.2`&ensp;&lt;&ensp;`1.0.0-beta.11`&ensp;&lt;&ensp;`1.0.0-rc.1`&ensp;&lt;&ensp;`1.0.0`
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 pub struct Version {
     pub major: u64,
     pub minor: u64,
@@ -181,6 +184,7 @@ pub struct Version {
 ///   not permitted within a partial version, i.e. anywhere between the major
 ///   version number and its minor, patch, pre-release, or build metadata.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 pub struct VersionReq {
     pub comparators: Vec<Comparator>,
 }
@@ -188,6 +192,7 @@ pub struct VersionReq {
 /// A pair of comparison operator and partial version, such as `>=1.2`. Forms
 /// one piece of a VersionReq.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 pub struct Comparator {
     pub op: Op,
     pub major: u64,
@@ -244,6 +249,7 @@ pub struct Comparator {
 /// - &ensp;**`I.J.*`**&emsp;&mdash;&emsp;equivalent to `=I.J`
 /// - &ensp;**`I.*`**&ensp;or&ensp;**`I.*.*`**&emsp;&mdash;&emsp;equivalent to `=I`
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 #[non_exhaustive]
 pub enum Op {
     Exact,
@@ -306,6 +312,7 @@ pub enum Op {
 ///
 /// Example:&ensp;`alpha`&ensp;&lt;&ensp;`alpha.85`&ensp;&lt;&ensp;`alpha.90`&ensp;&lt;&ensp;`alpha.200`&ensp;&lt;&ensp;`alpha.0a`&ensp;&lt;&ensp;`alpha.1a0`&ensp;&lt;&ensp;`alpha.a`&ensp;&lt;&ensp;`beta`
 #[derive(Default, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 pub struct Prerelease {
     identifier: Identifier,
 }
@@ -364,6 +371,7 @@ pub struct Prerelease {
 ///
 /// Example:&ensp;`demo`&ensp;&lt;&ensp;`demo.85`&ensp;&lt;&ensp;`demo.90`&ensp;&lt;&ensp;`demo.090`&ensp;&lt;&ensp;`demo.200`&ensp;&lt;&ensp;`demo.1a0`&ensp;&lt;&ensp;`demo.a`&ensp;&lt;&ensp;`memo`
 #[derive(Default, Clone, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize))]
 pub struct BuildMetadata {
     identifier: Identifier,
 }
