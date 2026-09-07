@@ -241,8 +241,10 @@ pub struct Comparator {
 /// - &ensp;**`^I`**&emsp;&mdash;&emsp;equivalent to `=I`
 ///
 /// # Op::Wildcard
-/// - &ensp;**`I.J.*`**&emsp;&mdash;&emsp;equivalent to `=I.J`
-/// - &ensp;**`I.*`**&ensp;or&ensp;**`I.*.*`**&emsp;&mdash;&emsp;equivalent to `=I`
+/// *Wildcard requirements allow the minor or patch version to be wildcarded using `*`, `x`, or `X`.*
+/// - &ensp;**`*`**&ensp;(or `x`, `X`)&emsp;&mdash;&emsp;matches any non-prerelease version
+/// - &ensp;**`I.J.*`**&ensp;(or `I.J.x`, `I.J.X`)&emsp;&mdash;&emsp;equivalent to `=I.J`
+/// - &ensp;**`I.*`**&ensp;or&ensp;**`I.*.*`**&ensp;(or `I.x`, `I.X`, `I.x.x`, `I.X.X`)&emsp;&mdash;&emsp;equivalent to `=I`
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[non_exhaustive]
 pub enum Op {
