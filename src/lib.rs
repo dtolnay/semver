@@ -200,30 +200,38 @@ pub struct Comparator {
 
 /// SemVer comparison operator: `=`, `>`, `>=`, `<`, `<=`, `~`, `^`, `*`.
 ///
+/// The expansions below describe how each comparator form is interpreted on
+/// its own. They are not a rewrite rule that can be freely substituted inside
+/// a larger [`VersionReq`]: when a requirement contains multiple comparators
+/// and one of them admits a prerelease version, replacing a partial
+/// comparator with its expanded form can change whether that prerelease is
+/// admitted by the requirement as a whole. Prefer the form that matches your
+/// intent.
+///
 /// # Op::Exact
 /// - &ensp;**`=I.J.K`**&emsp;&mdash;&emsp;exactly the version I.J.K
-/// - &ensp;**`=I.J`**&emsp;&mdash;&emsp;equivalent to `>=I.J.0, <I.(J+1).0`
-/// - &ensp;**`=I`**&emsp;&mdash;&emsp;equivalent to `>=I.0.0, <(I+1).0.0`
+/// - &ensp;**`=I.J`**&emsp;&mdash;&emsp;expands to `>=I.J.0, <I.(J+1).0`
+/// - &ensp;**`=I`**&emsp;&mdash;&emsp;expands to `>=I.0.0, <(I+1).0.0`
 ///
 /// # Op::Greater
 /// - &ensp;**`>I.J.K`**
-/// - &ensp;**`>I.J`**&emsp;&mdash;&emsp;equivalent to `>=I.(J+1).0`
-/// - &ensp;**`>I`**&emsp;&mdash;&emsp;equivalent to `>=(I+1).0.0`
+/// - &ensp;**`>I.J`**&emsp;&mdash;&emsp;expands to `>=I.(J+1).0`
+/// - &ensp;**`>I`**&emsp;&mdash;&emsp;expands to `>=(I+1).0.0`
 ///
 /// # Op::GreaterEq
 /// - &ensp;**`>=I.J.K`**
-/// - &ensp;**`>=I.J`**&emsp;&mdash;&emsp;equivalent to `>=I.J.0`
-/// - &ensp;**`>=I`**&emsp;&mdash;&emsp;equivalent to `>=I.0.0`
+/// - &ensp;**`>=I.J`**&emsp;&mdash;&emsp;expands to `>=I.J.0`
+/// - &ensp;**`>=I`**&emsp;&mdash;&emsp;expands to `>=I.0.0`
 ///
 /// # Op::Less
 /// - &ensp;**`<I.J.K`**
-/// - &ensp;**`<I.J`**&emsp;&mdash;&emsp;equivalent to `<I.J.0`
-/// - &ensp;**`<I`**&emsp;&mdash;&emsp;equivalent to `<I.0.0`
+/// - &ensp;**`<I.J`**&emsp;&mdash;&emsp;expands to `<I.J.0`
+/// - &ensp;**`<I`**&emsp;&mdash;&emsp;expands to `<I.0.0`
 ///
 /// # Op::LessEq
 /// - &ensp;**`<=I.J.K`**
-/// - &ensp;**`<=I.J`**&emsp;&mdash;&emsp;equivalent to `<I.(J+1).0`
-/// - &ensp;**`<=I`**&emsp;&mdash;&emsp;equivalent to `<(I+1).0.0`
+/// - &ensp;**`<=I.J`**&emsp;&mdash;&emsp;expands to `<I.(J+1).0`
+/// - &ensp;**`<=I`**&emsp;&mdash;&emsp;expands to `<(I+1).0.0`
 ///
 /// # Op::Tilde&emsp;("patch" updates)
 /// *Tilde requirements allow the **patch** part of the semver version (the third number) to increase.*
