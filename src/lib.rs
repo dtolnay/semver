@@ -491,6 +491,19 @@ impl VersionReq {
 
     /// Create `VersionReq` by parsing from string representation.
     ///
+    /// The wildcard spellings `*`, `x`, and `X` are equivalent. This applies
+    /// both to a standalone wildcard and to a wildcard component following a
+    /// version number, such as `1.2.x`. Display uses `*` for all three spellings.
+    ///
+    /// ```
+    /// use semver::VersionReq;
+    ///
+    /// assert_eq!(VersionReq::parse("X").unwrap(), VersionReq::STAR);
+    /// let requirement = VersionReq::parse("1.2.x").unwrap();
+    /// assert_eq!(requirement, VersionReq::parse("1.2.X").unwrap());
+    /// assert_eq!(requirement.to_string(), "1.2.*");
+    /// ```
+    ///
     /// # Errors
     ///
     /// Possible reasons for the parse to fail include:
