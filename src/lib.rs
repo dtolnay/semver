@@ -243,6 +243,10 @@ pub struct Comparator {
 /// # Op::Wildcard
 /// - &ensp;**`I.J.*`**&emsp;&mdash;&emsp;equivalent to `=I.J`
 /// - &ensp;**`I.*`**&ensp;or&ensp;**`I.*.*`**&emsp;&mdash;&emsp;equivalent to `=I`
+///
+/// The characters `x` and `X` may be used in place of `*` in any wildcard
+/// position and are treated equivalently; for example `I.J.x` is the same
+/// requirement as `I.J.*`, and `x` alone is the same as `*`.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[non_exhaustive]
 pub enum Op {

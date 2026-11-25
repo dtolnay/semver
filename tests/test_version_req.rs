@@ -478,3 +478,29 @@ fn test_wildcard_and_another() {
         "wildcard req (*) must be the only comparator in the version req",
     );
 }
+
+#[test]
+fn test_wildcard_x_equivalence() {
+    // `x` and `X` are accepted in place of `*` in any wildcard position,
+    // as documented on `Op::Wildcard`.
+    assert_eq!(
+        VersionReq::parse("1.2.*").unwrap(),
+        VersionReq::parse("1.2.x").unwrap()
+    );
+    assert_eq!(
+        VersionReq::parse("1.2.*").unwrap(),
+        VersionReq::parse("1.2.X").unwrap()
+    );
+    assert_eq!(
+        VersionReq::parse("1.*").unwrap(),
+        VersionReq::parse("1.x").unwrap()
+    );
+    assert_eq!(
+        VersionReq::parse("*").unwrap(),
+        VersionReq::parse("x").unwrap()
+    );
+    assert_eq!(
+        VersionReq::parse("*").unwrap(),
+        VersionReq::parse("X").unwrap()
+    );
+}
